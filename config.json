@@ -1,0 +1,11 @@
+{
+    "project_name": "Open_Finance_Lakehouse",
+    "author_name": "Rodrigo Monteiro Pereira",
+    "description": "Lakehouse platform for integrating public financial data sources such as CVM, BACEN, and B3, using PySpark, Delta Lake, Airflow, and Great Expectations.",
+    "layers": [
+        "raw",
+        "intermediate",
+        "primary",
+        "feature"
+    ]
+  }
