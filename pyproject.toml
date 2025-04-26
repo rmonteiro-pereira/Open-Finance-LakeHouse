@@ -1,0 +1,16 @@
+[project]
+name = "Open_Finance_Lakehouse"
+version = "0.1.0"
+description = "Lakehouse platform for integrating public financial data sources such as CVM, BACEN, and B3, using PySpark, Delta Lake, Airflow, and Great Expectations."
+authors = [
+  { name = "Rodrigo Monteiro Pereira" }
+]
+dependencies = [
+  "kedro",
+  "pyspark",
+  "apache-airflow",
+  "great-expectations",
+  "pandas",
+  "requests"
+]
+requires-python = ">=3.10"
