@@ -3,30 +3,52 @@ import pandas as pd
 import plotly.express as px  # noqa:  F401
 import plotly.graph_objs as go
 import seaborn as sn
+from pyspark.sql import DataFrame as SparkDataFrame
+from pyspark.sql import SparkSession
 
 
 # This function uses plotly.express
-def compare_passenger_capacity_exp(preprocessed_shuttles: pd.DataFrame):
-    return (
-        preprocessed_shuttles.groupby(["shuttle_type"])
-        .mean(numeric_only=True)
-        .reset_index()
-    )
+def compare_passenger_capacity_exp(preprocessed_shuttles: SparkDataFrame):
+    spark = SparkSession.builder.appName("PassengerCapacityComparison").getOrCreate()
+
+    # Register the DataFrame as a temporary table
+    preprocessed_shuttles.createOrReplaceTempView("shuttles")
+
+    # Perform the grouping and aggregation using SQL
+    query = """
+            SELECT shuttle_type, AVG(passenger_capacity) as passenger_capacity
+            FROM shuttles
+            GROUP BY shuttle_type
+        """
+    grouped_data = spark.sql(query)
+    # Convert Spark DataFrame to Pandas for visualization
+    pandas_grouped_data = grouped_data.toPandas()
+    return pandas_grouped_data
 
 
-# This function uses plotly.graph_objects
-def compare_passenger_capacity_go(preprocessed_shuttles: pd.DataFrame):
+def compare_passenger_capacity_go(preprocessed_shuttles: SparkDataFrame):
+    spark = SparkSession.builder.appName("PassengerCapacityComparison").getOrCreate()
 
-    data_frame = (
-        preprocessed_shuttles.groupby(["shuttle_type"])
-        .mean(numeric_only=True)
-        .reset_index()
-    )
+    # Register the DataFrame as a temporary table
+    preprocessed_shuttles.createOrReplaceTempView("shuttles")
+
+    # Perform the grouping and aggregation using SQL
+    query = """
+        SELECT shuttle_type, AVG(passenger_capacity) as avg_passenger_capacity
+        FROM shuttles
+        GROUP BY shuttle_type
+    """
+    grouped_data = spark.sql(query)
+
+    # Convert Spark DataFrame to Pandas for visualization
+    pandas_grouped_data = grouped_data.toPandas()
+
+    # Create the Plotly figure
     fig = go.Figure(
         [
             go.Bar(
-                x=data_frame["shuttle_type"],
-                y=data_frame["passenger_capacity"],
+                x=pandas_grouped_data["shuttle_type"],
+                y=pandas_grouped_data["avg_passenger_capacity"],
             )
         ]
     )

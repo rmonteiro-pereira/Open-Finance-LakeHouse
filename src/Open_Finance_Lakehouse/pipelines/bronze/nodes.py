@@ -1,15 +1,11 @@
-"""
-This is a boilerplate pipeline 'bronze'
-generated using Kedro 0.19.12
-"""
 # src/open_finance_lakehouse/pipelines/bronze/nodes.py
+
+import io
 
 import pandas as pd
 import requests
-import zipfile
-import io
-import pyspark.sql.functions as F
 from pyspark.sql import SparkSession
+
 
 # BACEN API Fetch
 def fetch_bacen_series(series_id: int) -> pd.DataFrame:
@@ -22,12 +18,12 @@ def fetch_bacen_series(series_id: int) -> pd.DataFrame:
     return df
 
 # CVM Download and Read
-def fetch_cvm_fundos(spark: SparkSession, year: int, month: int) -> pd.DataFrame:
+def fetch_cvm_fundos(year: int, month: int) -> pd.DataFrame:
+    spark = SparkSession.builder.appName("LakehouseFinanceiro").getOrCreate()
     base_url = "https://dados.cvm.gov.br/dados/FI/DOC/INF_DI/DADOS/"
     file_name = f"inf_di_fi_{year}{str(month).zfill(2)}.csv"
     url = f"{base_url}{file_name}"
-    
-    # Read CSV directly (CVM disponibiliza sem zip para anos recentes)
+
     df = spark.read.csv(url, header=True, sep=";", inferSchema=True, encoding="ISO-8859-1")
     return df
 
