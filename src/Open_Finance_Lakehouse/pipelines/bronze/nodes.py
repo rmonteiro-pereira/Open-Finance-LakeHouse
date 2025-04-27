@@ -11,11 +11,20 @@ from pyspark.sql import SparkSession
 def fetch_bacen_series(series_id: int) -> pd.DataFrame:
     url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{series_id}/dados?formato=json"
     response = requests.get(url)
-    df = pd.read_json(io.StringIO(response.text))
-    df.columns = ["data", "valor"]
-    df["data"] = pd.to_datetime(df["data"], format="%d/%m/%Y")
-    df["valor"] = pd.to_numeric(df["valor"], errors="coerce")
-    return df
+    if not response.ok or not response.text.strip():
+        # Return empty DataFrame with expected columns if response is bad or empty
+        return pd.DataFrame(columns=["data", "valor"])
+    try:
+        data = pd.read_json(io.StringIO(response.text))
+        if data.empty:
+            return pd.DataFrame(columns=["data", "valor"])
+        data.columns = ["data", "valor"]
+        data["data"] = pd.to_datetime(data["data"], format="%d/%m/%Y")
+        data["valor"] = pd.to_numeric(data["valor"], errors="coerce")
+        return data
+    except Exception:
+        # Return empty DataFrame if parsing fails
+        return pd.DataFrame(columns=["data", "valor"])
 
 # CVM Download and Read
 def fetch_cvm_fundos(year: int, month: int) -> pd.DataFrame:
