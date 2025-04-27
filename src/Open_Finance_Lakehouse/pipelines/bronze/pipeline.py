@@ -4,6 +4,11 @@ from kedro.pipeline import Pipeline, node
 
 from .nodes import fetch_bacen_series, fetch_cvm_fundos, save_as_delta
 
+inputs=dict(
+    series_id="params:bacen_selic_id",
+    start_date="params:bacen_start_date",
+    end_date="params:bacen_end_date"
+),
 
 def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline([

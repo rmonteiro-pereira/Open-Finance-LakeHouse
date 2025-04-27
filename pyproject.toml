@@ -16,7 +16,10 @@ dependencies = [
     "kedro-viz>=6.7.0",
     "scikit-learn~=1.5.1",
     "seaborn~=0.12.1",
-    "setuptools; python_version >= '3.12'"
+    "setuptools; python_version >= '3.12'",
+    "pyarrow>=19.0.1",
+    "pandas>=2.2.3",
+    "numpy>=2.0.2",
 ]
 
 [project.scripts]
@@ -83,4 +86,4 @@ select = [
     "PL",  # Pylint
     "T201", # Print Statement
 ]
-ignore = ["E501"]  # Ruff format takes care of line-too-long
+ignore = ["E501", "T201"]  # Ruff format takes care of line-too-long
