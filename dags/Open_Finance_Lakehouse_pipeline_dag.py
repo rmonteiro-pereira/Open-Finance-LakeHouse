@@ -1,1 +1,0 @@
-# Airflow DAG for the Open Finance Lakehouse pipeline

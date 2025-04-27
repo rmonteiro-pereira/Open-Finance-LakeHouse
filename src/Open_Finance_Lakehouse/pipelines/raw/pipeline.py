@@ -1,1 +1,0 @@
-# Pipeline definition for the raw layer
