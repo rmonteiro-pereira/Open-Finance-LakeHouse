@@ -12,10 +12,11 @@ dependencies = [
     "jupyterlab>=3.0",
     "notebook",
     "kedro[jupyter]~=0.19.12",
-    "kedro-datasets[pandas-csvdataset, pandas-exceldataset, pandas-parquetdataset, plotly-plotlydataset, plotly-jsondataset, matplotlib-matplotlibwriter]>=3.0",
+    "kedro-datasets[pandas-csvdataset, pandas-exceldataset, pandas-parquetdataset, spark-sparkdataset, plotly-plotlydataset, plotly-jsondataset, matplotlib-matplotlibwriter]>=3.0",
     "kedro-viz>=6.7.0",
     "scikit-learn~=1.5.1",
-    "seaborn~=0.12.1"
+    "seaborn~=0.12.1",
+    "setuptools; python_version >= '3.12'"
 ]
 
 [project.scripts]
@@ -53,7 +54,7 @@ namespaces = false
 package_name = "open_finance_lakehouse"
 project_name = "Open-Finance-Lakehouse"
 kedro_init_version = "0.19.12"
-tools = "['Linting', 'Testing', 'Custom Logging', 'Documentation', 'Data Structure']"
+tools = "['Linting', 'Testing', 'Custom Logging', 'Documentation', 'Data Structure', 'PySpark']"
 example_pipeline = "True"
 source_dir = "src"
 
@@ -83,6 +84,3 @@ select = [
     "T201", # Print Statement
 ]
 ignore = ["E501"]  # Ruff format takes care of line-too-long
-
-[tool.kedro_telemetry]
-project_id = "f71d06b65e1d4bfcb9b3f393d92aab19"

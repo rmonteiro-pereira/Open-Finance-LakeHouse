@@ -40,28 +40,98 @@
 # https://docs.kedro.org/en/stable/data/data_catalog.html
 
 companies:
-  type: pandas.CSVDataset
   filepath: data/01_raw/companies.csv
+  type: spark.SparkDataset
+  file_format: csv
+  load_args:
+    header: True
+    inferSchema: True
+  save_args:
+    sep: ','
+    header: True
+    mode: overwrite
 
 reviews:
-  type: pandas.CSVDataset
   filepath: data/01_raw/reviews.csv
+  type: spark.SparkDataset
+  file_format: csv
+  load_args:
+    header: True
+    inferSchema: True
+  save_args:
+    sep: ','
+    header: True
+    mode: overwrite
 
-shuttles:
+shuttles_excel:
   type: pandas.ExcelDataset
   filepath: data/01_raw/shuttles.xlsx
+
+shuttles@csv:
+  type: pandas.CSVDataset
+  filepath: data/02_intermediate/shuttles.csv
+
+shuttles@spark:
+  filepath: data/02_intermediate/shuttles.csv
+  type: spark.SparkDataset
+  file_format: csv
   load_args:
-    engine: openpyxl
+    header: True
+    inferSchema: True
+  save_args:
+    sep: ','
+    header: True
+    mode: overwrite
 
 preprocessed_companies:
-  type: pandas.ParquetDataset
-  filepath: data/02_intermediate/preprocessed_companies.parquet
+  filepath: data/02_intermediate/preprocessed_companies.csv
+  type: spark.SparkDataset
+  file_format: csv
+  load_args:
+    header: True
+    inferSchema: True
+  save_args:
+    sep: ','
+    header: True
+    mode: overwrite
 
 preprocessed_shuttles:
-  type: pandas.ParquetDataset
-  filepath: data/02_intermediate/preprocessed_shuttles.parquet
+  filepath: data/02_intermediate/preprocessed_shuttles.csv
+  type: spark.SparkDataset
+  file_format: csv
+  load_args:
+    header: True
+    inferSchema: True
+  save_args:
+    sep: ','
+    header: True
+    mode: overwrite
 
-model_input_table:
+preprocessed_reviews:
+  filepath: data/02_intermediate/preprocessed_reviews.csv
+  type: spark.SparkDataset
+  file_format: csv
+  load_args:
+    header: True
+    inferSchema: True
+  save_args:
+    sep: ','
+    header: True
+    mode: overwrite
+
+model_input_table@spark:
+  filepath: data/03_primary/model_input_table.parquet
+  type: spark.SparkDataset
+  file_format: parquet
+  load_args:
+    header: True
+    inferSchema: True
+  save_args:
+    sep: ','
+    header: True
+    mode: overwrite
+
+model_input_table@pandas:
   type: pandas.ParquetDataset
   filepath: data/03_primary/model_input_table.parquet
 
