@@ -1,11 +1,9 @@
-"""
-This is a boilerplate pipeline 'bronze'
-generated using Kedro 0.19.12
-"""
+# src/open_finance_lakehouse/pipelines/bronze/pipeline.py
 
 from kedro.pipeline import Pipeline, node
+
 from .nodes import fetch_bacen_series, fetch_cvm_fundos, save_as_delta
-from pyspark.sql import SparkSession
+
 
 def create_pipeline(**kwargs) -> Pipeline:
     return Pipeline([
@@ -17,7 +15,7 @@ def create_pipeline(**kwargs) -> Pipeline:
         ),
         node(
             func=fetch_cvm_fundos,
-            inputs=dict(spark=SparkSession.builder.getOrCreate(), year="params:cvm_year", month="params:cvm_month"),
+            inputs=dict(year="params:cvm_year", month="params:cvm_month"),
             outputs="cvm_fundos_df",
             name="fetch_cvm_fundos_node"
         ),
