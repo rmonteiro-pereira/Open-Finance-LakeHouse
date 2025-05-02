@@ -12,7 +12,7 @@
     {
       "expectation_type": "expect_column_to_exist",
       "kwargs": {
-        "column": "CNPJ_FUNDO_CLASSE"
+        "column": "CNPJ_FUNDO"
       },
       "meta": {}
     },
@@ -47,7 +47,7 @@
     {
       "expectation_type": "expect_column_values_to_not_be_null",
       "kwargs": {
-        "column": "CNPJ_FUNDO_CLASSE"
+        "column": "CNPJ_FUNDO"
       },
       "meta": {}
     },
