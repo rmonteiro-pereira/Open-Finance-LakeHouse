@@ -108,3 +108,6 @@ fluent_datasources:
       silver_bacen_selic:
         type: dataframe
         batch_metadata: {}
+      silver_cvm_if_di:
+        type: dataframe
+        batch_metadata: {}
