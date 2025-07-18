@@ -15,7 +15,7 @@ dependencies = [
     "kedro-datasets[pandas-csvdataset, pandas-exceldataset, pandas-parquetdataset, spark-sparkdataset, plotly-plotlydataset, plotly-jsondataset, matplotlib-matplotlibwriter]>=3.0",
     "kedro-viz>=6.7.0",
     "scikit-learn~=1.5.1",
-    "seaborn~=0.12.1",
+    "seaborn>=0.13.0",
     "setuptools; python_version >= '3.12'",
     "pyarrow>=19.0.1",
     "pandas>=2.2.3",
@@ -25,6 +25,8 @@ dependencies = [
     "boto3>=1.37.1",
     "great-expectations>=0.18.8",
     "kedro-mlflow>=0.14.4",
+    "openlineage-integration-common>=1.32.0",
+    "minio>=7.2.15",
 ]
 
 [project.scripts]
@@ -91,4 +93,4 @@ select = [
     "PL",  # Pylint
     "T201", # Print Statement
 ]
-ignore = ["E501", "T201"]  # Ruff format takes care of line-too-long
+ignore = ["E501", "T201", "W293", "I001", "E402"]  # Ruff format takes care of line-too-long

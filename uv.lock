@@ -3329,6 +3329,23 @@ wheels = [
 ]
 
 [[package]]
+name = "minio"
+version = "7.2.15"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "argon2-cffi" },
+    { name = "certifi" },
+    { name = "pycryptodome" },
+    { name = "typing-extensions" },
+    { name = "urllib3", version = "1.26.20", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
+    { name = "urllib3", version = "2.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9e/68/86a1cef80396e6a35a6fc4fafee5d28578c1a137bddd3ca2aa86f9b26a22/minio-7.2.15.tar.gz", hash = "sha256:5247df5d4dca7bfa4c9b20093acd5ad43e82d8710ceb059d79c6eea970f49f79", size = 138040, upload_time = "2025-01-19T08:57:26.626Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fb/6f/3690028e846fe432bfa5ba724a0dc37ec9c914965b7733e19d8ca2c4c48d/minio-7.2.15-py3-none-any.whl", hash = "sha256:c06ef7a43e5d67107067f77b6c07ebdd68733e5aa7eed03076472410ca19d876", size = 95075, upload_time = "2025-01-19T08:57:24.169Z" },
+]
+
+[[package]]
 name = "mistune"
 version = "3.1.3"
 source = { registry = "https://pypi.org/simple" }
@@ -3880,9 +3897,11 @@ dependencies = [
     { name = "kedro-datasets", version = "7.0.0", source = { registry = "https://pypi.org/simple" }, extra = ["matplotlib-matplotlibwriter", "pandas-csvdataset", "pandas-exceldataset", "pandas-parquetdataset", "plotly-jsondataset", "plotly-plotlydataset", "spark-sparkdataset"], marker = "python_full_version >= '3.10'" },
     { name = "kedro-mlflow" },
     { name = "kedro-viz" },
+    { name = "minio" },
     { name = "notebook" },
     { name = "numpy", version = "2.0.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
     { name = "numpy", version = "2.2.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
+    { name = "openlineage-integration-common" },
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "scikit-learn" },
@@ -3924,10 +3943,12 @@ requires-dist = [
     { name = "kedro-datasets", extras = ["matplotlib-matplotlibwriter", "pandas-csvdataset", "pandas-exceldataset", "pandas-parquetdataset", "plotly-jsondataset", "plotly-plotlydataset", "spark-sparkdataset"], specifier = ">=3.0" },
     { name = "kedro-mlflow", specifier = ">=0.14.4" },
     { name = "kedro-viz", specifier = ">=6.7.0" },
+    { name = "minio", specifier = ">=7.2.15" },
     { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=1.0,<2.1" },
     { name = "nbsphinx", marker = "extra == 'docs'", specifier = "==0.8.1" },
     { name = "notebook" },
     { name = "numpy", specifier = ">=2.0.2" },
+    { name = "openlineage-integration-common", specifier = ">=1.32.0" },
     { name = "pandas", specifier = ">=2.2.3" },
     { name = "pyarrow", specifier = ">=19.0.1" },
     { name = "pytest", marker = "extra == 'dev'", specifier = "~=7.2" },
@@ -3935,7 +3956,7 @@ requires-dist = [
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=1.7.1,<2.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = "~=0.1.8" },
     { name = "scikit-learn", specifier = "~=1.5.1" },
-    { name = "seaborn", specifier = "~=0.12.1" },
+    { name = "seaborn", specifier = ">=0.13.0" },
     { name = "setuptools", marker = "python_full_version >= '3.12'" },
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=5.3,<7.3" },
     { name = "sphinx-autodoc-typehints", marker = "extra == 'docs'", specifier = "==1.20.2" },
@@ -3943,6 +3964,47 @@ requires-dist = [
     { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = "==2.0.0" },
 ]
 provides-extras = ["docs", "dev"]
+
+[[package]]
+name = "openlineage-integration-common"
+version = "1.32.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "openlineage-python" },
+    { name = "openlineage-sql" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e0/de/d3b7bae19f1a49f8b120a9147a098b0e7da2e248f3dd0d5c6743507fcdef/openlineage_integration_common-1.32.0.tar.gz", hash = "sha256:0b034cc771a06fffe33a2d6af894cbb4f62a4406f7aa45328a1477ce91783fd2", size = 38394, upload_time = "2025-04-24T13:48:09.256Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e8/51/036eed276c537b6d28fb1fea624e98aca1e3dae355ae2b888471f7609d40/openlineage_integration_common-1.32.0-py3-none-any.whl", hash = "sha256:477d8dd7d0249f85f696e6d9ff922ff4bd33ec4fa03bfc7e62e6ea7a88aa0d2d", size = 43616, upload_time = "2025-04-24T13:48:00.599Z" },
+]
+
+[[package]]
+name = "openlineage-python"
+version = "1.32.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "packaging" },
+    { name = "python-dateutil" },
+    { name = "pyyaml" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/79/b3/1274c5777846456ef1e36b86846c0c007cbfe0c4e2ad16cc6cd9471ac2d3/openlineage_python-1.32.0.tar.gz", hash = "sha256:6c3a2582c552f27c4f126833e83d19d16dbdfef872a7d5af0aa1ecf4a58b453d", size = 59946, upload_time = "2025-04-24T13:48:09.88Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a1/a8/873369d32101aa0f05b8845f285e7ebcf47ddec08df0d2974b25bfe453cb/openlineage_python-1.32.0-py3-none-any.whl", hash = "sha256:82ad67357218bee31f6ce0049590716181d4d58b870941179c6c3bb5d4dc04b4", size = 66102, upload_time = "2025-04-24T13:48:02.027Z" },
+]
+
+[[package]]
+name = "openlineage-sql"
+version = "1.32.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e1/26/f62a7e4d7a4390875346e86059e883a36c149c909a3509e60b5d0ae59065/openlineage_sql-1.32.0.tar.gz", hash = "sha256:623f540ef4dadae4feebfbb32ca288fec8f009bf99f19d3a31e5ef3ad717b458", size = 39248, upload_time = "2025-04-24T13:48:10.793Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e7/93/3fdfd7b6f22823c2c9e2450538190f5a237075b9d1b105575d28a77c5687/openlineage_sql-1.32.0-cp39-abi3-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:d6356b87c819cecf1938ade69b230aff3d106a78e0ae3765933f556f496e9205", size = 2829766, upload_time = "2025-04-24T13:48:03.121Z" },
+    { url = "https://files.pythonhosted.org/packages/30/4b/79f0b01b653dbe4c73db57a34567264bdd0f3cc9cc34b2422c500ba1d2c7/openlineage_sql-1.32.0-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:c7862dd952bc72d03f57b3608f01c6db27138262d89130abdb32c4b4fe41ceb8", size = 1403052, upload_time = "2025-04-24T13:48:04.759Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/f4/82489e03c5c7cb24a87200e067f8e686c2e089ddf9ed3aed4e9fc0003568/openlineage_sql-1.32.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:90df190f372895bacef1ccc53c0ca47a12898c1012eed6ed1ba6f61af449c81a", size = 1544598, upload_time = "2025-04-24T13:48:05.768Z" },
+]
 
 [[package]]
 name = "openpyxl"
@@ -4734,6 +4796,34 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/1d/b2/31537cf4b1ca988837256c910a668b553fceb8f069bedc4b1c826024b52c/pycparser-2.22.tar.gz", hash = "sha256:491c8be9c040f5390f5bf44a5b07752bd07f56edf992381b05c701439eec10f6", size = 172736, upload_time = "2024-03-30T13:22:22.564Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/a3/a812df4e2dd5696d1f351d58b8fe16a405b234ad2886a0dab9183fb78109/pycparser-2.22-py3-none-any.whl", hash = "sha256:c3702b6d3dd8c7abc1afa565d7e63d53a1d0bd86cdc24edd75470f4de499cfcc", size = 117552, upload_time = "2024-03-30T13:22:20.476Z" },
+]
+
+[[package]]
+name = "pycryptodome"
+version = "3.22.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/44/e6/099310419df5ada522ff34ffc2f1a48a11b37fc6a76f51a6854c182dbd3e/pycryptodome-3.22.0.tar.gz", hash = "sha256:fd7ab568b3ad7b77c908d7c3f7e167ec5a8f035c64ff74f10d47a4edd043d723", size = 4917300, upload_time = "2025-03-15T23:03:36.506Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1f/65/a05831c3e4bcd1bf6c2a034e399f74b3d6f30bb4e37e36b9c310c09dc8c0/pycryptodome-3.22.0-cp37-abi3-macosx_10_9_universal2.whl", hash = "sha256:009e1c80eea42401a5bd5983c4bab8d516aef22e014a4705622e24e6d9d703c6", size = 2490637, upload_time = "2025-03-15T23:02:43.111Z" },
+    { url = "https://files.pythonhosted.org/packages/5c/76/ff3c2e7a60d17c080c4c6120ebaf60f38717cd387e77f84da4dcf7f64ff0/pycryptodome-3.22.0-cp37-abi3-macosx_10_9_x86_64.whl", hash = "sha256:3b76fa80daeff9519d7e9f6d9e40708f2fce36b9295a847f00624a08293f4f00", size = 1635372, upload_time = "2025-03-15T23:02:45.564Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/7f/cc5d6da0dbc36acd978d80a72b228e33aadaec9c4f91c93221166d8bdc05/pycryptodome-3.22.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a31fa5914b255ab62aac9265654292ce0404f6b66540a065f538466474baedbc", size = 2177456, upload_time = "2025-03-15T23:02:47.688Z" },
+    { url = "https://files.pythonhosted.org/packages/92/65/35f5063e68790602d892ad36e35ac723147232a9084d1999630045c34593/pycryptodome-3.22.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a0092fd476701eeeb04df5cc509d8b739fa381583cda6a46ff0a60639b7cd70d", size = 2263744, upload_time = "2025-03-15T23:02:49.548Z" },
+    { url = "https://files.pythonhosted.org/packages/cc/67/46acdd35b1081c3dbc72dc466b1b95b80d2f64cad3520f994a9b6c5c7d00/pycryptodome-3.22.0-cp37-abi3-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:18d5b0ddc7cf69231736d778bd3ae2b3efb681ae33b64b0c92fb4626bb48bb89", size = 2303356, upload_time = "2025-03-15T23:02:52.122Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/f9/a4f8a83384626098e3f55664519bec113002b9ef751887086ae63a53135a/pycryptodome-3.22.0-cp37-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:f6cf6aa36fcf463e622d2165a5ad9963b2762bebae2f632d719dfb8544903cf5", size = 2176714, upload_time = "2025-03-15T23:02:53.85Z" },
+    { url = "https://files.pythonhosted.org/packages/88/65/e5f8c3a885f70a6e05c84844cd5542120576f4369158946e8cfc623a464d/pycryptodome-3.22.0-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:aec7b40a7ea5af7c40f8837adf20a137d5e11a6eb202cde7e588a48fb2d871a8", size = 2337329, upload_time = "2025-03-15T23:02:56.11Z" },
+    { url = "https://files.pythonhosted.org/packages/b8/2a/25e0be2b509c28375c7f75c7e8d8d060773f2cce4856a1654276e3202339/pycryptodome-3.22.0-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:d21c1eda2f42211f18a25db4eaf8056c94a8563cd39da3683f89fe0d881fb772", size = 2262255, upload_time = "2025-03-15T23:02:58.055Z" },
+    { url = "https://files.pythonhosted.org/packages/41/58/60917bc4bbd91712e53ce04daf237a74a0ad731383a01288130672994328/pycryptodome-3.22.0-cp37-abi3-win32.whl", hash = "sha256:f02baa9f5e35934c6e8dcec91fcde96612bdefef6e442813b8ea34e82c84bbfb", size = 1763403, upload_time = "2025-03-15T23:03:00.616Z" },
+    { url = "https://files.pythonhosted.org/packages/55/f4/244c621afcf7867e23f63cfd7a9630f14cfe946c9be7e566af6c3915bcde/pycryptodome-3.22.0-cp37-abi3-win_amd64.whl", hash = "sha256:d086aed307e96d40c23c42418cbbca22ecc0ab4a8a0e24f87932eeab26c08627", size = 1794568, upload_time = "2025-03-15T23:03:03.189Z" },
+    { url = "https://files.pythonhosted.org/packages/37/c3/e3423e72669ca09f141aae493e1feaa8b8475859898b04f57078280a61c4/pycryptodome-3.22.0-pp310-pypy310_pp73-macosx_10_15_x86_64.whl", hash = "sha256:b4bdce34af16c1dcc7f8c66185684be15f5818afd2a82b75a4ce6b55f9783e13", size = 1618698, upload_time = "2025-03-15T23:03:11.163Z" },
+    { url = "https://files.pythonhosted.org/packages/f9/b7/35eec0b3919cafea362dcb68bb0654d9cb3cde6da6b7a9d8480ce0bf203a/pycryptodome-3.22.0-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2988ffcd5137dc2d27eb51cd18c0f0f68e5b009d5fec56fbccb638f90934f333", size = 1666957, upload_time = "2025-03-15T23:03:14.03Z" },
+    { url = "https://files.pythonhosted.org/packages/b0/1f/f49bccdd8d61f1da4278eb0d6aee7f988f1a6ec4056b0c2dc51eda45ae27/pycryptodome-3.22.0-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e653519dedcd1532788547f00eeb6108cc7ce9efdf5cc9996abce0d53f95d5a9", size = 1659242, upload_time = "2025-03-15T23:03:16.185Z" },
+    { url = "https://files.pythonhosted.org/packages/95/43/a01dcf1ed39c9a9e9c9d3f9d98040deeceedaa7cdf043e175251f2e13f44/pycryptodome-3.22.0-pp310-pypy310_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:f5810bc7494e4ac12a4afef5a32218129e7d3890ce3f2b5ec520cc69eb1102ad", size = 1697246, upload_time = "2025-03-15T23:03:18.436Z" },
+    { url = "https://files.pythonhosted.org/packages/3b/49/195842931f9ee6f14cd63ef85e06b93073463ed59601fb283ba9b813cd53/pycryptodome-3.22.0-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:e7514a1aebee8e85802d154fdb261381f1cb9b7c5a54594545145b8ec3056ae6", size = 1797436, upload_time = "2025-03-15T23:03:21.294Z" },
+    { url = "https://files.pythonhosted.org/packages/5f/e9/38087c7b41bc18eeeef285060883fa34ad9e545c692ec403dc43646e9643/pycryptodome-3.22.0-pp39-pypy39_pp73-macosx_10_15_x86_64.whl", hash = "sha256:56c6f9342fcb6c74e205fbd2fee568ec4cdbdaa6165c8fde55dbc4ba5f584464", size = 1618562, upload_time = "2025-03-15T23:03:24.16Z" },
+    { url = "https://files.pythonhosted.org/packages/b2/65/53da597a07c36d6253d4b7428df33d31c1fdaa6ad94c1a623a0787926141/pycryptodome-3.22.0-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:87a88dc543b62b5c669895caf6c5a958ac7abc8863919e94b7a6cafd2f64064f", size = 1666883, upload_time = "2025-03-15T23:03:26.519Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/af/97949fffc203e9eafe544899178f92d0359c84cbb6cb2fbdba07637b8a57/pycryptodome-3.22.0-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f7a683bc9fa585c0dfec7fa4801c96a48d30b30b096e3297f9374f40c2fedafc", size = 1659163, upload_time = "2025-03-15T23:03:29.13Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/30/fdb28fc201eaa121b302939ec9696b5f673ab3800938f2cb49afb8a5597c/pycryptodome-3.22.0-pp39-pypy39_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:8f4f6f47a7f411f2c157e77bbbda289e0c9f9e1e9944caa73c1c2e33f3f92d6e", size = 1697147, upload_time = "2025-03-15T23:03:31.208Z" },
+    { url = "https://files.pythonhosted.org/packages/24/a7/a565a451cf754de0d162cc140ff98c41c65654befefaa6a60a118af38361/pycryptodome-3.22.0-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:a6cf9553b29624961cab0785a3177a333e09e37ba62ad22314ebdbb01ca79840", size = 1797721, upload_time = "2025-03-15T23:03:33.274Z" },
 ]
 
 [[package]]
@@ -5733,7 +5823,7 @@ wheels = [
 
 [[package]]
 name = "seaborn"
-version = "0.12.2"
+version = "0.13.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib", version = "3.9.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -5742,9 +5832,9 @@ dependencies = [
     { name = "numpy", version = "2.2.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.10'" },
     { name = "pandas" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8a/77/5cde8bc47df770486acf64f550839b4136d1696e5e4d57ce33fa1823972b/seaborn-0.12.2.tar.gz", hash = "sha256:374645f36509d0dcab895cba5b47daf0586f77bfe3b36c97c607db7da5be0139", size = 1439798, upload_time = "2022-12-30T19:25:38.755Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/86/59/a451d7420a77ab0b98f7affa3a1d78a313d2f7281a57afb1a34bae8ab412/seaborn-0.13.2.tar.gz", hash = "sha256:93e60a40988f4d65e9f4885df477e2fdaff6b73a9ded434c1ab356dd57eefff7", size = 1457696, upload_time = "2024-01-25T13:21:52.551Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8f/2e/17bbb83fbf102687bb2aa3d808add39da820a7698159302a1a69bb82e01c/seaborn-0.12.2-py3-none-any.whl", hash = "sha256:ebf15355a4dba46037dfd65b7350f014ceb1f13c05e814eda2c9f5fd731afc08", size = 293284, upload_time = "2022-12-30T19:25:36.518Z" },
+    { url = "https://files.pythonhosted.org/packages/83/11/00d3c3dfc25ad54e731d91449895a79e4bf2384dc3ac01809010ba88f6d5/seaborn-0.13.2-py3-none-any.whl", hash = "sha256:636f8336facf092165e27924f223d3c62ca560b1f2bb5dff7ab7fad265361987", size = 294914, upload_time = "2024-01-25T13:21:49.598Z" },
 ]
 
 [[package]]

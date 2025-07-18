@@ -35,6 +35,100 @@ handlers:
 loggers:
   kedro:
     level: INFO
+    
+  # Suppress Kedro deprecation warnings 
+  kedro.io.data_catalog:
+    level: ERROR
+    
+  # Suppress MLflow warnings
+  mlflow:
+    level: ERROR
+    
+  # Suppress Spark verbose output
+  pyspark:
+    level: WARN
+    
+  py4j:
+    level: WARN
+    
+  # Suppress Hadoop S3A metrics warnings
+  org.apache.hadoop.metrics2:
+    level: ERROR
+    
+  # Suppress Spark temp directory cleanup warnings (Windows)
+  org.apache.spark.SparkEnv:
+    level: ERROR
+    handlers: [console]
+    propagate: no
+    
+  org.apache.spark.util.ShutdownHookManager:
+    level: ERROR
+    handlers: [console]
+    propagate: no
+    
+  org.apache.spark.network.util.JavaUtils:
+    level: ERROR
+    handlers: [console]
+    propagate: no
+    
+  # Suppress all Spark shutdown and cleanup related warnings
+  org.apache.spark.util.Utils:
+    level: ERROR 
+    handlers: [console]
+    propagate: no
+    
+  org.apache.spark.SparkContext:
+    level: ERROR 
+    handlers: [console]
+    propagate: no
+    
+  org.apache.spark.util.SparkFileUtils:
+    level: ERROR    
+    handlers: [console]
+    propagate: no
+    
+  # Suppress Java IO warnings during Spark cleanup
+  java.io.IOException:
+    level: ERROR
+    handlers: [console]
+    propagate: no
+    
+  # Suppress Ivy dependency resolution messages
+  org.apache.ivy:
+    level: ERROR
+    handlers: [console]
+    propagate: no
+    
+  org.apache.ivy.core.resolve.ResolveEngine:
+    level: ERROR
+    handlers: [console]
+    propagate: no
+    
+  org.apache.ivy.plugins.resolver:
+    level: ERROR
+    handlers: [console]
+    propagate: no
+    
+  org.apache.ivy.plugins.repository:
+    level: ERROR
+    handlers: [console]
+    propagate: no
+  
+  # Suppress Spark launcher and dependency resolution
+  org.apache.spark.deploy.SparkSubmit:
+    level: ERROR
+    handlers: [console]
+    propagate: no
+    
+  org.apache.spark.launcher:
+    level: ERROR
+    handlers: [console]
+    propagate: no
+    
+  org.apache.spark.launcher.OutputRedirector:
+    level: ERROR
+    handlers: [console]
+    propagate: no
 
   pyspark_spaceflights:
     level: INFO
