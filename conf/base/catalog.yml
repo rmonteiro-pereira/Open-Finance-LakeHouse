@@ -69,26 +69,28 @@ gold_cvm:
   filepath: s3a://lakehouse/gold/cvm_kpis/
   file_format: delta
 
-# SELIC Bronze data from BACEN API (Pandas for ingestion)
-bronze_selic:
-  type: pandas.ParquetDataset
-  filepath: data/01_raw/selic_bacen.parquet
+# SELIC Raw data from BACEN API (stored in MinIO as JSON)
+raw_selic:
+  type: text.TextDataset
+  filepath: s3a://lakehouse/raw/selic_bacen_raw.json
+  credentials: minio_credentials
 
-# SELIC Bronze data converted to Spark
-bronze_selic_spark:
+# SELIC Bronze data (structured but raw)
+bronze_selic:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/bacen_selic/
   file_format: delta
   save_args:
     mode: overwrite
 
-# SELIC Silver layer
+# SELIC Silver layer (cleaned and validated)
 silver_selic:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/bacen_selic/
   file_format: delta
   save_args:
     mode: overwrite
+    overwriteSchema: true
 
 # SELIC Gold layer (KPIs and aggregations)
 gold_selic:

@@ -4,6 +4,7 @@ generated using Kedro 0.19.12
 """
 import os
 import time
+import json
 import logging
 from typing import Any
 from functools import wraps
@@ -25,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 # Constants
 HTTP_NOT_FOUND = 404
+MAX_REASONABLE_SELIC_RATE = 100.0  # Maximum reasonable SELIC rate for validation
 
 
 def timing_decorator(func):
@@ -88,69 +90,99 @@ def ensure_minio_bucket(bucket_name: str = "lakehouse") -> None:
 
 
 @timing_decorator
-def ingest_selic_data(series_id: int, end_date: str = None) -> pd.DataFrame:
+def ingest_selic_raw(series_id: int, end_date: str = None) -> str:
     """
-    Stage 2: Ingestão - Fetch SELIC data from BACEN API
-    Returns pandas DataFrame that will be converted to Spark by Kedro
+    Stage 1: Raw Data Ingestion - Fetch raw SELIC data from BACEN API
+    Save as-is JSON format to preserve original structure
     """
-    logger.info(f"[FETCH] Fetching SELIC data for series {series_id}")
-    result = fetch_bacen_series(series_id, end_date)
-    logger.info(f"[RETRIEVED] Retrieved {len(result)} records from BACEN API")
-    return result
+    logger.info(f"[RAW] Fetching raw SELIC data for series {series_id}")
+    
+    # Fetch raw data from BACEN API
+    pandas_result = fetch_bacen_series(series_id, end_date)
+    
+    # Convert to dictionary format for JSON storage
+    raw_data = {
+        "series_id": series_id,
+        "fetched_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "total_records": len(pandas_result),
+        "data": pandas_result.to_dict(orient="records")
+    }
+    
+    logger.info(f"[RAW] Retrieved {len(pandas_result)} raw records from BACEN API")
+    
+    # Return as JSON string for TextDataset compatibility
+    return json.dumps(raw_data, indent=2)
 
 
 @timing_decorator
-def transform_selic_to_silver(bronze_selic: pd.DataFrame) -> DataFrame:
+def transform_raw_to_bronze(raw_selic: str) -> DataFrame:
     """
-    Stage 3: Transformação Silver - Clean and standardize SELIC data
-    Convert pandas DataFrame to Spark and apply transformations with enhanced error handling
+    Stage 2: Raw to Bronze - Apply basic schema and store in Delta format
+    Bronze layer contains raw data with basic validation
     """
-    logger.info(f"[TRANSFORM] Starting silver transformation with {len(bronze_selic)} records")
+    logger.info("[BRONZE] Transforming raw data to bronze layer")
+    
+    # Parse JSON string back to dict
+    raw_data = json.loads(raw_selic)
     
     # Ensure MinIO bucket exists
     ensure_minio_bucket("lakehouse")
-
-    # Get Spark session - Use existing session managed by Kedro
+    
+    # Get Spark session
     spark = SparkSession.getActiveSession()
     if spark is None:
-        logger.error("❌ No active Spark session found. Ensure Kedro is managing Spark sessions properly.")
         raise RuntimeError("No Spark session available")
+    
+    # Extract raw data
+    raw_records = raw_data["data"]
+    pandas_df = pd.DataFrame(raw_records)
+    
+    # Create bronze DataFrame with metadata
+    schema = StructType([
+        StructField("data", StringType(), True),
+        StructField("valor", StringType(), True),
+        StructField("series_id", StringType(), True),
+        StructField("ingested_at", StringType(), True)
+    ])
+    
+    # Add metadata columns
+    pandas_df['series_id'] = str(raw_data["series_id"])
+    pandas_df['ingested_at'] = raw_data["fetched_at"]
+    
+    bronze_df = spark.createDataFrame(pandas_df, schema=schema)
+    bronze_df = bronze_df.coalesce(1)
+    
+    record_count = bronze_df.count()
+    logger.info(f"[BRONZE] Created bronze layer with {record_count} records")
+    
+    return bronze_df
 
-    logger.info(f"[CONVERT] Converting {len(bronze_selic)} pandas records to Spark...")
 
-    # Convert pandas to Spark directly - no chunking for small datasets
+@timing_decorator
+def transform_bronze_to_silver(bronze_selic: DataFrame) -> DataFrame:
+    """
+    Stage 3: Bronze to Silver - Clean and standardize SELIC data
+    Silver layer contains validated and cleaned data
+    """
+    logger.info("[SILVER] Transforming bronze data to silver layer")
+    
+    # Apply silver transformations with validation
     try:
-        schema = StructType([
-            StructField("data", StringType(), True),
-            StructField("valor", StringType(), True)
-        ])
-        spark_df = spark.createDataFrame(bronze_selic, schema=schema)
-        
-        # Coalesce to single partition for small datasets to improve performance
-        spark_df = spark_df.coalesce(1)
-        
-        record_count = spark_df.count()
-        logger.info(f"[CONVERTED] Successfully converted to Spark DataFrame with {record_count} records")
-
-    except Exception as e:
-        logger.error(f"❌ Error in pandas to Spark conversion: {e}")
-        raise
-
-    # Apply silver transformations with better error handling
-    logger.info("[TRANSFORM] Applying silver transformations...")
-    try:
-        silver_df = spark_df.select(
+        silver_df = bronze_selic.select(
             to_date(col("data"), "dd/MM/yyyy").alias("date"),  # BACEN uses DD/MM/YYYY format
-            col("valor").cast("double").alias("selic_rate")
+            col("valor").cast("double").alias("selic_rate"),
+            col("series_id"),
+            col("ingested_at")
         ).filter(
             col("selic_rate").isNotNull() &
-            col("date").isNotNull()
+            col("date").isNotNull() &
+            (col("selic_rate") >= 0)  # Basic business rule validation
         ).orderBy("date")
 
-        # Coalesce to single partition for small datasets and cache for performance
+        # Coalesce and cache for performance
         silver_df = silver_df.coalesce(1).cache()
         record_count = silver_df.count()
-        logger.info(f"[COMPLETE] Silver transformation complete: {record_count} records")
+        logger.info(f"[SILVER] Silver transformation complete: {record_count} records")
 
         return silver_df
 
@@ -162,7 +194,7 @@ def transform_selic_to_silver(bronze_selic: pd.DataFrame) -> DataFrame:
 @timing_decorator
 def validate_selic_data(silver_selic: DataFrame) -> dict[str, Any]:
     """
-    Stage 4: Validação - Data quality checks for SELIC
+    Stage 4: Data Validation - Data quality checks for SELIC silver layer
     """
     logger.info("[VALIDATE] Running data quality validation...")
     
@@ -174,6 +206,11 @@ def validate_selic_data(silver_selic: DataFrame) -> dict[str, Any]:
         "date_range": {
             "min_date": str(silver_selic.agg({"date": "min"}).collect()[0][0]),
             "max_date": str(silver_selic.agg({"date": "max"}).collect()[0][0])
+        },
+        "rate_stats": {
+            "min_rate": float(silver_selic.agg({"selic_rate": "min"}).collect()[0][0]),
+            "max_rate": float(silver_selic.agg({"selic_rate": "max"}).collect()[0][0]),
+            "avg_rate": float(silver_selic.agg({"selic_rate": "avg"}).collect()[0][0])
         }
     }
     
@@ -181,12 +218,14 @@ def validate_selic_data(silver_selic: DataFrame) -> dict[str, Any]:
                 f"{validation_results['null_dates']} null dates, "
                 f"{validation_results['null_rates']} null rates")
     
-    # Basic validation rules
+    # Enhanced validation rules
     is_valid = (
         validation_results["null_dates"] == 0 and
         validation_results["null_rates"] == 0 and
         validation_results["negative_rates"] == 0 and
-        validation_results["total_records"] > 0
+        validation_results["total_records"] > 0 and
+        validation_results["rate_stats"]["min_rate"] >= 0 and
+        validation_results["rate_stats"]["max_rate"] <= MAX_REASONABLE_SELIC_RATE
     )
     
     validation_results["is_valid"] = is_valid
