@@ -1,4 +1,2 @@
-bronze_cvm_path: "s3a://lakehouse/bronze/cvm/"
-bronze_bacen_path: "s3a://lakehouse/bronze/bacen/"
 silver_cvm_path: "s3a://lakehouse/silver/cvm/"
 silver_bacen_path: "s3a://lakehouse/silver/bacen/"

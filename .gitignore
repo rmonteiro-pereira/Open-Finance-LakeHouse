@@ -161,3 +161,8 @@ venv.bak/
 mlruns/*
 
 *docker-volume/
+Planning/*
+temp/*
+**test**.py
+**teste**.py
+.ivy2/*

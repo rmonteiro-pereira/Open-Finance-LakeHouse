@@ -2,14 +2,21 @@
 from the Kedro defaults. For further information, including these default values, see
 https://docs.kedro.org/en/stable/kedro_project_setup/settings.html."""
 
+import os
+
+from dotenv import load_dotenv
+from kedro.config import OmegaConfigLoader
+
 # Instantiated project hooks.
 from kedro_mlflow.framework.hooks import MlflowHook
 
 from open_finance_lakehouse.hooks import SparkHooks  # noqa: E402
 
+# Load environment variables from .env file
+load_dotenv()
+
 # Hooks are executed in a Last-In-First-Out (LIFO) order.
-HOOKS = (SparkHooks(),)
-HOOKS.register(MlflowHook())
+HOOKS = (SparkHooks(), MlflowHook())
 
 # Installed plugins for which to disable hook auto-registration.
 # DISABLE_HOOKS_FOR_PLUGINS = ("kedro-viz",)
@@ -26,8 +33,6 @@ HOOKS.register(MlflowHook())
 # CONF_SOURCE = "conf"
 
 # Class that manages how configuration is loaded.
-from kedro.config import OmegaConfigLoader  # noqa: E402
-
 CONFIG_LOADER_CLASS = OmegaConfigLoader
 # Keyword arguments to pass to the `CONFIG_LOADER_CLASS` constructor.
 CONFIG_LOADER_ARGS = {
@@ -35,6 +40,9 @@ CONFIG_LOADER_ARGS = {
     "default_run_env": "local",
     "config_patterns": {
         "spark": ["spark*", "spark*/**"],
+    },
+    "custom_resolvers": {
+        "env": lambda var: os.getenv(var),
     }
 }
 

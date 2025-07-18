@@ -1,0 +1,4 @@
+# Minimal MLflow configuration to suppress warnings
+server:
+  mlflow_tracking_uri: "file:///E:/Projetos/Portifolio/Open-Finance-LakeHouse/mlruns"
+  mlflow_registry_uri: "file:///E:/Projetos/Portifolio/Open-Finance-LakeHouse/mlruns"

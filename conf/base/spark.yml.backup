@@ -1,4 +1,6 @@
-# Spark configuration optimized for Windows + MinIO + Delta Lake + Python Worker Connectivity
+# Spark configuration optimized for Windows# Additional Java options to suppress logging and Ivy dependency resolution
+spark.driver.extraJavaOptions: -Dlog4j.configuration=file:E:/Projetos/Portifolio/Open-Finance-LakeHouse/conf/log4j.properties -Dlog4j.rootLogger=ERROR,console -Dspark.launcher.verbose=false -Dorg.apache.ivy.silence=true -Divy.quiet=true -Divy.message.logger.level=0 -Divy.status.enabled=false -Divy.summary.enabled=false -Divy.report.enabled=false -Divy.console.log.level=0 -Divy.log.modules.in.use=false -Divy.log.resolved.modules=false -Divy.log.downloaded.artifacts=false -Divy.log.resolve.report=false -Divy.log.retrieved.report=false -Divy.log.circular.dependency=false -Divy.log.evicted.modules=false -Divy.log.not.converted.module=false -Divy.log.conflict.resolution=false -Divy.log.resolved.revision=false -Divy.log.default.configuration=false -Divy.log.module.when.found=false -Divy.verbose.level=0 -Divy.log.level=0
+spark.executor.extraJavaOptions: -Dlog4j.configuration=file:E:/Projetos/Portifolio/Open-Finance-LakeHouse/conf/log4j.properties -Dlog4j.rootLogger=ERROR,consoleMinIO + Delta Lake + Python Worker Connectivity
 
 # Memory and performance - Optimized for small datasets
 spark.driver.maxResultSize: 1g
@@ -8,12 +10,11 @@ spark.sql.shuffle.partitions: 1
 spark.serializer: org.apache.spark.serializer.KryoSerializer
 spark.default.parallelism: 1
 
-# Adaptive query execution - Optimized for small datasets with ERROR logging
+# Adaptive query execution - Optimized for small datasets
 spark.sql.adaptive.enabled: true
 spark.sql.adaptive.coalescePartitions.enabled: true
 spark.sql.adaptive.coalescePartitions.minPartitionSize: 1MB
 spark.sql.adaptive.coalescePartitions.initialPartitionNum: 1
-spark.sql.adaptive.logLevel: ERROR
 
 # Python path configuration - critical for Windows (uv-managed Python)
 spark.pyspark.driver.python: ${env:PYSPARK_DRIVER_PYTHON}
@@ -37,21 +38,14 @@ spark.sql.debug.maxToStringFields: 100
 spark.eventLog.enabled: false
 spark.ui.showConsoleProgress: false
 
-# Suppress Spark startup verbosity and Ivy dependency resolution
+# Suppress Spark startup verbosity
 spark.launcher.verbose: false
-spark.launcher.quiet: true
 spark.python.daemon.log: false
 spark.submit.quiet: true
 
-# Additional comprehensive logging suppression
-spark.python.worker.log: false
-
 # Additional Java options to suppress logging and Ivy dependency resolution
-spark.driver.extraJavaOptions: -Dlog4j.configuration=file:E:/Projetos/Portifolio/Open-Finance-LakeHouse/conf/log4j.properties -Dlog4j.rootLogger=ERROR,console -Dspark.launcher.verbose=false -Dorg.apache.ivy.silence=true -Divy.quiet=true -Divy.message.logger.level=0 -Divy.status.enabled=false -Divy.summary.enabled=false -Divy.report.enabled=false -Divy.console.log.level=0 -Divy.log.modules.in.use=false -Divy.log.resolved.modules=false -Divy.log.downloaded.artifacts=false -Divy.log.resolve.report=false -Divy.log.retrieved.report=false -Divy.log.circular.dependency=false -Divy.log.evicted.modules=false -Divy.log.not.converted.module=false -Divy.log.conflict.resolution=false -Divy.log.resolved.revision=false -Divy.log.default.configuration=false -Divy.log.module.when.found=false -Divy.verbose.level=0 -Divy.log.level=0
+spark.driver.extraJavaOptions: -Dlog4j.configuration=file:E:/Projetos/Portifolio/Open-Finance-LakeHouse/conf/log4j.properties -Dlog4j.rootLogger=ERROR,console -Dspark.launcher.verbose=false -Dorg.apache.ivy.silence=true -Divy.message.logger.level=0 -Divy.quiet=true -Divy.status.enabled=false -Divy.summary.enabled=false -Divy.report.enabled=false
 spark.executor.extraJavaOptions: -Dlog4j.configuration=file:E:/Projetos/Portifolio/Open-Finance-LakeHouse/conf/log4j.properties -Dlog4j.rootLogger=ERROR,console
-
-# Pre-download and cache dependencies - alternative approach
-spark.jars.ivy: E:/Projetos/Portifolio/Open-Finance-LakeHouse/.ivy2
 
 # Windows temp directory cleanup fixes - Suppress warnings and improve cleanup
 spark.cleaner.periodicGC.interval: 30s
@@ -67,7 +61,7 @@ spark.serializer.objectStreamReset: 100
 spark.driver.allowMultipleContexts: false
 spark.sql.execution.arrow.pyspark.fallback.enabled: true
 
-# Delta Lake configuration - Using dynamic package resolution
+# Delta Lake configuration
 spark.jars.packages: io.delta:delta-spark_2.12:3.1.0,org.apache.hadoop:hadoop-aws:3.3.4
 spark.sql.extensions: io.delta.sql.DeltaSparkSessionExtension
 spark.sql.catalog.spark_catalog: org.apache.spark.sql.delta.catalog.DeltaCatalog

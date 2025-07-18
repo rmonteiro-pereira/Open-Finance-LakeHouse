@@ -39,128 +39,66 @@
 # (transcoding), templating and a way to reuse arguments that are frequently repeated. See more here:
 # https://docs.kedro.org/en/stable/data/data_catalog.html
 
-companies:
-  filepath: data/01_raw/companies.csv
+bronze_bacen:
   type: spark.SparkDataset
-  file_format: csv
-  load_args:
-    header: True
-    inferSchema: True
-  save_args:
-    sep: ','
-    header: True
-    mode: overwrite
+  filepath: s3a://lakehouse/bronze/bacen_selic/
+  file_format: delta
 
-reviews:
-  filepath: data/01_raw/reviews.csv
+bronze_cvm:
   type: spark.SparkDataset
-  file_format: csv
-  load_args:
-    header: True
-    inferSchema: True
-  save_args:
-    sep: ','
-    header: True
-    mode: overwrite
+  filepath: s3a://lakehouse/bronze/cvm_if_di/
+  file_format: delta
 
-shuttles_excel:
-  type: pandas.ExcelDataset
-  filepath: data/01_raw/shuttles.xlsx
-
-shuttles@csv:
-  type: pandas.CSVDataset
-  filepath: data/02_intermediate/shuttles.csv
-
-shuttles@spark:
-  filepath: data/02_intermediate/shuttles.csv
+silver_bacen:
   type: spark.SparkDataset
-  file_format: csv
-  load_args:
-    header: True
-    inferSchema: True
-  save_args:
-    sep: ','
-    header: True
-    mode: overwrite
+  filepath: s3a://lakehouse/silver/bacen_selic/
+  file_format: delta
 
-preprocessed_companies:
-  filepath: data/02_intermediate/preprocessed_companies.csv
+silver_cvm:
   type: spark.SparkDataset
-  file_format: csv
-  load_args:
-    header: True
-    inferSchema: True
-  save_args:
-    sep: ','
-    header: True
-    mode: overwrite
+  filepath: s3a://lakehouse/silver/cvm_if_di/
+  file_format: delta
 
-preprocessed_shuttles:
-  filepath: data/02_intermediate/preprocessed_shuttles.csv
+gold_bacen:
   type: spark.SparkDataset
-  file_format: csv
-  load_args:
-    header: True
-    inferSchema: True
-  save_args:
-    sep: ','
-    header: True
-    mode: overwrite
+  filepath: s3a://lakehouse/gold/bacen_kpis/
+  file_format: delta
 
-preprocessed_reviews:
-  filepath: data/02_intermediate/preprocessed_reviews.csv
+gold_cvm:
   type: spark.SparkDataset
-  file_format: csv
-  load_args:
-    header: True
-    inferSchema: True
-  save_args:
-    sep: ','
-    header: True
-    mode: overwrite
+  filepath: s3a://lakehouse/gold/cvm_kpis/
+  file_format: delta
 
-model_input_table@spark:
-  filepath: data/03_primary/model_input_table.parquet
-  type: spark.SparkDataset
-  file_format: parquet
-  load_args:
-    header: True
-    inferSchema: True
-  save_args:
-    sep: ','
-    header: True
-    mode: overwrite
-
-model_input_table@pandas:
+# SELIC Bronze data from BACEN API (Pandas for ingestion)
+bronze_selic:
   type: pandas.ParquetDataset
-  filepath: data/03_primary/model_input_table.parquet
+  filepath: data/01_raw/selic_bacen.parquet
 
-regressor:
-  type: pickle.PickleDataset
-  filepath: data/06_models/regressor.pickle
-  versioned: true
+# SELIC Bronze data converted to Spark
+bronze_selic_spark:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/bacen_selic/
+  file_format: delta
+  save_args:
+    mode: overwrite
 
-shuttle_passenger_capacity_plot_exp:
-  type: plotly.PlotlyDataset
-  filepath: data/08_reporting/shuttle_passenger_capacity_plot_exp.json
-  versioned: true
-  plotly_args:
-    type: bar
-    fig:
-      x: shuttle_type
-      y: passenger_capacity
-      orientation: h
-    layout:
-      xaxis_title: Shuttles
-      yaxis_title: Average passenger capacity
-      title: Shuttle Passenger capacity
+# SELIC Silver layer
+silver_selic:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/bacen_selic/
+  file_format: delta
+  save_args:
+    mode: overwrite
 
-shuttle_passenger_capacity_plot_go:
-  type: plotly.JSONDataset
-  filepath: data/08_reporting/shuttle_passenger_capacity_plot_go.json
-  versioned: true
+# SELIC Gold layer (KPIs and aggregations)
+gold_selic:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/gold/selic_kpis/
+  file_format: delta
+  save_args:
+    mode: overwrite
 
-dummy_confusion_matrix:
-  type: matplotlib.MatplotlibWriter
-  filepath: data/08_reporting/dummy_confusion_matrix.png
-  versioned: true
+# SELIC validation results
+selic_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/selic_validation_results.json
