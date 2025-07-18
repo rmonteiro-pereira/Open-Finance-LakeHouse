@@ -1,0 +1,81 @@
+# BACEN Series Configuration
+# Series IDs for Brazilian financial indicators
+
+bacen_series:
+  selic:
+    id: 11
+    name: "SELIC"
+    description: "Taxa básica de juros - Over / Selic"
+    max_rate: 100.0
+    
+  selic_meta:
+    id: 432
+    name: "SELIC Meta"
+    description: "Taxa de juros - Meta Selic definida pelo Copom"
+    max_rate: 100.0
+    
+  over:
+    id: 1178
+    name: "OVER"
+    description: "Taxa de juros - Over / Selic - acumulada no mês"
+    max_rate: 100.0
+    
+  cdi:
+    id: 12
+    name: "CDI"
+    description: "Taxa de juros - CDI"
+    max_rate: 100.0
+    
+  tlp:
+    id: 26192
+    name: "TLP"
+    description: "Taxa de Longo Prazo - TLP"
+    max_rate: 100.0
+    
+  ipca:
+    id: 433
+    name: "IPCA"
+    description: "Índice Nacional de Preços ao Consumidor Amplo - IPCA"
+    max_rate: 50.0
+    
+  ipca_15:
+    id: 1705
+    name: "IPCA-15"
+    description: "Índice Nacional de Preços ao Consumidor Amplo 15 - IPCA-15"
+    max_rate: 50.0
+    
+  inpc:
+    id: 188
+    name: "INPC"
+    description: "Índice Nacional de Preços ao Consumidor - INPC"
+    max_rate: 50.0
+    
+  igp_di:
+    id: 189
+    name: "IGP-DI"
+    description: "Índice Geral de Preços - Disponibilidade Interna - IGP-DI"
+    max_rate: 50.0
+    
+  igp_m:
+    id: 190
+    name: "IGP-M"
+    description: "Índice Geral de Preços do Mercado - IGP-M"
+    max_rate: 50.0
+    
+  igp_10:
+    id: 7447
+    name: "IGP-10"
+    description: "Índice Geral de Preços 10 - IGP-10"
+    max_rate: 50.0
+    
+  usd_brl:
+    id: 1
+    name: "USD/BRL"
+    description: "Taxa de câmbio - R$ / US$ - comercial - compra - média"
+    max_rate: 20.0
+    
+  eur_brl:
+    id: 21619
+    name: "EUR/BRL"
+    description: "Taxa de câmbio - R$ / EUR - comercial - compra - média"
+    max_rate: 25.0
