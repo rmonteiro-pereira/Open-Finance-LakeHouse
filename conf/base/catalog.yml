@@ -1243,3 +1243,67 @@ tesouro_silver_layer:
 tesouro_catalog_entry:
   type: json.JSONDataset
   filepath: data/08_reporting/tesouro_direto_catalog_entry.json
+
+# ==============================================================================
+# B3 - BRAZILIAN STOCK EXCHANGE DATA
+# ==============================================================================
+
+# B3 Raw Data (All Series Combined)
+b3_raw_data_container:
+  type: json.JSONDataset
+  filepath: data/00_raw/b3_all_series_raw.json
+
+# B3 Bronze Layer (Unified)
+b3_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/b3/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+# B3 Silver Layer (Quality Filtered)
+b3_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/b3/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+# B3 Catalog Entry
+b3_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/b3_catalog_entry.json
+
+# ==============================================================================
+# IPEA/RECEITA FEDERAL - ECONOMIC & FISCAL DATA
+# ==============================================================================
+
+# IPEA/Receita Raw Data (All Series Combined)
+ipea_receita_raw_data_container:
+  type: json.JSONDataset
+  filepath: data/00_raw/ipea_receita_all_series_raw.json
+
+# IPEA/Receita Bronze Layer (Unified)
+ipea_receita_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/ipea_receita/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+# IPEA/Receita Silver Layer (Quality Filtered)
+ipea_receita_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/ipea_receita/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+# IPEA/Receita Catalog Entry
+ipea_receita_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ipea_receita_catalog_entry.json

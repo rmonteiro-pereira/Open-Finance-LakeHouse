@@ -3,6 +3,7 @@ from the Kedro defaults. For further information, including these default values
 https://docs.kedro.org/en/stable/kedro_project_setup/settings.html."""
 
 import os
+import locale
 
 from dotenv import load_dotenv
 from kedro.config import OmegaConfigLoader
@@ -10,13 +11,28 @@ from kedro.config import OmegaConfigLoader
 # Instantiated project hooks.
 from kedro_mlflow.framework.hooks import MlflowHook
 
-from open_finance_lakehouse.hooks import SparkHooks  # noqa: E402
+from open_finance_lakehouse.hooks import SparkHooks, UTF8EncodingHook  # noqa: E402
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Fix for Windows UTF-8 encoding issues with MLflow
+# This ensures Brazilian Portuguese characters are handled correctly
+os.environ["PYTHONUTF8"] = "1"
+os.environ["PYTHONIOENCODING"] = "utf-8"
+
+# Set locale for proper encoding handling
+try:
+    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+except locale.Error:
+    try:
+        locale.setlocale(locale.LC_ALL, 'Portuguese_Brazil.1252')
+    except locale.Error:
+        pass  # Fall back to default locale
+
 # Hooks are executed in a Last-In-First-Out (LIFO) order.
-HOOKS = (SparkHooks(), MlflowHook())
+# UTF8EncodingHook must be first to set encoding before MLflow operations
+HOOKS = (UTF8EncodingHook(), SparkHooks(), MlflowHook())
 
 # Installed plugins for which to disable hook auto-registration.
 # DISABLE_HOOKS_FOR_PLUGINS = ("kedro-viz",)
