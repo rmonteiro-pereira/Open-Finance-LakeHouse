@@ -27,6 +27,7 @@ dependencies = [
     "kedro-mlflow>=0.14.4",
     "openlineage-integration-common>=1.32.0",
     "minio>=7.2.15",
+    "python-dotenv>=1.1.0",
 ]
 
 [project.scripts]
@@ -93,4 +94,4 @@ select = [
     "PL",  # Pylint
     "T201", # Print Statement
 ]
-ignore = ["E501", "T201", "W293", "I001", "E402"]  # Ruff format takes care of line-too-long
+ignore = ["E501", "T201", "W293", "I001", "E402", "W291"]  # Ruff format takes care of line-too-long
