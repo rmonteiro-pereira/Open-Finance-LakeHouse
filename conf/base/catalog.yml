@@ -1154,7 +1154,7 @@ anbima_raw_data_container:
 # ANBIMA Bronze Layer
 anbima_bronze:
   type: spark.SparkDataset
-  filepath: s3a://lakehouse/anbima/bronze/
+  filepath: s3a://lakehouse/bronze/anbima/
   file_format: delta
   load_args:
     header: true
@@ -1166,7 +1166,7 @@ anbima_bronze:
 # ANBIMA Silver Layer
 anbima_silver:
   type: spark.SparkDataset
-  filepath: s3a://lakehouse/anbima/silver/
+  filepath: s3a://lakehouse/silver/anbima/
   file_format: delta
   load_args:
     header: true
