@@ -1217,3 +1217,29 @@ anbima_silver_simple:
 anbima_catalog_simple:
   type: json.JSONDataset
   filepath: data/08_reporting/anbima_catalog_simple.json
+
+# ==============================================================================
+# TESOURO DIRETO DATA
+# ==============================================================================
+
+# Tesouro Direto Raw Data (All Series Combined)
+tesouro_all_series_raw:
+  type: json.JSONDataset
+  filepath: data/00_raw/tesouro_all_series_raw.json
+
+# Tesouro Direto Bronze Layer (Unified)
+tesouro_bronze_layer:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/tesouro_direto/
+  file_format: delta
+
+# Tesouro Direto Silver Layer (Quality Filtered)
+tesouro_silver_layer:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/tesouro_direto/
+  file_format: delta
+
+# Tesouro Direto Catalog Entry
+tesouro_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/tesouro_direto_catalog_entry.json
