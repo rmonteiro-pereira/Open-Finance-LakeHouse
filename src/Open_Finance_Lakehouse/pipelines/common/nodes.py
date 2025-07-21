@@ -8,7 +8,7 @@ import logging
 from functools import wraps
 import pandas as pd
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.functions import col, to_date, year, month
+from pyspark.sql.functions import col, to_date, year, month, first, last, avg, count, stddev, lit, current_timestamp, min, max
 from ...utils.bacen_api import fetch_bacen_series
 
 try:
@@ -172,7 +172,7 @@ def transform_bronze_to_silver_generic(bronze_df: DataFrame, series_id: int) -> 
 
 
 @timing_decorator
-def validate_bacen_data_generic(silver_df: DataFrame, series_id: int, max_rate: float = 100.0) -> dict:
+def validate_bacen_data_generic(silver_df: DataFrame, series_id: int, max_rate: float = 100.0) -> str:
     """
     Generic validation for any BACEN series
     """
@@ -206,4 +206,33 @@ def validate_bacen_data_generic(silver_df: DataFrame, series_id: int, max_rate: 
     else:
         logger.warning(f"[INVALID] Data validation failed for series {series_id}")
     
-    return validation_results
+    return json.dumps(validation_results, indent=2)
+
+
+@timing_decorator
+def aggregate_bacen_to_gold_generic(silver_df: DataFrame, series_name: str) -> DataFrame:
+    """
+    Generic Gold layer aggregation for any BACEN series
+    Creates monthly aggregations for business intelligence
+    """
+    logger.info(f"[GOLD] Creating {series_name} gold layer aggregations...")
+    
+    # Group by year and month to create monthly aggregations
+    gold_df = silver_df.groupBy("year", "month") \
+        .agg(
+            first("date").alias("month_start_date"),
+            avg("rate").alias("avg_rate"),
+            min("rate").alias("min_rate"),
+            max("rate").alias("max_rate"),
+            last("rate").alias("last_rate"),
+            count("rate").alias("count_observations"),
+            stddev("rate").alias("rate_volatility")
+        ) \
+        .withColumn("series_name", lit(series_name)) \
+        .withColumn("created_at", current_timestamp()) \
+        .orderBy("year", "month")
+    
+    monthly_count = gold_df.count()
+    logger.info(f"[GOLD] {series_name} gold aggregation complete: {monthly_count} monthly aggregations")
+    
+    return gold_df

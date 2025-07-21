@@ -17,6 +17,9 @@ from .pipelines.igp_di.pipeline import create_pipeline as create_igp_di_pipeline
 from .pipelines.igp_m.pipeline import create_pipeline as create_igp_m_pipeline
 from .pipelines.igp_10.pipeline import create_pipeline as create_igp_10_pipeline
 from .pipelines.eur_brl.pipeline import create_pipeline as create_eur_brl_pipeline
+from .pipelines.reservas_internacionais.pipeline import create_pipeline as create_reservas_internacionais_pipeline
+from .pipelines.divida_pib.pipeline import create_pipeline as create_divida_pib_pipeline
+from .pipelines.focus_pib.pipeline import create_pipeline as create_focus_pib_pipeline
 
 
 def register_pipelines() -> dict[str, Pipeline]:
@@ -47,6 +50,9 @@ def register_pipelines() -> dict[str, Pipeline]:
         "igp_m": create_igp_m_pipeline(),
         "igp_10": create_igp_10_pipeline(),
         "eur_brl": create_eur_brl_pipeline(),
+        "reservas_internacionais": create_reservas_internacionais_pipeline(),
+        "divida_pib": create_divida_pib_pipeline(),
+        "focus_pib": create_focus_pib_pipeline(),
     })
     
     pipelines["__default__"] = sum(pipelines.values())

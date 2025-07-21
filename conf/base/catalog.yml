@@ -536,3 +536,102 @@ gold_eur_brl:
 eur_brl_validation_results:
   type: json.JSONDataset
   filepath: data/08_reporting/eur_brl_validation_results.json
+
+# RESERVAS INTERNACIONAIS datasets
+raw_reservas_internacionais:
+  type: text.TextDataset
+  filepath: data/00_raw/reservas_internacionais_bacen_raw.json
+
+bronze_reservas_internacionais:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/reservas_internacionais/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+silver_reservas_internacionais:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/reservas_internacionais/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+gold_reservas_internacionais:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/gold/reservas_internacionais/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+reservas_internacionais_validation_results:
+  type: text.TextDataset
+  filepath: data/08_reporting/reservas_internacionais_validation_results.json
+
+# DIVIDA PIB datasets
+raw_divida_pib:
+  type: text.TextDataset
+  filepath: data/00_raw/divida_pib_bacen_raw.json
+
+bronze_divida_pib:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/divida_pib/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+silver_divida_pib:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/divida_pib/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+gold_divida_pib:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/gold/divida_pib/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+divida_pib_validation_results:
+  type: text.TextDataset
+  filepath: data/08_reporting/divida_pib_validation_results.json
+
+# FOCUS PIB datasets
+raw_focus_pib:
+  type: text.TextDataset
+  filepath: data/00_raw/focus_pib_bacen_raw.json
+
+bronze_focus_pib:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/focus_pib/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+silver_focus_pib:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/focus_pib/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+gold_focus_pib:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/gold/focus_pib/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+focus_pib_validation_results:
+  type: text.TextDataset
+  filepath: data/08_reporting/focus_pib_validation_results.json
