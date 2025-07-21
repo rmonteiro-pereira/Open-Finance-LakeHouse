@@ -61,6 +61,19 @@ IBGE_SERIES_CONFIG = {
         "description": "População Economicamente Ativa"
     }
 }
+        "variable": "4099",  # Taxa de desocupação
+        "classification": "1|1",  # Brasil
+        "period": "all",
+        "description": "Taxa de Desemprego - PNAD Contínua"
+    },
+    "pea": {
+        "table": "4093",  # PNAD Contínua - População na força de trabalho
+        "variable": "1641",  # Pessoas de 14 anos ou mais de idade
+        "classification": "1|1",  # Brasil  
+        "period": "all",
+        "description": "População Economicamente Ativa"
+    }
+}
 
 
 def fetch_ibge_sidra_data(table: str, variable: str, classification: str, 
