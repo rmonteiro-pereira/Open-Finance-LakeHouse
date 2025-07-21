@@ -1,0 +1,100 @@
+# IPEA/Receita Federal Configuration  
+# Brazilian Economic Policy Institute & Federal Revenue Service data parameters
+
+ipea_receita:
+  # Data extraction settings
+  extraction:
+    ipea_base_url: "http://www.ipeadata.gov.br/api"
+    receita_base_url: "https://dadosabertos.rfb.gov.br/api"
+    timeout: 60
+    retry_attempts: 3
+    
+  # Series configuration for economic and fiscal indicators
+  series:
+    # Fiscal Indicators
+    deficit_primario:
+      code: "DEFICIT_PRIM"
+      category: "fiscal"
+      subcategory: "deficit"
+      unit: "R$ milhoes"
+      frequency: "monthly"
+      source: "IPEA"
+      description: "Deficit primario do setor publico"
+      
+    divida_bruta:
+      code: "DIVIDA_BRUTA"
+      category: "fiscal"
+      subcategory: "debt"
+      unit: "% PIB"
+      frequency: "monthly"
+      source: "IPEA"
+      description: "Divida bruta do setor publico"
+      
+    investimento_publico:
+      code: "INV_PUB"
+      category: "fiscal"
+      subcategory: "investment"
+      unit: "R$ milhoes"
+      frequency: "monthly"
+      source: "IPEA"
+      description: "Investimento publico"
+      
+    # Tax Collection & Burden
+    arrecadacao:
+      code: "ARREC_TOTAL"
+      category: "tax"
+      subcategory: "collection"
+      unit: "R$ milhoes"
+      frequency: "monthly"
+      source: "Receita Federal"
+      description: "Arrecadacao tributaria total"
+      
+    carga_tributaria:
+      code: "CARGA_TRIB"
+      category: "tax"
+      subcategory: "burden"
+      unit: "% PIB"
+      frequency: "annual"
+      source: "IPEA"
+      description: "Carga tributaria bruta"
+      
+    irpj:
+      code: "IRPJ"
+      category: "tax"
+      subcategory: "corporate"
+      unit: "R$ milhoes"
+      frequency: "monthly"
+      source: "Receita Federal"
+      description: "Imposto de Renda Pessoa Juridica"
+      
+    csll:
+      code: "CSLL"
+      category: "tax"
+      subcategory: "corporate"
+      unit: "R$ milhoes"
+      frequency: "monthly"
+      source: "Receita Federal"
+      description: "Contribuicao Social sobre Lucro Liquido"
+      
+    # Economic Indicators
+    produtividade:
+      code: "PROD_TRAB"
+      category: "economic"
+      subcategory: "productivity"
+      unit: "Indice"
+      frequency: "quarterly"
+      source: "IPEA"
+      description: "Produtividade do trabalho"
+      
+  # Data processing settings
+  processing:
+    date_format: "%Y-%m-%d"
+    value_precision: 2
+    currency_format: "BRL"
+    
+  # Quality control parameters
+  quality:
+    min_records_per_series: 12  # At least 1 year of monthly data
+    max_null_percentage: 10.0
+    fiscal_value_limits: [-1000000, 1000000]  # R$ millions
+    percentage_limits: [0, 100]  # For % values

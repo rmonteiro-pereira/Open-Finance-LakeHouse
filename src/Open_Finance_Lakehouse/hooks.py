@@ -1,6 +1,17 @@
+import os
 from kedro.framework.hooks import hook_impl
 from pyspark import SparkConf
 from pyspark.sql import SparkSession
+
+
+class UTF8EncodingHook:
+    """Hook to ensure UTF-8 encoding for Windows compatibility with MLflow"""
+    
+    @hook_impl
+    def before_context_created(self, context) -> None:
+        """Set UTF-8 encoding before any operations"""
+        os.environ["PYTHONUTF8"] = "1"
+        os.environ["PYTHONIOENCODING"] = "utf-8"
 
 
 class SparkHooks:
