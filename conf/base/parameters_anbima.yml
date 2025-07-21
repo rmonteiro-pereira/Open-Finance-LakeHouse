@@ -1,0 +1,109 @@
+# ANBIMA Parameters
+anbima:
+  # Empty data placeholder for unused series
+  empty_data: "[]"
+  
+  # Available series to fetch
+  series:
+    cdi:
+      code: "CDI"
+      description: "CDI - Certificado de Depósito Interbancário"
+      unit: "Taxa (%)"
+      category: "renda_fixa"
+      frequency: "daily"
+      endpoint: "indicadores/cdi"
+    
+    ima_b:
+      code: "IMA-B"
+      description: "IMA-B - Índice de Mercado ANBIMA Brasil"
+      unit: "Índice"
+      category: "indices"
+      frequency: "daily"
+      endpoint: "indices/ima-b"
+    
+    ima_b_5:
+      code: "IMA-B 5"
+      description: "IMA-B 5 anos - Índice de Mercado ANBIMA"
+      unit: "Índice"
+      category: "indices"
+      frequency: "daily"
+      endpoint: "indices/ima-b-5"
+    
+    ima_b_5_plus:
+      code: "IMA-B 5+"
+      description: "IMA-B 5+ anos - Índice de Mercado ANBIMA"
+      unit: "Índice"
+      category: "indices"
+      frequency: "daily"
+      endpoint: "indices/ima-b-5-plus"
+    
+    curva_di:
+      code: "DI"
+      description: "Curva de Juros DI - Depósito Interbancário"
+      unit: "Taxa (%)"
+      category: "curvas_juros"
+      frequency: "daily"
+      endpoint: "curvas/di"
+    
+    curva_pre:
+      code: "PRE"
+      description: "Curva de Juros Prefixada"
+      unit: "Taxa (%)"
+      category: "curvas_juros"
+      frequency: "daily"
+      endpoint: "curvas/pre"
+    
+    curva_ipca:
+      code: "IPCA+"
+      description: "Curva de Juros IPCA+"
+      unit: "Taxa (%)"
+      category: "curvas_juros"
+      frequency: "daily"
+      endpoint: "curvas/ipca"
+    
+    ntn_b:
+      code: "NTN-B"
+      description: "NTN-B - Notas do Tesouro Nacional Série B"
+      unit: "Taxa (%)"
+      category: "titulos_publicos"
+      frequency: "daily"
+      endpoint: "titulos/ntn-b"
+    
+    ltn:
+      code: "LTN"
+      description: "LTN - Letras do Tesouro Nacional"
+      unit: "Taxa (%)"
+      category: "titulos_publicos"
+      frequency: "daily"
+      endpoint: "titulos/ltn"
+    
+    mercado_secundario:
+      code: "SECUNDARIO"
+      description: "Mercado Secundário - Preços e Taxas"
+      unit: "Variados"
+      category: "mercado_secundario"
+      frequency: "daily"
+      endpoint: "mercado-secundario/precos"
+
+  # API Configuration
+  api:
+    base_url: "https://api.anbima.com.br/feed/dados"
+    timeout: 30
+    retry_attempts: 3
+    delay_between_requests: 2
+    # ANBIMA API parameters
+    format: "json"
+    date_format: "%Y-%m-%d"
+    historical_days: 365  # Último ano de dados
+
+  # Data Processing Configuration
+  processing:
+    validation_rules:
+      min_records: 50  # Mínimo 50 dias de dados (aprox. 2 meses úteis)
+      max_null_percentage: 5  # Máximo 5% de valores nulos
+      date_range_days: 30  # Mínimo 30 dias de cobertura
+    
+    quality_checks:
+      value_variance_threshold: 500  # Threshold para detecção de outliers
+      business_days_only: true  # Considerar apenas dias úteis
+      rate_change_threshold: 200  # Mudança máxima permitida em basis points

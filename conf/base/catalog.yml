@@ -896,3 +896,324 @@ gold_focus_pib:
 focus_pib_validation_results:
   type: text.TextDataset
   filepath: data/08_reporting/focus_pib_validation_results.json
+
+# ==============================================================================
+# IBGE DATA SERIES
+# ==============================================================================
+
+# IPCA (Inflation) datasets
+ibge_ipca_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/ibge_ipca_raw.json
+
+ibge_ipca_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/ibge/inflacao/ipca/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_ipca_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/ibge/inflacao/ipca/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_ipca_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_ipca_catalog_entry.json
+
+ibge_ipca_validation_report:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_ipca_validation_report.json
+
+# INPC (Inflation for Low Income) datasets
+ibge_inpc_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/ibge_inpc_raw.json
+
+ibge_inpc_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/ibge/inflacao/inpc/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_inpc_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/ibge/inflacao/inpc/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_inpc_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_inpc_catalog_entry.json
+
+ibge_inpc_validation_report:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_inpc_validation_report.json
+
+# PIB Mensal (Monthly GDP) datasets
+ibge_pib_mensal_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/ibge_pib_mensal_raw.json
+
+ibge_pib_mensal_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/ibge/economia/pib_mensal/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_pib_mensal_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/ibge/economia/pib_mensal/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_pib_mensal_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_pib_mensal_catalog_entry.json
+
+ibge_pib_mensal_validation_report:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_pib_mensal_validation_report.json
+
+# PIB Trimestral (Quarterly GDP) datasets
+ibge_pib_trimestral_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/ibge_pib_trimestral_raw.json
+
+ibge_pib_trimestral_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/ibge/economia/pib_trimestral/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_pib_trimestral_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/ibge/economia/pib_trimestral/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_pib_trimestral_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_pib_trimestral_catalog_entry.json
+
+ibge_pib_trimestral_validation_report:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_pib_trimestral_validation_report.json
+
+# Desemprego (Unemployment) datasets
+ibge_desemprego_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/ibge_desemprego_raw.json
+
+ibge_desemprego_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/ibge/emprego/desemprego/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_desemprego_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/ibge/emprego/desemprego/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_desemprego_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_desemprego_catalog_entry.json
+
+ibge_desemprego_validation_report:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_desemprego_validation_report.json
+
+# Renda Média (Average Income) datasets
+ibge_renda_media_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/ibge_renda_media_raw.json
+
+ibge_renda_media_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/ibge/emprego/renda_media/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_renda_media_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/ibge/emprego/renda_media/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_renda_media_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_renda_media_catalog_entry.json
+
+ibge_renda_media_validation_report:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_renda_media_validation_report.json
+
+# População Economicamente Ativa (Labor Force) datasets
+ibge_populacao_economicamente_ativa_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/ibge_populacao_economicamente_ativa_raw.json
+
+ibge_populacao_economicamente_ativa_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/ibge/emprego/populacao_economicamente_ativa/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_populacao_economicamente_ativa_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/ibge/emprego/populacao_economicamente_ativa/
+  file_format: delta
+  save_args:
+    mode: overwrite
+    overwriteSchema: true
+
+ibge_populacao_economicamente_ativa_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_populacao_economicamente_ativa_catalog_entry.json
+
+ibge_populacao_economicamente_ativa_validation_report:
+  type: json.JSONDataset
+  filepath: data/08_reporting/ibge_populacao_economicamente_ativa_validation_report.json
+
+# =====================================================
+# ANBIMA - Associação Brasileira das Entidades dos Mercados Financeiro e de Capitais
+# Financial market data including rates, indices, yield curves, and government bonds
+# =====================================================
+
+# ANBIMA Raw Data
+anbima_cdi_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_cdi_raw.json
+
+anbima_ima_b_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_ima_b_raw.json
+
+anbima_ima_b_5_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_ima_b_5_raw.json
+
+anbima_curva_di_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_curva_di_raw.json
+
+anbima_curva_pre_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_curva_pre_raw.json
+
+anbima_curva_ipca_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_curva_ipca_raw.json
+
+anbima_ntn_b_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_ntn_b_raw.json
+
+anbima_ltn_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_ltn_raw.json
+
+anbima_mercado_secundario_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_mercado_secundario_raw.json
+
+# ANBIMA Raw Data Container (for bronze processing)
+anbima_raw_data_container:
+  type: pickle.PickleDataset
+  filepath: data/01_intermediate/anbima_raw_data_container.pkl
+
+# ANBIMA Bronze Layer
+anbima_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/anbima/bronze/
+  file_format: delta
+  load_args:
+    header: true
+    inferSchema: true
+  save_args:
+    mode: overwrite
+    partitionBy: ["series", "date"]
+
+# ANBIMA Silver Layer
+anbima_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/anbima/silver/
+  file_format: delta
+  load_args:
+    header: true
+    inferSchema: true
+  save_args:
+    mode: overwrite
+    partitionBy: ["series", "date_parsed"]
+
+# ANBIMA Catalog Entry
+anbima_catalog:
+  type: json.JSONDataset
+  filepath: data/08_reporting/anbima_financial_data_catalog_entry.json
+
+# =====================================================
+# ANBIMA Simple Pipeline Datasets
+# =====================================================
+
+# ANBIMA Simple Raw Data
+anbima_cdi_raw_simple:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_cdi_raw_simple.json
+
+anbima_ima_b_raw_simple:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_ima_b_raw_simple.json
+
+anbima_curva_di_raw_simple:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_curva_di_raw_simple.json
+
+anbima_ntn_b_raw_simple:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_ntn_b_raw_simple.json
+
+anbima_ltn_raw_simple:
+  type: text.TextDataset
+  filepath: data/00_raw/anbima_ltn_raw_simple.json
+
+# ANBIMA Simple Processed Data
+anbima_bronze_simple:
+  type: json.JSONDataset
+  filepath: data/02_intermediate/anbima_bronze_simple.json
+
+anbima_silver_simple:
+  type: json.JSONDataset
+  filepath: data/03_primary/anbima_silver_simple.json
+
+anbima_catalog_simple:
+  type: json.JSONDataset
+  filepath: data/08_reporting/anbima_catalog_simple.json

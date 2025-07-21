@@ -13,3 +13,7 @@ series_name_ouro: "ouro"
 series_name_soja: "soja"
 series_name_cafe: "cafe"
 series_name_usd_brl: "usd_brl"
+
+# IBGE Series Names
+ipca_series_name: "ipca"
+inpc_series_name: "inpc"

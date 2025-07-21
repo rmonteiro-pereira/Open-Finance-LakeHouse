@@ -29,6 +29,16 @@ from .pipelines.yahoo_finance.pipeline import (
     create_yahoo_currency_pipeline
 )
 
+# IBGE pipelines
+from .pipelines.ibge.pipeline_simple import (
+    create_pipeline as create_ibge_pipeline
+)
+
+# ANBIMA pipelines
+from .pipelines.anbima.pipeline import (
+    create_anbima_pipeline
+)
+
 
 def register_pipelines() -> dict[str, Pipeline]:
     """Register the project's pipelines.
@@ -66,6 +76,10 @@ def register_pipelines() -> dict[str, Pipeline]:
         "yahoo_etf": create_yahoo_etf_pipeline(),
         "yahoo_commodity": create_yahoo_commodity_pipeline(),
         "yahoo_currency": create_yahoo_currency_pipeline(),
+        # IBGE pipelines
+        "ibge": create_ibge_pipeline(),
+        # ANBIMA pipelines
+        "anbima": create_anbima_pipeline(),
     })
     
     pipelines["__default__"] = sum(pipelines.values())
