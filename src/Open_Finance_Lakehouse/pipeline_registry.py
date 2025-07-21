@@ -39,6 +39,11 @@ from .pipelines.anbima.pipeline import (
     create_anbima_pipeline
 )
 
+# Tesouro Direto pipelines
+from .pipelines.tesouro_direto.pipeline import (
+    create_pipeline as create_tesouro_direto_pipeline
+)
+
 
 def register_pipelines() -> dict[str, Pipeline]:
     """Register the project's pipelines.
@@ -80,6 +85,8 @@ def register_pipelines() -> dict[str, Pipeline]:
         "ibge": create_ibge_pipeline(),
         # ANBIMA pipelines
         "anbima": create_anbima_pipeline(),
+        # Tesouro Direto pipelines
+        "tesouro_direto": create_tesouro_direto_pipeline(),
     })
     
     pipelines["__default__"] = sum(pipelines.values())

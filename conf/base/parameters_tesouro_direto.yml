@@ -1,0 +1,76 @@
+# Tesouro Direto Parameters
+tesouro_direto:
+  # Available treasury series to fetch
+  series:
+    tesouro_prefixado_2027:
+      title_code: "Tesouro Prefixado 2027"
+      maturity: "2027-01-01"
+      description: "Tesouro Prefixado com Juros Semestrais 2027"
+      type: "prefixado"
+      category: "renda_fixa"
+      frequency: "daily"
+    tesouro_prefixado_2031:
+      title_code: "Tesouro Prefixado 2031"
+      maturity: "2031-01-01"
+      description: "Tesouro Prefixado com Juros Semestrais 2031"
+      type: "prefixado"
+      category: "renda_fixa"
+      frequency: "daily"
+    tesouro_ipca_2029:
+      title_code: "Tesouro IPCA+ 2029"
+      maturity: "2029-08-15"
+      description: "Tesouro IPCA+ com Juros Semestrais 2029"
+      type: "ipca_plus"
+      category: "renda_fixa"
+      frequency: "daily"
+    tesouro_ipca_2035:
+      title_code: "Tesouro IPCA+ 2035"
+      maturity: "2035-05-15"
+      description: "Tesouro IPCA+ com Juros Semestrais 2035"
+      type: "ipca_plus"
+      category: "renda_fixa"
+      frequency: "daily"
+    tesouro_ipca_2045:
+      title_code: "Tesouro IPCA+ 2045"
+      maturity: "2045-05-15"
+      description: "Tesouro IPCA+ com Juros Semestrais 2045"
+      type: "ipca_plus"
+      category: "renda_fixa"
+      frequency: "daily"
+    tesouro_selic_2027:
+      title_code: "Tesouro Selic 2027"
+      maturity: "2027-03-01"
+      description: "Tesouro Selic 2027"
+      type: "selic"
+      category: "renda_fixa"
+      frequency: "daily"
+    tesouro_selic_2029:
+      title_code: "Tesouro Selic 2029"
+      maturity: "2029-03-01"
+      description: "Tesouro Selic 2029"
+      type: "selic"
+      category: "renda_fixa"
+      frequency: "daily"
+
+  # API Configuration
+  api:
+    base_url: "https://www.tesourotransparente.gov.br/ckan/api/3/action"
+    timeout: 30
+    retry_attempts: 3
+    delay_between_requests: 2
+    # Tesouro Direto API parameters
+    dataset_id: "df56aa42-484a-4a59-8184-7676580c81e3"  # Preços e taxas dos títulos
+    format: "JSON"
+
+  # Data Processing Configuration
+  processing:
+    validation_rules:
+      min_records: 50  # Mínimo de registros esperados
+      max_null_percentage: 10  # Máximo 10% de valores nulos
+      date_range_days: 30  # Mínimo 30 dias de cobertura
+    
+    quality_checks:
+      price_variance_threshold: 20  # Threshold para detecção de outliers em preços
+      yield_variance_threshold: 5   # Threshold para detecção de outliers em taxas
+      min_price: 50                 # Preço mínimo válido
+      max_yield: 25                 # Yield máximo válido (%)
