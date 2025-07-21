@@ -1,4 +1,14 @@
-# Minimal MLflow configuration to suppress warnings
+# MLflow configuration for Open Finance LakeHouse
+# Minimal configuration to avoid Windows encoding issues
+
 server:
-  mlflow_tracking_uri: "file:///E:/Projetos/Portifolio/Open-Finance-LakeHouse/mlruns"
-  mlflow_registry_uri: "file:///E:/Projetos/Portifolio/Open-Finance-LakeHouse/mlruns"
+  mlflow_tracking_uri: ./mlruns
+  mlflow_registry_uri: ./mlruns
+
+tracking:
+  experiment:
+    name: open-finance-lakehouse
+
+ui:
+  port: "5000"
+  host: "127.0.0.1"

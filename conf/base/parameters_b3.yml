@@ -1,0 +1,68 @@
+# B3 - Brazilian Stock Exchange Configuration
+# Brasil, Bolsa, Balcão stock exchange data parameters
+
+b3:
+  # Data extraction settings
+  extraction:
+    base_url: "https://www.b3.com.br/api"
+    timeout: 30
+    retry_attempts: 3
+    
+  # Series configuration for B3 indices and market data
+  series:
+    # Major Indices
+    ibov:
+      symbol: "IBOV"
+      category: "index" 
+      index_type: "broad_market"
+      description: "Indice Bovespa - Principal indice da bolsa brasileira"
+      
+    ifix:
+      symbol: "IFIX"
+      category: "index"
+      index_type: "real_estate" 
+      description: "Indice de Fundos de Investimentos Imobiliarios"
+      
+    imob:
+      symbol: "IMOB"
+      category: "index"
+      index_type: "real_estate"
+      description: "Indice Imobiliario"
+      
+    icon:
+      symbol: "ICON"
+      category: "index"
+      index_type: "consumption"
+      description: "Indice de Consumo"
+      
+    iee:
+      symbol: "IEE"
+      category: "index"
+      index_type: "energy"
+      description: "Indice de Energia Eletrica"
+      
+    # Trading Volume
+    volume_negociado:
+      symbol: "VOL"
+      category: "volume"
+      index_type: "trading"
+      description: "Volume total negociado na B3"
+      
+    # ETF Data
+    etf_bulletins:
+      symbol: "ETF"
+      category: "etf"
+      index_type: "funds"
+      description: "Boletins de ETFs da B3"
+      
+  # Data processing settings
+  processing:
+    date_format: "%Y-%m-%d"
+    value_precision: 2
+    volume_precision: 0
+    
+  # Quality control parameters
+  quality:
+    min_records_per_series: 100
+    max_null_percentage: 5.0
+    acceptable_change_range: [-10.0, 10.0]  # Daily change % limits
