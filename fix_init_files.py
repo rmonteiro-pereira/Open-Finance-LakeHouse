@@ -3,7 +3,6 @@
 Fix all __init__.py files for generated pipelines
 """
 
-import os
 
 # Series configuration
 SERIES_CONFIG = {
