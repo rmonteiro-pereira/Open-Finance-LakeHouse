@@ -39,6 +39,10 @@
 # (transcoding), templating and a way to reuse arguments that are frequently repeated. See more here:
 # https://docs.kedro.org/en/stable/data/data_catalog.html
 
+# ==============================================================================
+# BACEN DATA (Existing)
+# ==============================================================================
+
 bronze_bacen:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/bacen_selic/
@@ -48,6 +52,263 @@ bronze_cvm:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/cvm_if_di/
   file_format: delta
+
+# ==============================================================================
+# YAHOO FINANCE DATA
+# ==============================================================================
+
+# Yahoo Finance ETF Series - Raw Layer
+yahoo_bova11_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_bova11_raw.json
+
+yahoo_ivvb11_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_ivvb11_raw.json
+
+yahoo_smal11_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_smal11_raw.json
+
+yahoo_nasd11_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_nasd11_raw.json
+
+yahoo_spxi11_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_spxi11_raw.json
+
+yahoo_fixa11_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_fixa11_raw.json
+
+# Yahoo Finance Commodity Series - Raw Layer
+yahoo_petroleo_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_petroleo_raw.json
+
+yahoo_ouro_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_ouro_raw.json
+
+yahoo_soja_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_soja_raw.json
+
+yahoo_cafe_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_cafe_raw.json
+
+# Yahoo Finance Currency Series - Raw Layer
+yahoo_usd_brl_raw:
+  type: text.TextDataset
+  filepath: data/00_raw/yahoo_usd_brl_raw.json
+
+# Yahoo Finance ETF Series - Bronze Layer
+yahoo_bova11_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/etf/bova11/
+  file_format: delta
+
+yahoo_ivvb11_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/etf/ivvb11/
+  file_format: delta
+
+yahoo_smal11_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/etf/smal11/
+  file_format: delta
+
+yahoo_nasd11_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/etf/nasd11/
+  file_format: delta
+
+yahoo_spxi11_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/etf/spxi11/
+  file_format: delta
+
+yahoo_fixa11_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/etf/fixa11/
+  file_format: delta
+
+# Yahoo Finance Commodity Series - Bronze Layer
+yahoo_petroleo_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/commodity/petroleo/
+  file_format: delta
+
+yahoo_ouro_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/commodity/ouro/
+  file_format: delta
+
+yahoo_soja_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/commodity/soja/
+  file_format: delta
+
+yahoo_cafe_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/commodity/cafe/
+  file_format: delta
+
+# Yahoo Finance Currency Series - Bronze Layer
+yahoo_usd_brl_bronze:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/bronze/yahoo_finance/currency/usd_brl/
+  file_format: delta
+
+# Yahoo Finance ETF Series - Silver Layer
+yahoo_bova11_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/etf/bova11/
+  file_format: delta
+
+yahoo_ivvb11_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/etf/ivvb11/
+  file_format: delta
+
+yahoo_smal11_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/etf/smal11/
+  file_format: delta
+
+yahoo_nasd11_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/etf/nasd11/
+  file_format: delta
+
+yahoo_spxi11_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/etf/spxi11/
+  file_format: delta
+
+yahoo_fixa11_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/etf/fixa11/
+  file_format: delta
+
+# Yahoo Finance Commodity Series - Silver Layer
+yahoo_petroleo_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/commodity/petroleo/
+  file_format: delta
+
+yahoo_ouro_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/commodity/ouro/
+  file_format: delta
+
+yahoo_soja_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/commodity/soja/
+  file_format: delta
+
+yahoo_cafe_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/commodity/cafe/
+  file_format: delta
+
+# Yahoo Finance Currency Series - Silver Layer
+yahoo_usd_brl_silver:
+  type: spark.SparkDataset
+  filepath: s3a://lakehouse/silver/yahoo_finance/currency/usd_brl/
+  file_format: delta
+
+# Yahoo Finance Validation Results
+yahoo_bova11_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_bova11_validation_results.json
+
+yahoo_ivvb11_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_ivvb11_validation_results.json
+
+yahoo_smal11_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_smal11_validation_results.json
+
+yahoo_nasd11_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_nasd11_validation_results.json
+
+yahoo_spxi11_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_spxi11_validation_results.json
+
+yahoo_fixa11_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_fixa11_validation_results.json
+
+yahoo_petroleo_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_petroleo_validation_results.json
+
+yahoo_ouro_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_ouro_validation_results.json
+
+yahoo_soja_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_soja_validation_results.json
+
+yahoo_cafe_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_cafe_validation_results.json
+
+yahoo_usd_brl_validation_results:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_usd_brl_validation_results.json
+
+# Yahoo Finance Catalog Entries
+yahoo_bova11_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_bova11_catalog_entry.json
+
+yahoo_ivvb11_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_ivvb11_catalog_entry.json
+
+yahoo_smal11_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_smal11_catalog_entry.json
+
+yahoo_nasd11_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_nasd11_catalog_entry.json
+
+yahoo_spxi11_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_spxi11_catalog_entry.json
+
+yahoo_fixa11_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_fixa11_catalog_entry.json
+
+yahoo_petroleo_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_petroleo_catalog_entry.json
+
+yahoo_ouro_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_ouro_catalog_entry.json
+
+yahoo_soja_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_soja_catalog_entry.json
+
+yahoo_cafe_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_cafe_catalog_entry.json
+
+yahoo_usd_brl_catalog_entry:
+  type: json.JSONDataset
+  filepath: data/08_reporting/yahoo_usd_brl_catalog_entry.json
 
 silver_bacen:
   type: spark.SparkDataset

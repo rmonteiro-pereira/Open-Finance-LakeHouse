@@ -21,6 +21,14 @@ from .pipelines.reservas_internacionais.pipeline import create_pipeline as creat
 from .pipelines.divida_pib.pipeline import create_pipeline as create_divida_pib_pipeline
 from .pipelines.focus_pib.pipeline import create_pipeline as create_focus_pib_pipeline
 
+# Yahoo Finance pipelines
+from .pipelines.yahoo_finance.pipeline import (
+    create_yahoo_finance_full_pipeline,
+    create_yahoo_etf_pipeline,
+    create_yahoo_commodity_pipeline,
+    create_yahoo_currency_pipeline
+)
+
 
 def register_pipelines() -> dict[str, Pipeline]:
     """Register the project's pipelines.
@@ -53,6 +61,11 @@ def register_pipelines() -> dict[str, Pipeline]:
         "reservas_internacionais": create_reservas_internacionais_pipeline(),
         "divida_pib": create_divida_pib_pipeline(),
         "focus_pib": create_focus_pib_pipeline(),
+        # Yahoo Finance pipelines
+        "yahoo_finance": create_yahoo_finance_full_pipeline(),
+        "yahoo_etf": create_yahoo_etf_pipeline(),
+        "yahoo_commodity": create_yahoo_commodity_pipeline(),
+        "yahoo_currency": create_yahoo_currency_pipeline(),
     })
     
     pipelines["__default__"] = sum(pipelines.values())

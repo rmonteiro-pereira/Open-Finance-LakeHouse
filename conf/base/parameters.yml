@@ -1,2 +1,15 @@
 silver_cvm_path: "s3a://lakehouse/silver/cvm/"
 silver_bacen_path: "s3a://lakehouse/silver/bacen/"
+
+# Yahoo Finance Series Names
+series_name_bova11: "bova11"
+series_name_ivvb11: "ivvb11"
+series_name_smal11: "smal11"
+series_name_nasd11: "nasd11" 
+series_name_spxi11: "spxi11"
+series_name_fixa11: "fixa11"
+series_name_petroleo: "petroleo"
+series_name_ouro: "ouro"
+series_name_soja: "soja"
+series_name_cafe: "cafe"
+series_name_usd_brl: "usd_brl"

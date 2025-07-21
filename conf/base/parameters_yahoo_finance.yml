@@ -1,0 +1,77 @@
+# Yahoo Finance Parameters
+yahoo_finance:
+  # Available series to fetch
+  series:
+    bova11:
+      symbol: "BOVA11.SA"
+      description: "BOVA11 - ETF Bovespa"
+      currency: "BRL"
+      category: "etf"
+    ivvb11:
+      symbol: "IVVB11.SA"
+      description: "IVVB11 - ETF S&P 500"
+      currency: "BRL"
+      category: "etf"
+    smal11:
+      symbol: "SMAL11.SA"
+      description: "SMAL11 - ETF Small Caps"
+      currency: "BRL"
+      category: "etf"
+    nasd11:
+      symbol: "NASD11.SA"
+      description: "NASD11 - ETF Nasdaq"
+      currency: "BRL"
+      category: "etf"
+    spxi11:
+      symbol: "SPXI11.SA"
+      description: "SPXI11 - ETF S&P"
+      currency: "BRL"
+      category: "etf"
+    fixa11:
+      symbol: "FIXA11.SA"
+      description: "FIXA11 - ETF Renda Fixa"
+      currency: "BRL"
+      category: "etf"
+    petroleo:
+      symbol: "CL=F"
+      description: "Crude Oil Futures"
+      currency: "USD"
+      category: "commodity"
+    ouro:
+      symbol: "GC=F"
+      description: "Gold Futures"
+      currency: "USD"
+      category: "commodity"
+    soja:
+      symbol: "ZS=F"
+      description: "Soybean Futures"
+      currency: "USD"
+      category: "commodity"
+    cafe:
+      symbol: "KC=F"
+      description: "Coffee Futures"
+      currency: "USD"
+      category: "commodity"
+    usd_brl:
+      symbol: "USDBRL=X"
+      description: "USD/BRL Exchange Rate"
+      currency: "BRL"
+      category: "currency"
+
+  # API Configuration
+  api:
+    base_url: "https://query1.finance.yahoo.com/v8/finance/chart"
+    timeout: 30
+    retry_attempts: 3
+    delay_between_requests: 1
+
+  # Data Processing Configuration
+  processing:
+    validation_rules:
+      min_records: 100  # Minimum number of records expected
+      max_null_percentage: 5  # Maximum percentage of null values allowed
+      date_range_days: 30  # Minimum date range in days
+    
+    quality_checks:
+      price_variance_threshold: 50  # Percentage change threshold for outlier detection
+      volume_threshold: 1000  # Minimum volume for validity (when applicable)
