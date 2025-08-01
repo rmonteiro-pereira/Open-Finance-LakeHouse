@@ -60,256 +60,465 @@ bronze_cvm:
 # Yahoo Finance ETF Series - Raw Layer
 yahoo_bova11_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_bova11_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_bova11_raw.json
 
 yahoo_ivvb11_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_ivvb11_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_ivvb11_raw.json
 
 yahoo_smal11_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_smal11_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_smal11_raw.json
 
 yahoo_nasd11_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_nasd11_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_nasd11_raw.json
 
 yahoo_spxi11_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_spxi11_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_spxi11_raw.json
 
 yahoo_fixa11_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_fixa11_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_fixa11_raw.json
 
 # Yahoo Finance Commodity Series - Raw Layer
 yahoo_petroleo_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_petroleo_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_petroleo_raw.json
 
 yahoo_ouro_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_ouro_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_ouro_raw.json
 
 yahoo_soja_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_soja_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_soja_raw.json
 
 yahoo_cafe_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_cafe_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_cafe_raw.json
 
 # Yahoo Finance Currency Series - Raw Layer
 yahoo_usd_brl_raw:
   type: text.TextDataset
-  filepath: data/00_raw/yahoo_usd_brl_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/yahoo/yahoo_usd_brl_raw.json
 
 # Yahoo Finance ETF Series - Bronze Layer
 yahoo_bova11_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/etf/bova11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_ivvb11_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/etf/ivvb11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_smal11_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/etf/smal11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_nasd11_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/etf/nasd11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_spxi11_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/etf/spxi11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_fixa11_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/etf/fixa11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 # Yahoo Finance Commodity Series - Bronze Layer
 yahoo_petroleo_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/commodity/petroleo/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_ouro_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/commodity/ouro/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_soja_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/commodity/soja/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_cafe_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/commodity/cafe/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 # Yahoo Finance Currency Series - Bronze Layer
 yahoo_usd_brl_bronze:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/bronze/yahoo_finance/currency/usd_brl/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 # Yahoo Finance ETF Series - Silver Layer
 yahoo_bova11_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/etf/bova11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_ivvb11_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/etf/ivvb11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_smal11_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/etf/smal11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_nasd11_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/etf/nasd11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_spxi11_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/etf/spxi11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_fixa11_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/etf/fixa11/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 # Yahoo Finance Commodity Series - Silver Layer
 yahoo_petroleo_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/commodity/petroleo/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_ouro_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/commodity/ouro/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_soja_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/commodity/soja/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 yahoo_cafe_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/commodity/cafe/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 # Yahoo Finance Currency Series - Silver Layer
 yahoo_usd_brl_silver:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/yahoo_finance/currency/usd_brl/
   file_format: delta
+  save_args:
+    mode: overwrite
 
 # Yahoo Finance Validation Results
 yahoo_bova11_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_bova11_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_bova11_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_ivvb11_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_ivvb11_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_ivvb11_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_smal11_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_smal11_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_smal11_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_nasd11_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_nasd11_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_nasd11_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_spxi11_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_spxi11_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_spxi11_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_fixa11_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_fixa11_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_fixa11_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_petroleo_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_petroleo_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_petroleo_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_ouro_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_ouro_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_ouro_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_soja_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_soja_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_soja_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_cafe_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_cafe_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_cafe_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_usd_brl_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_usd_brl_validation_results.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_usd_brl_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # Yahoo Finance Catalog Entries
 yahoo_bova11_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_bova11_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_bova11_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_ivvb11_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_ivvb11_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_ivvb11_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_smal11_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_smal11_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_smal11_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_nasd11_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_nasd11_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_nasd11_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_spxi11_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_spxi11_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_spxi11_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_fixa11_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_fixa11_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_fixa11_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_petroleo_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_petroleo_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_petroleo_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_ouro_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_ouro_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_ouro_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_soja_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_soja_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_soja_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_cafe_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_cafe_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_cafe_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 yahoo_usd_brl_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/yahoo_usd_brl_catalog_entry.json
+  filepath: s3a://lakehouse/gold/yahoo/yahoo_usd_brl_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 silver_bacen:
   type: spark.SparkDataset
   filepath: s3a://lakehouse/silver/bacen_selic/
@@ -333,8 +542,12 @@ gold_cvm:
 # SELIC Raw data from BACEN API (stored in MinIO as JSON)
 raw_selic:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/selic_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/selic_bacen_raw.json
 
 # SELIC Bronze data (structured but raw)
 bronze_selic:
@@ -364,13 +577,22 @@ gold_selic:
 # SELIC validation results
 selic_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/selic_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/selic_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # IPCA Raw data from BACEN API (stored in MinIO as JSON)
 raw_ipca:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/ipca_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/ipca_bacen_raw.json
 
 # IPCA Bronze data (structured but raw)
 bronze_ipca:
@@ -400,13 +622,22 @@ gold_ipca:
 # IPCA validation results
 ipca_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/ipca_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/ipca_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # SELIC Meta Raw data from BACEN API (stored in MinIO as JSON)
 raw_selic_meta:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/selic_meta_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/selic_meta_bacen_raw.json
 
 # SELIC Meta Bronze data (structured but raw)
 bronze_selic_meta:
@@ -436,13 +667,22 @@ gold_selic_meta:
 # SELIC Meta validation results
 selic_meta_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/selic_meta_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/selic_meta_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # OVER Raw data from BACEN API (stored in MinIO as JSON)
 raw_over:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/over_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/over_bacen_raw.json
 
 # OVER Bronze data (structured but raw)
 bronze_over:
@@ -472,13 +712,22 @@ gold_over:
 # OVER validation results
 over_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/over_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/over_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # CDI Raw data from BACEN API (stored in MinIO as JSON)
 raw_cdi:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/cdi_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/cdi_bacen_raw.json
 
 # CDI Bronze data (structured but raw)
 bronze_cdi:
@@ -508,13 +757,22 @@ gold_cdi:
 # CDI validation results
 cdi_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/cdi_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/cdi_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # TLP Raw data from BACEN API (stored in MinIO as JSON)
 raw_tlp:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/tlp_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/tlp_bacen_raw.json
 
 # TLP Bronze data (structured but raw)
 bronze_tlp:
@@ -544,13 +802,22 @@ gold_tlp:
 # TLP validation results
 tlp_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/tlp_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/tlp_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # IPCA-15 Raw data from BACEN API (stored in MinIO as JSON)
 raw_ipca_15:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/ipca_15_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/ipca_15_bacen_raw.json
 
 # IPCA-15 Bronze data (structured but raw)
 bronze_ipca_15:
@@ -580,13 +847,22 @@ gold_ipca_15:
 # IPCA-15 validation results
 ipca_15_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/ipca_15_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/ipca_15_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # INPC Raw data from BACEN API (stored in MinIO as JSON)
 raw_inpc:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/inpc_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/inpc_bacen_raw.json
 
 # INPC Bronze data (structured but raw)
 bronze_inpc:
@@ -616,13 +892,22 @@ gold_inpc:
 # INPC validation results
 inpc_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/inpc_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/inpc_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # IGP-DI Raw data from BACEN API (stored in MinIO as JSON)
 raw_igp_di:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/igp_di_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/igp_di_bacen_raw.json
 
 # IGP-DI Bronze data (structured but raw)
 bronze_igp_di:
@@ -652,13 +937,22 @@ gold_igp_di:
 # IGP-DI validation results
 igp_di_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/igp_di_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/igp_di_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # IGP-M Raw data from BACEN API (stored in MinIO as JSON)
 raw_igp_m:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/igp_m_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/igp_m_bacen_raw.json
 
 # IGP-M Bronze data (structured but raw)
 bronze_igp_m:
@@ -688,13 +982,22 @@ gold_igp_m:
 # IGP-M validation results
 igp_m_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/igp_m_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/igp_m_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # IGP-10 Raw data from BACEN API (stored in MinIO as JSON)
 raw_igp_10:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/igp_10_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/igp_10_bacen_raw.json
 
 # IGP-10 Bronze data (structured but raw)
 bronze_igp_10:
@@ -724,13 +1027,22 @@ gold_igp_10:
 # IGP-10 validation results
 igp_10_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/igp_10_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/igp_10_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # USD/BRL Raw data from BACEN API (stored in MinIO as JSON)
 raw_usd_brl:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/usd_brl_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/usd_brl_bacen_raw.json
 
 # USD/BRL Bronze data (structured but raw)
 bronze_usd_brl:
@@ -760,13 +1072,22 @@ gold_usd_brl:
 # USD/BRL validation results
 usd_brl_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/usd_brl_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/usd_brl_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # EUR/BRL Raw data from BACEN API (stored in MinIO as JSON)
 raw_eur_brl:
   type: text.TextDataset
-  filepath: s3a://lakehouse/raw/eur_brl_bacen_raw.json
-  credentials: minio_credentials
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/eur_brl_bacen_raw.json
 
 # EUR/BRL Bronze data (structured but raw)
 bronze_eur_brl:
@@ -796,12 +1117,22 @@ gold_eur_brl:
 # EUR/BRL validation results
 eur_brl_validation_results:
   type: json.JSONDataset
-  filepath: data/08_reporting/eur_brl_validation_results.json
+  filepath: s3a://lakehouse/gold/bacen/eur_brl_validation_results.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # RESERVAS INTERNACIONAIS datasets
 raw_reservas_internacionais:
   type: text.TextDataset
-  filepath: data/00_raw/reservas_internacionais_bacen_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/reservas_internacionais_bacen_raw.json
 
 bronze_reservas_internacionais:
   type: spark.SparkDataset
@@ -829,12 +1160,22 @@ gold_reservas_internacionais:
 
 reservas_internacionais_validation_results:
   type: text.TextDataset
-  filepath: data/08_reporting/reservas_internacionais_validation_results.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/bacen/reservas_internacionais_validation_results.json
 
 # DIVIDA PIB datasets
 raw_divida_pib:
   type: text.TextDataset
-  filepath: data/00_raw/divida_pib_bacen_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/divida_pib_bacen_raw.json
 
 bronze_divida_pib:
   type: spark.SparkDataset
@@ -862,12 +1203,22 @@ gold_divida_pib:
 
 divida_pib_validation_results:
   type: text.TextDataset
-  filepath: data/08_reporting/divida_pib_validation_results.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/bacen/divida_pib_validation_results.json
 
 # FOCUS PIB datasets
 raw_focus_pib:
   type: text.TextDataset
-  filepath: data/00_raw/focus_pib_bacen_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/bacen/focus_pib_bacen_raw.json
 
 bronze_focus_pib:
   type: spark.SparkDataset
@@ -895,7 +1246,12 @@ gold_focus_pib:
 
 focus_pib_validation_results:
   type: text.TextDataset
-  filepath: data/08_reporting/focus_pib_validation_results.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/bacen/focus_pib_validation_results.json
 
 # ==============================================================================
 # IBGE DATA SERIES
@@ -904,7 +1260,12 @@ focus_pib_validation_results:
 # IPCA (Inflation) datasets
 ibge_ipca_raw:
   type: text.TextDataset
-  filepath: data/00_raw/ibge_ipca_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/ibge/ibge_ipca_raw.json
 
 ibge_ipca_bronze:
   type: spark.SparkDataset
@@ -924,16 +1285,31 @@ ibge_ipca_silver:
 
 ibge_ipca_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_ipca_catalog_entry.json
+  filepath: s3a://lakehouse/gold/ibge/ibge_ipca_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 ibge_ipca_validation_report:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_ipca_validation_report.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/ibge/ibge_ipca_validation_report.json
 
 # INPC (Inflation for Low Income) datasets
 ibge_inpc_raw:
   type: text.TextDataset
-  filepath: data/00_raw/ibge_inpc_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/ibge/ibge_inpc_raw.json
 
 ibge_inpc_bronze:
   type: spark.SparkDataset
@@ -953,16 +1329,31 @@ ibge_inpc_silver:
 
 ibge_inpc_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_inpc_catalog_entry.json
+  filepath: s3a://lakehouse/gold/ibge/ibge_inpc_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 ibge_inpc_validation_report:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_inpc_validation_report.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/ibge/ibge_inpc_validation_report.json
 
 # PIB Mensal (Monthly GDP) datasets
 ibge_pib_mensal_raw:
   type: text.TextDataset
-  filepath: data/00_raw/ibge_pib_mensal_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/ibge/ibge_pib_mensal_raw.json
 
 ibge_pib_mensal_bronze:
   type: spark.SparkDataset
@@ -982,16 +1373,31 @@ ibge_pib_mensal_silver:
 
 ibge_pib_mensal_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_pib_mensal_catalog_entry.json
+  filepath: s3a://lakehouse/gold/ibge/ibge_pib_mensal_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 ibge_pib_mensal_validation_report:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_pib_mensal_validation_report.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/ibge/ibge_pib_mensal_validation_report.json
 
 # PIB Trimestral (Quarterly GDP) datasets
 ibge_pib_trimestral_raw:
   type: text.TextDataset
-  filepath: data/00_raw/ibge_pib_trimestral_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/ibge/ibge_pib_trimestral_raw.json
 
 ibge_pib_trimestral_bronze:
   type: spark.SparkDataset
@@ -1011,16 +1417,31 @@ ibge_pib_trimestral_silver:
 
 ibge_pib_trimestral_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_pib_trimestral_catalog_entry.json
+  filepath: s3a://lakehouse/gold/ibge/ibge_pib_trimestral_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 ibge_pib_trimestral_validation_report:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_pib_trimestral_validation_report.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/ibge/ibge_pib_trimestral_validation_report.json
 
 # Desemprego (Unemployment) datasets
 ibge_desemprego_raw:
   type: text.TextDataset
-  filepath: data/00_raw/ibge_desemprego_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/ibge/ibge_desemprego_raw.json
 
 ibge_desemprego_bronze:
   type: spark.SparkDataset
@@ -1040,16 +1461,31 @@ ibge_desemprego_silver:
 
 ibge_desemprego_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_desemprego_catalog_entry.json
+  filepath: s3a://lakehouse/gold/ibge/ibge_desemprego_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 ibge_desemprego_validation_report:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_desemprego_validation_report.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/ibge/ibge_desemprego_validation_report.json
 
 # Renda Média (Average Income) datasets
 ibge_renda_media_raw:
   type: text.TextDataset
-  filepath: data/00_raw/ibge_renda_media_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/ibge/ibge_renda_media_raw.json
 
 ibge_renda_media_bronze:
   type: spark.SparkDataset
@@ -1069,16 +1505,31 @@ ibge_renda_media_silver:
 
 ibge_renda_media_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_renda_media_catalog_entry.json
+  filepath: s3a://lakehouse/gold/ibge/ibge_renda_media_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 ibge_renda_media_validation_report:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_renda_media_validation_report.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/ibge/ibge_renda_media_validation_report.json
 
 # População Economicamente Ativa (Labor Force) datasets
 ibge_populacao_economicamente_ativa_raw:
   type: text.TextDataset
-  filepath: data/00_raw/ibge_populacao_economicamente_ativa_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/ibge/ibge_populacao_economicamente_ativa_raw.json
 
 ibge_populacao_economicamente_ativa_bronze:
   type: spark.SparkDataset
@@ -1098,11 +1549,21 @@ ibge_populacao_economicamente_ativa_silver:
 
 ibge_populacao_economicamente_ativa_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_populacao_economicamente_ativa_catalog_entry.json
+  filepath: s3a://lakehouse/gold/ibge/ibge_populacao_economicamente_ativa_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 ibge_populacao_economicamente_ativa_validation_report:
   type: json.JSONDataset
-  filepath: data/08_reporting/ibge_populacao_economicamente_ativa_validation_report.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/ibge/ibge_populacao_economicamente_ativa_validation_report.json
 
 # =====================================================
 # ANBIMA - Associação Brasileira das Entidades dos Mercados Financeiro e de Capitais
@@ -1112,44 +1573,89 @@ ibge_populacao_economicamente_ativa_validation_report:
 # ANBIMA Raw Data
 anbima_cdi_raw:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_cdi_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima/anbima_cdi_raw.json
 
 anbima_ima_b_raw:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_ima_b_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima/anbima_ima_b_raw.json
 
 anbima_ima_b_5_raw:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_ima_b_5_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima/anbima_ima_b_5_raw.json
 
 anbima_curva_di_raw:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_curva_di_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima/anbima_curva_di_raw.json
 
 anbima_curva_pre_raw:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_curva_pre_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima/anbima_curva_pre_raw.json
 
 anbima_curva_ipca_raw:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_curva_ipca_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima/anbima_curva_ipca_raw.json
 
 anbima_ntn_b_raw:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_ntn_b_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima/anbima_ntn_b_raw.json
 
 anbima_ltn_raw:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_ltn_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima/anbima_ltn_raw.json
 
 anbima_mercado_secundario_raw:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_mercado_secundario_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima/anbima_mercado_secundario_raw.json
 
 # ANBIMA Raw Data Container (for bronze processing)
 anbima_raw_data_container:
   type: pickle.PickleDataset
-  filepath: data/01_intermediate/anbima_raw_data_container.pkl
+  filepath: s3a://lakehouse/bronze/anbima_raw_data_container.pkl
 
 # ANBIMA Bronze Layer
 anbima_bronze:
@@ -1178,8 +1684,13 @@ anbima_silver:
 # ANBIMA Catalog Entry
 anbima_catalog:
   type: json.JSONDataset
-  filepath: data/08_reporting/anbima_financial_data_catalog_entry.json
+  filepath: s3a://lakehouse/gold/anbima/anbima_financial_data_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # =====================================================
 # ANBIMA Simple Pipeline Datasets
 # =====================================================
@@ -1187,36 +1698,76 @@ anbima_catalog:
 # ANBIMA Simple Raw Data
 anbima_cdi_raw_simple:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_cdi_raw_simple.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima_cdi_raw_simple.json
 
 anbima_ima_b_raw_simple:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_ima_b_raw_simple.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima_ima_b_raw_simple.json
 
 anbima_curva_di_raw_simple:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_curva_di_raw_simple.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima_curva_di_raw_simple.json
 
 anbima_ntn_b_raw_simple:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_ntn_b_raw_simple.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima_ntn_b_raw_simple.json
 
 anbima_ltn_raw_simple:
   type: text.TextDataset
-  filepath: data/00_raw/anbima_ltn_raw_simple.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/anbima_ltn_raw_simple.json
 
 # ANBIMA Simple Processed Data
 anbima_bronze_simple:
   type: json.JSONDataset
-  filepath: data/02_intermediate/anbima_bronze_simple.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/bronze/anbima_bronze_simple.json
 
 anbima_silver_simple:
   type: json.JSONDataset
-  filepath: data/03_primary/anbima_silver_simple.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/silver/anbima_silver_simple.json
 
 anbima_catalog_simple:
   type: json.JSONDataset
-  filepath: data/08_reporting/anbima_catalog_simple.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/gold/anbima/anbima_catalog_simple.json
 
 # ==============================================================================
 # TESOURO DIRETO DATA
@@ -1225,7 +1776,12 @@ anbima_catalog_simple:
 # Tesouro Direto Raw Data (All Series Combined)
 tesouro_all_series_raw:
   type: json.JSONDataset
-  filepath: data/00_raw/tesouro_all_series_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/tesouro/tesouro_all_series_raw.json
 
 # Tesouro Direto Bronze Layer (Unified)
 tesouro_bronze_layer:
@@ -1242,8 +1798,13 @@ tesouro_silver_layer:
 # Tesouro Direto Catalog Entry
 tesouro_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/tesouro_direto_catalog_entry.json
+  filepath: s3a://lakehouse/gold/tesouro/tesouro_direto_catalog_entry.json
 
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 # ==============================================================================
 # B3 - BRAZILIAN STOCK EXCHANGE DATA
 # ==============================================================================
@@ -1251,7 +1812,12 @@ tesouro_catalog_entry:
 # B3 Raw Data (All Series Combined)
 b3_raw_data_container:
   type: json.JSONDataset
-  filepath: data/00_raw/b3_all_series_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/b3/b3_all_series_raw.json
 
 # B3 Bronze Layer (Unified)
 b3_bronze:
@@ -1274,7 +1840,12 @@ b3_silver:
 # B3 Catalog Entry
 b3_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/b3_catalog_entry.json
+  filepath: s3a://lakehouse/gold/b3/b3_catalog_entry.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
 
 # ==============================================================================
 # IPEA/RECEITA FEDERAL - ECONOMIC & FISCAL DATA
@@ -1283,7 +1854,12 @@ b3_catalog_entry:
 # IPEA/Receita Raw Data (All Series Combined)
 ipea_receita_raw_data_container:
   type: json.JSONDataset
-  filepath: data/00_raw/ipea_receita_all_series_raw.json
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}
+  filepath: s3a://lakehouse/raw/ipea/ipea_receita_all_series_raw.json
 
 # IPEA/Receita Bronze Layer (Unified)
 ipea_receita_bronze:
@@ -1306,4 +1882,10 @@ ipea_receita_silver:
 # IPEA/Receita Catalog Entry
 ipea_receita_catalog_entry:
   type: json.JSONDataset
-  filepath: data/08_reporting/ipea_receita_catalog_entry.json
+  filepath: s3a://lakehouse/gold/ipea/ipea_receita_catalog_entry.json
+
+  fs_args:
+    key: ${env:MINIO_USER}
+    secret: ${env:MINIO_PASSWORD}
+    client_kwargs:
+      endpoint_url: ${env:MINIO_ENDPOINT}

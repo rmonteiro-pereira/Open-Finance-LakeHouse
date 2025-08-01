@@ -9,9 +9,10 @@ from dotenv import load_dotenv
 from kedro.config import OmegaConfigLoader
 
 # Instantiated project hooks.
-from kedro_mlflow.framework.hooks import MlflowHook
+# Commented out MlflowHook to prevent parameter conflicts
+# from kedro_mlflow.framework.hooks import MlflowHook
 
-from open_finance_lakehouse.hooks import SparkHooks, UTF8EncodingHook  # noqa: E402
+from .hooks import SparkHooks, UTF8EncodingHook  # Import from hooks package
 
 # Load environment variables from .env file
 load_dotenv()
@@ -31,22 +32,8 @@ except locale.Error:
         pass  # Fall back to default locale
 
 # Hooks are executed in a Last-In-First-Out (LIFO) order.
-# UTF8EncodingHook must be first to set encoding before MLflow operations
-HOOKS = (UTF8EncodingHook(), SparkHooks(), MlflowHook())
-
-# Installed plugins for which to disable hook auto-registration.
-# DISABLE_HOOKS_FOR_PLUGINS = ("kedro-viz",)
-
-# Class that manages storing KedroSession data.
-# from kedro.framework.session.store import BaseSessionStore
-# SESSION_STORE_CLASS = BaseSessionStore
-# Keyword arguments to pass to the `SESSION_STORE_CLASS` constructor.
-# SESSION_STORE_ARGS = {
-#     "path": "./sessions"
-# }
-
-# Directory that holds configuration.
-# CONF_SOURCE = "conf"
+# UTF8EncodingHook ensures proper encoding for Brazilian Portuguese characters
+HOOKS = (UTF8EncodingHook(), SparkHooks())
 
 # Class that manages how configuration is loaded.
 CONFIG_LOADER_CLASS = OmegaConfigLoader
