@@ -220,11 +220,6 @@ def process_anbima_silver(bronze_df: DataFrame) -> DataFrame:
         logger.warning("No bronze data to process to silver")
         return bronze_df.withColumn("layer", lit("silver"))
     
-    # Debug: Show sample bronze data
-    logger.info(f"Bronze data count: {bronze_df.count()}")
-    bronze_df.show(5, truncate=False)
-    bronze_df.printSchema()
-    
     # More relaxed data quality filters
     silver_df = (
         bronze_df

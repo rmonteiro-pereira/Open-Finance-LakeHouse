@@ -139,10 +139,6 @@ def process_b3_bronze_layer(raw_data_container: dict[str, str], parameters: dict
     
     logger.info(f"✅ Bronze layer processing completed. {bronze_df.count()} total records processed")
     
-    # Show sample data for debugging
-    logger.info("📊 Sample bronze data:")
-    bronze_df.show(10, truncate=False)
-    
     return bronze_df
 
 
