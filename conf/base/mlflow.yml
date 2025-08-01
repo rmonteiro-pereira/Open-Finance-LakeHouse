@@ -1,5 +1,5 @@
 # MLflow configuration for Open Finance LakeHouse
-# Minimal configuration to avoid Windows encoding issues
+# Minimal configuration to avoid parameter conflicts
 
 server:
   mlflow_tracking_uri: ./mlruns

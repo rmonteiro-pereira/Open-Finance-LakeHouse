@@ -1,18 +1,16 @@
 """
-imporimport json
+IBGE Pipeline Nodes - Versão Simplificada
+Nós de pipeline para processamento de dados do IBGE.
+"""
+import json
 import logging
 from datetime import datetime
 from typing import Any
 
 import pandas as pd
+from pyspark.sql import SparkSession, DataFrame as SparkDataFrame
 
-logger = logging.getLogger(__name__)port logging
-from datetime import datetime
-from typing import Any
-
-import pandas as pdeline Nodes - Versão Simplificada
-Nós de pipeline para processamento de dados do IBGE.
-"""
+logger = logging.getLogger(__name__)
 
 import json
 import logging
@@ -205,7 +203,7 @@ def extract_ibge_populacao_economicamente_ativa_raw(parameters: dict[str, Any]) 
         return "[]"
 
 
-def process_ibge_bronze(raw_data: str, series_name: str) -> pd.DataFrame:
+def process_ibge_bronze(raw_data: str, series_name: str) -> SparkDataFrame:
     """
     Processa dados brutos para a camada Bronze
     
@@ -214,23 +212,27 @@ def process_ibge_bronze(raw_data: str, series_name: str) -> pd.DataFrame:
         series_name: Nome da série
         
     Returns:
-        DataFrame do Pandas para a camada Bronze
+        Spark DataFrame para a camada Bronze
     """
     logger.info(f"🔄 Processing {series_name} data to Bronze layer")
     
     try:
         if not raw_data or raw_data == "[]":
             logger.warning(f"⚠️ No raw data to process for {series_name}")
-            return pd.DataFrame()
+            # Return empty Spark DataFrame
+            spark = SparkSession.getActiveSession() or SparkSession.builder.appName("ibge_bronze").getOrCreate()
+            return spark.createDataFrame([], schema="")
         
         # Parse JSON data
         records = json.loads(raw_data)
         
         if not records:
             logger.warning(f"⚠️ Empty records list for {series_name}")
-            return pd.DataFrame()
+            # Return empty Spark DataFrame
+            spark = SparkSession.getActiveSession() or SparkSession.builder.appName("ibge_bronze").getOrCreate()
+            return spark.createDataFrame([], schema="")
             
-        # Convert to Pandas DataFrame
+        # Convert to Pandas DataFrame first for processing
         df = pd.DataFrame(records)
         
         # Add bronze layer metadata
@@ -249,32 +251,50 @@ def process_ibge_bronze(raw_data: str, series_name: str) -> pd.DataFrame:
             df = df.sort_values("date")
         
         logger.info(f"✅ Processed {len(df)} records to Bronze layer for {series_name}")
-        return df
+        
+        # Convert to Spark DataFrame
+        spark = SparkSession.getActiveSession() or SparkSession.builder.appName("ibge_bronze").getOrCreate()
+        spark_df = spark.createDataFrame(df)
+        
+        return spark_df
         
     except Exception as e:
         logger.error(f"❌ Error processing {series_name} to Bronze layer: {e}")
-        return pd.DataFrame()
+        # Return empty Spark DataFrame on error
+        spark = SparkSession.getActiveSession() or SparkSession.builder.appName("ibge_bronze").getOrCreate()
+        return spark.createDataFrame([], schema="")
 
 
-def process_ibge_silver(bronze_data: pd.DataFrame, series_name: str) -> pd.DataFrame:
+def process_ibge_silver(bronze_data: SparkDataFrame, series_name: str) -> SparkDataFrame:
     """
     Processa dados da camada Bronze para Silver
     
     Args:
-        bronze_data: DataFrame da camada Bronze
+        bronze_data: Spark DataFrame da camada Bronze
         series_name: Nome da série
         
     Returns:
-        DataFrame do Pandas para a camada Silver
+        Spark DataFrame para a camada Silver
     """
     logger.info(f"🔄 Processing {series_name} data to Silver layer")
     
     try:
-        if bronze_data.empty:
-            logger.warning(f"⚠️ No bronze data to process for {series_name}")
-            return pd.DataFrame()
+        # Check if we have data
+        if hasattr(bronze_data, 'isEmpty') and bronze_data.isEmpty():
+            logger.warning(f"⚠️ Empty Bronze DataFrame for {series_name}")
+            spark = SparkSession.getActiveSession() or SparkSession.builder.appName("ibge_silver").getOrCreate()
+            return spark.createDataFrame([], schema="")
         
-        df = bronze_data.copy()
+        # Convert Spark DataFrame to Pandas for processing
+        if hasattr(bronze_data, 'toPandas'):
+            df = bronze_data.toPandas()
+        else:
+            df = bronze_data.copy()
+        
+        if df.empty:
+            logger.warning(f"⚠️ No bronze data to process for {series_name}")
+            spark = SparkSession.getActiveSession() or SparkSession.builder.appName("ibge_silver").getOrCreate()
+            return spark.createDataFrame([], schema="")
         
         # Add silver layer metadata
         df["silver_processed_at"] = datetime.now().isoformat()
@@ -292,11 +312,18 @@ def process_ibge_silver(bronze_data: pd.DataFrame, series_name: str) -> pd.DataF
                 df["rate_ma_12m"] = df["rate"].expanding().mean()
         
         logger.info(f"✅ Processed {len(df)} records to Silver layer for {series_name}")
-        return df
+        
+        # Convert back to Spark DataFrame
+        spark = SparkSession.getActiveSession() or SparkSession.builder.appName("ibge_silver").getOrCreate()
+        spark_df = spark.createDataFrame(df)
+        
+        return spark_df
         
     except Exception as e:
         logger.error(f"❌ Error processing {series_name} to Silver layer: {e}")
-        return pd.DataFrame()
+        # Return empty Spark DataFrame on error
+        spark = SparkSession.getActiveSession() or SparkSession.builder.appName("ibge_silver").getOrCreate()
+        return spark.createDataFrame([], schema="")
 
 
 def create_ibge_catalog_entry(series_name: str) -> dict[str, Any]:
