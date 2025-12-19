@@ -4,18 +4,8 @@
 ====================================================
 
 This script provides comprehensive visualization and analysis of Brazilian financial 
-and economic data from a MinIO-based data lakehouse, including:
-
-- 📈 BACEN (Central Bank) Economic Indicators
-- 📊 B3 Stock Exchange Market Data  
-- 🌍 Yahoo Finance International Data
-- 📋 IBGE & IPEA Economic Statistics
-
-The script solves hanging issues by implementing safe data discovery with:
-- Progressive loading with limits
-- Timeout handling
-- Error recovery
-- Memory-efficient processing
+and economic data from a MinIO-based data lakehouse, solving hanging issues by 
+implementing safe data discovery with progressive loading and timeout handling.
 
 Author: GitHub Copilot
 Date: August 1, 2025
@@ -26,7 +16,6 @@ import sys
 import warnings
 import traceback
 from datetime import datetime
-from typing import Optional, Any
 import logging
 
 # Configure logging
@@ -58,21 +47,11 @@ except ImportError as e:
 # Visualization imports (optional)
 try:
     import plotly.graph_objects as go
-    import plotly.express as px
     PLOTLY_AVAILABLE = True
     logger.info("✅ Plotly visualization libraries loaded")
 except ImportError:
     PLOTLY_AVAILABLE = False
     logger.warning("⚠️ Plotly not available - visualizations will be limited")
-
-try:
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    MATPLOTLIB_AVAILABLE = True
-    logger.info("✅ Matplotlib visualization libraries loaded")
-except ImportError:
-    MATPLOTLIB_AVAILABLE = False
-    logger.warning("⚠️ Matplotlib not available - fallback visualizations disabled")
 
 
 class LakehouseConfig:
@@ -93,13 +72,13 @@ class LakehouseConfig:
         self.endpoint = self._sanitize_endpoint()
         self.secure = self.config["endpoint"].startswith("https")
         
-    def _sanitize_endpoint(self) -> str:
+    def _sanitize_endpoint(self):
         """Remove protocol and path from endpoint"""
         endpoint = self.config["endpoint"]
         endpoint = re.sub(r"^https?://", "", endpoint)
         return endpoint.split("/")[0]
     
-    def get_minio_client(self) -> Minio:
+    def get_minio_client(self):
         """Create and return MinIO client"""
         return Minio(
             self.endpoint,
@@ -112,19 +91,18 @@ class LakehouseConfig:
 class SafeDataDiscovery:
     """Safe data discovery with hanging prevention"""
     
-    def __init__(self, minio_client: Minio, bucket_name: str):
+    def __init__(self, minio_client, bucket_name):
         self.minio_client = minio_client
         self.bucket_name = bucket_name
         self.max_files_per_layer = 50  # Limit to prevent hanging
         self.max_sample_files = 5      # Limit for sampling
         
-    def log_progress(self, message: str):
+    def log_progress(self, message):
         """Log progress with timestamp"""
         timestamp = datetime.now().strftime("%H:%M:%S")
         logger.info(f"[{timestamp}] {message}")
         
-    def safe_list_objects(self, prefix: str = "", recursive: bool = True, 
-                         max_objects: int = 100) -> List[Any]:
+    def safe_list_objects(self, prefix="", recursive=True, max_objects=100):
         """Safely list objects with limits to prevent hanging"""
         try:
             self.log_progress(f"📁 Listing objects with prefix '{prefix}' (max: {max_objects})")
@@ -156,7 +134,7 @@ class SafeDataDiscovery:
             self.log_progress(f"   ❌ Error listing objects: {str(e)}")
             return []
     
-    def discover_data_structure(self) -> Dict[str, Any]:
+    def discover_data_structure(self):
         """Discover the overall structure of the data lake"""
         self.log_progress("🔍 DISCOVERING DATA LAKE STRUCTURE")
         
@@ -211,7 +189,7 @@ class SafeDataDiscovery:
         
         return structure
     
-    def load_sample_data(self, file_path: str) -> Optional[pd.DataFrame]:
+    def load_sample_data(self, file_path):
         """Safely load a single parquet file as sample"""
         try:
             self.log_progress(f"📄 Loading sample: {file_path}")
@@ -226,7 +204,7 @@ class SafeDataDiscovery:
             self.log_progress(f"   ❌ Error loading {file_path}: {str(e)}")
             return None
     
-    def discover_data_samples(self, structure: Dict[str, Any]) -> Dict[str, Any]:
+    def discover_data_samples(self, structure):
         """Load sample data from each layer"""
         self.log_progress("🔬 LOADING DATA SAMPLES")
         
@@ -255,7 +233,7 @@ class TimeSeriesProcessor:
     """Process and clean time series data"""
     
     @staticmethod
-    def detect_time_series_columns(df: pd.DataFrame) -> Tuple[Optional[str], Optional[str]]:
+    def detect_time_series_columns(df):
         """Detect date and value columns automatically"""
         
         # Common date column patterns
@@ -279,7 +257,7 @@ class TimeSeriesProcessor:
         return date_col, value_col
     
     @staticmethod
-    def clean_time_series(df: pd.DataFrame, date_col: str, value_col: str) -> Optional[pd.DataFrame]:
+    def clean_time_series(df, date_col, value_col):
         """Clean and standardize time series data"""
         try:
             # Create standardized DataFrame
@@ -306,9 +284,8 @@ class LakehouseVisualizer:
     
     def __init__(self):
         self.plotly_available = PLOTLY_AVAILABLE
-        self.matplotlib_available = MATPLOTLIB_AVAILABLE
         
-    def create_summary_chart(self, structure: Dict[str, Any]) -> None:
+    def create_summary_chart(self, structure):
         """Create summary chart of data lake structure"""
         
         if not self.plotly_available:
@@ -342,7 +319,7 @@ class LakehouseVisualizer:
             logger.error(f"❌ Error creating summary chart: {str(e)}")
             self._print_text_summary(structure)
     
-    def _print_text_summary(self, structure: Dict[str, Any]) -> None:
+    def _print_text_summary(self, structure):
         """Print text-based summary when visualization libraries unavailable"""
         
         print("\n" + "="*60)
@@ -355,17 +332,17 @@ class LakehouseVisualizer:
             print(f"   📊 Parquet files: {layer_info['parquet_files']}")
             
             if layer_info['sample_files']:
-                print(f"   📋 Sample files:")
+                print("   📋 Sample files:")
                 for sample_file in layer_info['sample_files']:
                     print(f"      • {sample_file}")
         
-        print(f"\n📈 TOTAL SUMMARY:")
+        print("\n📈 TOTAL SUMMARY:")
         print(f"   🗂️ Layers: {structure['summary']['layers_count']}")
         print(f"   📄 Total files: {structure['summary']['total_files']}")
         print(f"   📊 Parquet files: {structure['summary']['parquet_files']}")
         print("="*60)
     
-    def create_time_series_chart(self, df: pd.DataFrame, title: str) -> None:
+    def create_time_series_chart(self, df, title):
         """Create time series visualization"""
         
         if not self.plotly_available:
@@ -398,7 +375,7 @@ class LakehouseVisualizer:
             logger.error(f"❌ Error creating time series chart: {str(e)}")
             self._print_time_series_summary(df, title)
     
-    def _print_time_series_summary(self, df: pd.DataFrame, title: str) -> None:
+    def _print_time_series_summary(self, df, title):
         """Print time series summary when visualization unavailable"""
         
         print(f"\n📈 TIME SERIES SUMMARY: {title}")
@@ -406,7 +383,7 @@ class LakehouseVisualizer:
         print(f"📊 Records: {len(df)}")
         print(f"📅 Date range: {df['date'].min():%Y-%m-%d} to {df['date'].max():%Y-%m-%d}")
         print(f"📈 Value range: {df['value'].min():,.2f} to {df['value'].max():,.2f}")
-        print(f"📊 Latest values:")
+        print("📊 Latest values:")
         print(df.tail(5).to_string(index=False))
 
 
@@ -433,7 +410,7 @@ class LakehouseAnalyzer:
         self.processor = TimeSeriesProcessor()
         self.visualizer = LakehouseVisualizer()
         
-    def test_connection(self) -> bool:
+    def test_connection(self):
         """Test MinIO connection safely"""
         logger.info("🔍 Testing MinIO connection...")
         
@@ -452,7 +429,7 @@ class LakehouseAnalyzer:
             logger.error(f"❌ Connection test failed: {str(e)}")
             return False
     
-    def analyze_lakehouse(self) -> Dict[str, Any]:
+    def analyze_lakehouse(self):
         """Main analysis method - discovers and analyzes all data"""
         logger.info("🏦 STARTING COMPREHENSIVE LAKEHOUSE ANALYSIS")
         logger.info("="*60)
@@ -509,7 +486,7 @@ class LakehouseAnalyzer:
             
         return results
     
-    def _process_time_series_samples(self, samples: Dict[str, Any]) -> Dict[str, pd.DataFrame]:
+    def _process_time_series_samples(self, samples):
         """Process sample data into time series"""
         
         time_series = {}
@@ -543,7 +520,7 @@ class LakehouseAnalyzer:
                 
         return time_series
     
-    def _generate_summary(self, results: Dict[str, Any]) -> Dict[str, Any]:
+    def _generate_summary(self, results):
         """Generate comprehensive summary of analysis"""
         
         summary = {
@@ -555,8 +532,7 @@ class LakehouseAnalyzer:
             'samples_loaded': len(results['samples']),
             'time_series_processed': len(results['time_series']),
             'visualization_libraries': {
-                'plotly': PLOTLY_AVAILABLE,
-                'matplotlib': MATPLOTLIB_AVAILABLE
+                'plotly': PLOTLY_AVAILABLE
             }
         }
         
@@ -591,7 +567,6 @@ def main():
             print(f"🔬 Samples loaded: {summary['samples_loaded']}")
             print(f"📈 Time series processed: {summary['time_series_processed']}")
             print(f"🎨 Plotly available: {'✅' if summary['visualization_libraries']['plotly'] else '❌'}")
-            print(f"📊 Matplotlib available: {'✅' if summary['visualization_libraries']['matplotlib'] else '❌'}")
             print(f"⏰ Analysis completed: {summary['analysis_timestamp']}")
             
         print("\n🎉 ANALYSIS COMPLETED - NO HANGING DETECTED!")
@@ -611,6 +586,8 @@ if __name__ == "__main__":
     
     # Exit with appropriate code
     if results and results.get('summary', {}).get('connection_successful', False):
+        print("\n✅ SUCCESS: Lakehouse analysis completed successfully!")
         sys.exit(0)  # Success
     else:
+        print("\n❌ FAILURE: Lakehouse analysis failed!")
         sys.exit(1)  # Failure
