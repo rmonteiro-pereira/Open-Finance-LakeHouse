@@ -77,7 +77,7 @@ class SparkHooks:
             except Exception as e:
                 jvm_pid = "unknown"
             
-            print(f"🔍 Spark Session Created:")
+            print("🔍 Spark Session Created:")
             print(f"   📍 Python PID: {python_pid}")
             print(f"   📍 JVM PID: {jvm_pid}")
             print(f"   📍 App Name: {spark_context.appName}")
