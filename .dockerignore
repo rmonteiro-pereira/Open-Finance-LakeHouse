@@ -1,0 +1,13 @@
+.git
+data/0*/**
+*.log
+__pycache__/
+**/__pycache__/
+.ivy2/
+.venv/
+notebooks/
+docs/
+tests/
+uv.lock
+*.html
+.telemetry
