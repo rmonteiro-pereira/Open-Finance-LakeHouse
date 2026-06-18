@@ -1,0 +1,26 @@
+# Cluster (Kubernetes) Spark overrides. Merged on top of conf/base/spark.yml by
+# Kedro's OmegaConfigLoader when run with `--env cluster`. Removes all Windows
+# `E:/...` paths and disables runtime Ivy resolution (jars are baked into the image).
+spark.master: local[*]
+spark.driver.bindAddress: 127.0.0.1
+
+# No Ivy/Maven at runtime — delta + hadoop-aws + aws-sdk jars are baked into pyspark/jars.
+spark.jars.packages: ""
+spark.jars.ivy: /tmp/.ivy2
+
+# Override the base Windows log4j/Ivy JVM options; keep Derby (Hive metastore) under /tmp.
+spark.driver.extraJavaOptions: "-Dderby.system.home=/tmp -Divy.silence=true"
+spark.executor.extraJavaOptions: "-Dderby.system.home=/tmp"
+spark.sql.warehouse.dir: /tmp/spark-warehouse
+spark.hadoop.hadoop.metrics2.config.file: /opt/app/conf/hadoop-metrics2.properties
+
+# Python interpreters (override base's ${env:...} so they never resolve to null).
+spark.pyspark.python: python3
+spark.pyspark.driver.python: python3
+
+# MinIO (in-cluster). Credentials are injected from env by SparkHooks.
+spark.hadoop.fs.s3a.endpoint: http://minio.minio.svc.cluster.local:9000
+spark.hadoop.fs.s3a.path.style.access: true
+spark.hadoop.fs.s3a.connection.ssl.enabled: false
+spark.hadoop.fs.s3a.aws.credentials.provider: org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+spark.hadoop.fs.s3a.endpoint.region: us-east-1
