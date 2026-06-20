@@ -5,7 +5,7 @@ DOMAINS = {"rates", "inflation", "fx", "fiscal", "market", "equities"}
 
 def test_registry_loads_all_series():
     reg = load_registry("sources/registry.yml")
-    assert len(reg.series) == 24
+    assert len(reg.series) == 26
     assert set(reg.domains()) == DOMAINS
 
 
@@ -20,7 +20,8 @@ def test_active_excludes_planned():
     reg = load_registry("sources/registry.yml")
     active = {s.key for s in reg.active()}
     assert "selic" in active
-    assert "tesouro_direto" in active and "ibge" in active  # real handlers
+    # real handlers (ipea replaces the old synthetic ipea_receita)
+    assert {"tesouro_direto", "ibge", "ipea_nfsp_primario", "ipea_pib"} <= active
     assert "b3" not in active  # legacy impl was synthetic -> planned
     assert "anbima" not in active
-    assert len(active) == 21
+    assert len(active) == 24

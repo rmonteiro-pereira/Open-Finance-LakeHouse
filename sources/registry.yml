@@ -198,15 +198,34 @@ series:
     frequency: daily
     fact: observation
     max_value: 1000000.0
-  ipea_receita:
+  ipea_nfsp_primario:
     domain: fiscal
-    handler: ipea            # multi-series handler (IPEA + Receita Federal)
-    name: "IPEA / Receita fiscal & tax indicators"
+    handler: ipea
+    sercodigo: BM12_NFSPPNS12   # NFSP - setor público - resultado primário (fluxo mensal)
+    name: "Primary balance — public sector (monthly, R$ million)"
     category: fiscal
-    unit: mixed
+    unit: brl_million
     frequency: monthly
     fact: observation
-    status: planned          # legacy impl was synthetic; needs real IPEA OData integration
+  ipea_divida_liquida:
+    domain: fiscal
+    handler: ipea
+    sercodigo: WEO_DIVLIQGGWEOBRA   # net general government debt (% GDP, IMF WEO)
+    name: "Net general government debt (% GDP)"
+    category: fiscal
+    unit: percent
+    frequency: annual
+    fact: observation
+    max_value: 300.0
+  ipea_pib:
+    domain: fiscal
+    handler: ipea
+    sercodigo: BM12_PIB12   # GDP, current prices (monthly, R$ million)
+    name: "GDP — current prices (monthly, R$ million)"
+    category: macro
+    unit: brl_million
+    frequency: monthly
+    fact: observation
 
   # --------------------------------------------------------------- market ----
   tesouro_direto:

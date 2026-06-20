@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from ofl.ingestion.bacen import ingest_bacen_sgs
 from ofl.ingestion.ibge import ingest_ibge
+from ofl.ingestion.ipea import ingest_ipea
 from ofl.ingestion.tesouro import ingest_tesouro
 from ofl.ingestion.yahoo import ingest_yahoo
 from ofl.platform.logging import get_logger
@@ -21,8 +22,9 @@ _HANDLERS = {
     "yahoo": ingest_yahoo,
     "tesouro_direto": ingest_tesouro,
     "ibge": ingest_ibge,
-    # planned (legacy impls were mock/synthetic — need real API integration):
-    #   "ipea", "b3", "anbima"
+    "ipea": ingest_ipea,
+    # planned (legacy impls were mock/synthetic; no free official API):
+    #   "b3", "anbima"
 }
 
 
