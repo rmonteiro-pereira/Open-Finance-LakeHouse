@@ -36,6 +36,12 @@ spark.openlineage.transport.topicName: openlineage-events
 spark.openlineage.transport.messageKey: ofl-spark
 spark.openlineage.transport.properties.bootstrap.servers: redpanda.redpanda.svc.cluster.local:9093
 spark.openlineage.transport.properties.acks: all
+# openlineage-spark 1.50.0's KafkaTransport does NOT default the producer
+# (de)serializers, so without these the KafkaProducer ctor throws
+# "Invalid value null for configuration key.serializer" on app start and every
+# lineage event is dropped. Events are JSON strings, so StringSerializer both.
+spark.openlineage.transport.properties.key.serializer: org.apache.kafka.common.serialization.StringSerializer
+spark.openlineage.transport.properties.value.serializer: org.apache.kafka.common.serialization.StringSerializer
 spark.openlineage.namespace: ofl-spark
 # Don't let a broker hiccup fail a pipeline run — lineage is best-effort.
 spark.openlineage.transport.properties.delivery.timeout.ms: "15000"
