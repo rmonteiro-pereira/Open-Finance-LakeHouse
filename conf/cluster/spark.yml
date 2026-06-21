@@ -44,5 +44,10 @@ spark.openlineage.transport.properties.key.serializer: org.apache.kafka.common.s
 spark.openlineage.transport.properties.value.serializer: org.apache.kafka.common.serialization.StringSerializer
 spark.openlineage.namespace: ofl-spark
 # Don't let a broker hiccup fail a pipeline run — lineage is best-effort.
-spark.openlineage.transport.properties.delivery.timeout.ms: "15000"
+# Kafka requires delivery.timeout.ms >= linger.ms + request.timeout.ms; the
+# default request.timeout.ms is 30000, so the bare 15000 below was rejected
+# ("delivery.timeout.ms should be equal to or larger than linger.ms +
+# request.timeout.ms"). Lower request.timeout.ms to keep the fast-fail budget.
+spark.openlineage.transport.properties.request.timeout.ms: "10000"
+spark.openlineage.transport.properties.delivery.timeout.ms: "20000"
 spark.openlineage.facets.disabled: "[spark_unknown;spark.logicalPlan]"
