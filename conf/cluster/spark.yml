@@ -24,3 +24,19 @@ spark.hadoop.fs.s3a.path.style.access: true
 spark.hadoop.fs.s3a.connection.ssl.enabled: false
 spark.hadoop.fs.s3a.aws.credentials.provider: org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
 spark.hadoop.fs.s3a.endpoint.region: us-east-1
+
+# OpenLineage: emit dataset/column-level lineage from the Spark logical plan to
+# the Redpanda topic openlineage-events, where the OpenMetadata OpenLineage
+# connector consumes it. The openlineage-spark + kafka-clients jars are baked
+# into the image (see Dockerfile); no runtime Ivy needed. The OM connector maps
+# emitted datasets to the cataloged Delta tables via lineageInformation.dbServiceNames.
+spark.extraListeners: io.openlineage.spark.agent.OpenLineageSparkListener
+spark.openlineage.transport.type: kafka
+spark.openlineage.transport.topicName: openlineage-events
+spark.openlineage.transport.messageKey: ofl-spark
+spark.openlineage.transport.properties.bootstrap.servers: redpanda.redpanda.svc.cluster.local:9093
+spark.openlineage.transport.properties.acks: all
+spark.openlineage.namespace: ofl-spark
+# Don't let a broker hiccup fail a pipeline run — lineage is best-effort.
+spark.openlineage.transport.properties.delivery.timeout.ms: "15000"
+spark.openlineage.facets.disabled: "[spark_unknown;spark.logicalPlan]"
