@@ -66,6 +66,11 @@ with DAG(
             name=f"ofl-{pipeline}",
             namespace=POD_NAMESPACE,
             image=IMAGE,
+            # The :cluster tag is reused across rebuilds, so without Always a node
+            # with a cached image never picks up a new build (k8s defaults a
+            # non-:latest tag to IfNotPresent). Always = every run uses the latest
+            # pushed :cluster image (e.g. the OpenLineage-enabled build).
+            image_pull_policy="Always",
             image_pull_secrets=[k8s.V1LocalObjectReference(name="ghcr-pull")],
             cmds=["kedro"],
             arguments=["run", "--env", "cluster", "--pipeline", pipeline],
