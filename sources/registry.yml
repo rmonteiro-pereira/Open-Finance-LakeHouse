@@ -248,13 +248,14 @@ series:
       - { code: "Tesouro Selic 2029",      type: selic,     maturity: "2029-03-01" }
   b3:
     domain: market
-    handler: b3
-    name: "B3 market data"
-    category: equity_market
-    unit: mixed
+    handler: b3              # B3 index levels sourced via Yahoo (no free official B3 API)
+    name: "B3 indices (Ibovespa)"
+    category: equity_index
+    unit: index
     frequency: daily
     fact: security_price
-    status: planned          # legacy impl was synthetic; needs real B3 market-data feed
+    symbols:
+      - { symbol: "^BVSP", currency: BRL, name: "Ibovespa" }
   ibge:
     domain: market
     handler: ibge
@@ -267,13 +268,13 @@ series:
     max_value: 100.0
   anbima:
     domain: market
-    handler: anbima
-    name: "ANBIMA indices"
+    handler: anbima           # real Feed API implemented; needs registered credentials
+    name: "ANBIMA secondary-market federal bond prices (TPF)"
     category: fixed_income
     unit: mixed
     frequency: daily
-    fact: observation
-    status: planned           # legacy impl was synthetic; needs real (paid/auth) feed
+    fact: treasury
+    status: planned           # flip to active once ANBIMA_CLIENT_ID/SECRET are in env (via OpenBao)
 
   # ------------------------------------------------------------- equities ----
   yahoo_etf:

@@ -20,8 +20,8 @@ def test_active_excludes_planned():
     reg = load_registry("sources/registry.yml")
     active = {s.key for s in reg.active()}
     assert "selic" in active
-    # real handlers (ipea replaces the old synthetic ipea_receita)
-    assert {"tesouro_direto", "ibge", "ipea_nfsp_primario", "ipea_pib"} <= active
-    assert "b3" not in active  # legacy impl was synthetic -> planned
+    # real handlers (ipea replaces old synthetic ipea_receita; b3 via Yahoo)
+    assert {"tesouro_direto", "ibge", "ipea_nfsp_primario", "b3"} <= active
+    # anbima handler is implemented but needs registered credentials -> planned
     assert "anbima" not in active
-    assert len(active) == 24
+    assert len(active) == 25

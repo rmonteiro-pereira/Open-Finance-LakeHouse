@@ -7,6 +7,8 @@ and register it in ``_HANDLERS``.
 
 from __future__ import annotations
 
+from ofl.ingestion.anbima import ingest_anbima
+from ofl.ingestion.b3 import ingest_b3
 from ofl.ingestion.bacen import ingest_bacen_sgs
 from ofl.ingestion.ibge import ingest_ibge
 from ofl.ingestion.ipea import ingest_ipea
@@ -23,8 +25,8 @@ _HANDLERS = {
     "tesouro_direto": ingest_tesouro,
     "ibge": ingest_ibge,
     "ipea": ingest_ipea,
-    # planned (legacy impls were mock/synthetic; no free official API):
-    #   "b3", "anbima"
+    "b3": ingest_b3,  # B3 indices via Yahoo
+    "anbima": ingest_anbima,  # real Feed API; series stays planned until creds are set
 }
 
 
