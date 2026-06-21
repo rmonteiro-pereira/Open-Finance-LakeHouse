@@ -28,7 +28,11 @@ from kubernetes.client import models as k8s
 from ofl.registry import load_registry
 
 # --- cluster wiring (override via Airflow env) --------------------------------
-IMAGE = os.getenv("OFL_IMAGE", "ghcr.io/rmonteiro-pereira/open-finance-lakehouse:redesign")
+# Two lane-specific images (see docker/): the slim image runs Polars ingest +
+# DuckDB gold (no JVM); the spark image runs the silver conform/MERGE.
+_REPO = os.getenv("OFL_IMAGE_REPO", "ghcr.io/rmonteiro-pereira/open-finance-lakehouse")
+SLIM_IMAGE = os.getenv("OFL_SLIM_IMAGE", f"{_REPO}:slim")
+SPARK_IMAGE = os.getenv("OFL_SPARK_IMAGE", f"{_REPO}:spark")
 NAMESPACE = os.getenv("OFL_NAMESPACE", "default")
 MINIO_SECRET = os.getenv("OFL_MINIO_SECRET", "minio-creds")
 PULL_SECRET = os.getenv("OFL_PULL_SECRET", "ghcr-pull")
@@ -53,12 +57,12 @@ ASSET_SILVER = Asset("lakehouse://silver/fact_observation")
 ASSET_GOLD = Asset("lakehouse://gold/marts")
 
 
-def _pod(task_id: str, args: list[str], **kwargs) -> KubernetesPodOperator:
+def _pod(task_id: str, args: list[str], image: str = SLIM_IMAGE, **kwargs) -> KubernetesPodOperator:
     return KubernetesPodOperator(
         task_id=task_id,
         name=task_id.replace("_", "-"),
         namespace=NAMESPACE,
-        image=IMAGE,
+        image=image,
         cmds=["ofl"],
         arguments=args,
         env_from=_ENV_FROM,
@@ -103,7 +107,7 @@ with DAG(
     default_args=_DEFAULTS,
     tags=["ofl", "silver"],
 ) as silver_dag:
-    _pod("conform_silver", ["silver"], outlets=[ASSET_SILVER])
+    _pod("conform_silver", ["silver"], image=SPARK_IMAGE, outlets=[ASSET_SILVER])
 
 # --- gold: triggered when silver refreshes ------------------------------------
 with DAG(
@@ -126,6 +130,6 @@ with DAG(
     tags=["ofl", "backfill", "manual"],
 ) as backfill_dag:
     ingest_all = _pod("ingest_all", ["ingest"])
-    silver = _pod("silver", ["silver"])
+    silver = _pod("silver", ["silver"], image=SPARK_IMAGE)
     gold = _pod("gold", ["gold"])
     ingest_all >> silver >> gold
