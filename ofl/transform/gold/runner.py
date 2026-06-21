@@ -40,6 +40,15 @@ def _model_sql(name: str) -> str:
 
 def configure_minio(con: "duckdb.DuckDBPyConnection") -> None:
     s = get_settings()
+    # In the cluster image the `httpfs`/`delta` extensions are pre-baked into an
+    # offline directory (pods have no egress). Point DuckDB at it so INSTALL is a
+    # local no-op and LOAD never touches the network. Falls back to online install
+    # when the env var is unset (local dev).
+    import os
+
+    ext_dir = os.environ.get("DUCKDB_EXTENSION_DIRECTORY")
+    if ext_dir:
+        con.execute(f"SET extension_directory='{ext_dir}'")
     con.execute("INSTALL httpfs; LOAD httpfs; INSTALL delta; LOAD delta;")
     endpoint = s.minio_endpoint.split("://", 1)[-1]
     con.execute("SET s3_url_style='path'")

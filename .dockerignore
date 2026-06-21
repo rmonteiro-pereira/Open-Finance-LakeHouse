@@ -1,0 +1,29 @@
+# Build context hygiene — keep images small & reproducible.
+.git
+.github
+.venv
+.viz
+.trash
+.pytest_cache
+**/__pycache__
+*.pyc
+
+# Legacy Kedro stack (not in the redesign image).
+src
+conf
+notebooks
+Planning
+airflow
+
+# Local data / artifacts / logs.
+data
+mlruns
+*.log
+*.html
+.telemetry
+.env
+
+# Docs & tests aren't needed at runtime.
+docs
+tests
+scripts
