@@ -1,3 +1,0 @@
-"""
-INPC pipeline
-"""

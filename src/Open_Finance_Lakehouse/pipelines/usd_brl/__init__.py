@@ -1,3 +1,0 @@
-"""
-USD/BRL pipeline
-"""

@@ -1,3 +1,0 @@
-"""
-SELIC Meta pipeline
-"""

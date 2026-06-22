@@ -1,3 +1,0 @@
-"""
-Tesouro Direto Pipeline
-"""
