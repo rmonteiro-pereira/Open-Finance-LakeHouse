@@ -9,7 +9,7 @@
 #
 # Schema (per series):
 #   domain     : rates | inflation | fx | fiscal | credit | market | equities
-#   handler    : bacen_sgs | bacen_focus | yahoo | tesouro_direto | ipea | b3 | ibge | anbima
+#   handler    : bacen_sgs | bacen_focus | yahoo | tesouro_direto | ipea | b3 | b3_cotahist | ibge | anbima
 #   name       : human label (-> dim_series.name)
 #   category   : interest_rate | price_index | exchange_rate | fiscal | ...
 #   unit       : percent | percent_per_year | index | brl | brl_million | ...
@@ -570,3 +570,21 @@ series:
       - { symbol: "BZ=F",      currency: USD, name: "Brent Crude Futures" }
       - { symbol: "EURUSD=X",  currency: USD, name: "EUR/USD spot" }
       - { symbol: "USDMXN=X",  currency: MXN, name: "USD/MXN spot (EM FX benchmark)" }
+  b3_cotahist:
+    domain: equities
+    handler: b3_cotahist
+    name: "B3 COTAHIST — official cash-market daily OHLCV"
+    category: equity
+    unit: price
+    frequency: daily
+    fact: security_price
+    freshness_sla: "5d"
+    # Annual backfill of a blue-chip watchlist (round lot, cash market). Each
+    # COTAHIST_A{year}.ZIP is the full year for ALL securities; the tickers filter
+    # keeps the bronze table tight. Drop `tickers` to land the whole round-lot
+    # universe; switch to a daily pull by removing `years` (handler appends today).
+    years: [2024, 2025]
+    codbdi: ["02"]            # lote padrão (round lot)
+    tpmerc: ["010"]          # mercado à vista (cash)
+    tickers: ["PETR4", "PETR3", "VALE3", "ITUB4", "BBDC4", "ABEV3", "B3SA3",
+              "WEGE3", "BBAS3", "ITSA4", "RENT3", "PRIO3", "SUZB3", "GGBR4", "MGLU3"]
