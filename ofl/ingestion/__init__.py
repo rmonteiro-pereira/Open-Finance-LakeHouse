@@ -10,6 +10,7 @@ from __future__ import annotations
 from ofl.ingestion.anbima import ingest_anbima
 from ofl.ingestion.b3 import ingest_b3
 from ofl.ingestion.bacen import ingest_bacen_sgs
+from ofl.ingestion.bacen_focus import ingest_bacen_focus
 from ofl.ingestion.ibge import ingest_ibge
 from ofl.ingestion.ipea import ingest_ipea
 from ofl.ingestion.tesouro import ingest_tesouro
@@ -21,6 +22,7 @@ log = get_logger(__name__)
 
 _HANDLERS = {
     "bacen_sgs": ingest_bacen_sgs,
+    "bacen_focus": ingest_bacen_focus,  # market-expectations survey (Olinda OData)
     "yahoo": ingest_yahoo,
     "tesouro_direto": ingest_tesouro,
     "ibge": ingest_ibge,
