@@ -8,8 +8,8 @@
 # Adding a new KIND of source = one new `handler` in ofl/ingestion/.
 #
 # Schema (per series):
-#   domain     : rates | inflation | fx | fiscal | market | equities
-#   handler    : bacen_sgs | yahoo | tesouro_direto | ipea | b3 | ibge | anbima
+#   domain     : rates | inflation | fx | fiscal | credit | market | equities
+#   handler    : bacen_sgs | bacen_focus | yahoo | tesouro_direto | ipea | b3 | ibge | anbima
 #   name       : human label (-> dim_series.name)
 #   category   : interest_rate | price_index | exchange_rate | fiscal | ...
 #   unit       : percent | percent_per_year | index | brl | brl_million | ...
@@ -89,6 +89,36 @@ series:
     frequency: daily
     fact: observation
     max_value: 100.0
+  cdi_anual:
+    domain: rates
+    handler: bacen_sgs
+    sgs_id: 4389
+    name: "CDI (annualized, base 252)"
+    category: interest_rate
+    unit: percent_per_year
+    frequency: daily
+    fact: observation
+    max_value: 100.0
+  tr:
+    domain: rates
+    handler: bacen_sgs
+    sgs_id: 7811
+    name: "TR (reference rate, monthly %)"
+    category: interest_rate
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 100.0
+  poupanca:
+    domain: rates
+    handler: bacen_sgs
+    sgs_id: 195
+    name: "Poupança remuneration (monthly %)"
+    category: interest_rate
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 100.0
 
   # ------------------------------------------------------------ inflation ----
   ipca:
@@ -124,7 +154,7 @@ series:
   igp_m:
     domain: inflation
     handler: bacen_sgs
-    sgs_id: 190
+    sgs_id: 189
     name: "IGP-M (general prices, monthly %)"
     category: price_index
     unit: percent
@@ -134,7 +164,7 @@ series:
   igp_di:
     domain: inflation
     handler: bacen_sgs
-    sgs_id: 189
+    sgs_id: 190
     name: "IGP-DI (general prices, monthly %)"
     category: price_index
     unit: percent
@@ -147,6 +177,56 @@ series:
     sgs_id: 7447
     name: "IGP-10 (general prices, monthly %)"
     category: price_index
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+  ipc_fipe:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 193
+    name: "IPC-FIPE (São Paulo CPI, monthly %)"
+    category: price_index
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+  ipca_nucleo_ms:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 11427
+    name: "IPCA core — trimmed means, smoothed (IPCA-MS, monthly %)"
+    category: core_inflation
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+  ipca_nucleo_ma:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 16121
+    name: "IPCA core — trimmed means, non-smoothed (IPCA-MA, monthly %)"
+    category: core_inflation
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+  ipca_nucleo_dp:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 16122
+    name: "IPCA core — double weighting (IPCA-DP, monthly %)"
+    category: core_inflation
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+  ipca_nucleo_ex3:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 27839
+    name: "IPCA core — exclusion EX3 (monthly %)"
+    category: core_inflation
     unit: percent
     frequency: monthly
     fact: observation
@@ -173,28 +253,56 @@ series:
     frequency: daily
     fact: observation
     max_value: 25.0
+  usd_brl_compra:
+    domain: fx
+    handler: bacen_sgs
+    sgs_id: 10813
+    name: "USD/BRL (PTAX buy)"
+    category: exchange_rate
+    unit: brl
+    frequency: daily
+    fact: observation
+    max_value: 20.0
 
   # --------------------------------------------------------------- fiscal ----
   divida_pib:
     domain: fiscal
     handler: bacen_sgs
-    sgs_id: 4513
+    sgs_id: 13762            # DBGG — gross general government debt (matches the label)
     name: "Gross general government debt (% GDP)"
     category: fiscal
     unit: percent
     frequency: monthly
     fact: observation
     max_value: 200.0
-  focus_pib:
+  dlsp_pib:
     domain: fiscal
     handler: bacen_sgs
-    sgs_id: 4389
-    name: "GDP-related Focus expectation series"
+    sgs_id: 4513             # DLSP — net public-sector debt
+    name: "Net public-sector debt (% GDP)"
     category: fiscal
     unit: percent
     frequency: monthly
     fact: observation
-    max_value: 100.0
+    max_value: 200.0
+  ibc_br:
+    domain: fiscal
+    handler: bacen_sgs
+    sgs_id: 24364           # seasonally adjusted economic activity index (GDP proxy)
+    name: "IBC-Br economic activity index (seasonally adjusted)"
+    category: activity
+    unit: index
+    frequency: monthly
+    fact: observation
+  resultado_primario:
+    domain: fiscal
+    handler: bacen_sgs
+    sgs_id: 4649            # public-sector primary balance, monthly flow (R$ million; can be negative)
+    name: "Primary balance — public sector (monthly flow, R$ million)"
+    category: fiscal
+    unit: brl_million
+    frequency: monthly
+    fact: observation
   reservas_internacionais:
     domain: fiscal
     handler: bacen_sgs
@@ -233,6 +341,87 @@ series:
     unit: brl_million
     frequency: monthly
     fact: observation
+
+  # --------------------------------------------------------------- credit ----
+  credito_total:
+    domain: credit
+    handler: bacen_sgs
+    sgs_id: 20539           # outstanding credit, whole financial system (R$ million)
+    name: "Total outstanding credit — SFN (R$ million)"
+    category: credit
+    unit: brl_million
+    frequency: monthly
+    fact: observation
+  inadimplencia_pf:
+    domain: credit
+    handler: bacen_sgs
+    sgs_id: 21084
+    name: "Credit default rate — households (PF, %)"
+    category: credit
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 100.0
+  inadimplencia_pj:
+    domain: credit
+    handler: bacen_sgs
+    sgs_id: 21086
+    name: "Credit default rate — firms (PJ, %)"
+    category: credit
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 100.0
+
+  # ------------------------------------------------ market expectations (Focus) --
+  # BACEN's weekly Focus survey via the open Olinda OData API (bacen_focus handler).
+  # Each series pins one indicator + horizon and lands the survey *median*, so it
+  # conforms to fact_observation alongside the realized series (enables ex-ante reads).
+  focus_ipca_12m:
+    domain: inflation
+    handler: bacen_focus
+    name: "Focus — IPCA expectation, rolling 12 months (median)"
+    category: expectation
+    unit: percent
+    frequency: weekly
+    fact: observation
+    max_value: 50.0
+    freshness_sla: "10d"
+    resource: ExpectativasMercadoInflacao12Meses
+    indicador: IPCA
+    suavizada: "S"
+    base_calculo: 0
+    value_field: Mediana
+  focus_selic_fim_ano:
+    domain: rates
+    handler: bacen_focus
+    name: "Focus — Selic expectation, end of current year (median)"
+    category: expectation
+    unit: percent_per_year
+    frequency: weekly
+    fact: observation
+    max_value: 100.0
+    freshness_sla: "10d"
+    resource: ExpectativasMercadoAnuais
+    indicador: Selic
+    horizon: current_year
+    base_calculo: 0
+    value_field: Mediana
+  focus_cambio_fim_ano:
+    domain: fx
+    handler: bacen_focus
+    name: "Focus — USD/BRL expectation, end of current year (median)"
+    category: expectation
+    unit: brl
+    frequency: weekly
+    fact: observation
+    max_value: 20.0
+    freshness_sla: "10d"
+    resource: ExpectativasMercadoAnuais
+    indicador: Câmbio
+    horizon: current_year
+    base_calculo: 0
+    value_field: Mediana
 
   # --------------------------------------------------------------- market ----
   tesouro_direto:
