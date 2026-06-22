@@ -1,3 +1,0 @@
-"""
-Reservas Internacionais pipeline
-"""

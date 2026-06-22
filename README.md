@@ -1,100 +1,72 @@
-# Open-Finance-Lakehouse
+# Open-Finance LakeHouse
 
-[![Powered by Kedro](https://img.shields.io/badge/powered_by-kedro-ffc900?logo=kedro)](https://kedro.org)
+A single-node, GitOps-managed **lakehouse for Brazilian macro & financial data**
+(BACEN/SGS rates & indices, IBGE, IPEA, Tesouro Direto, Yahoo/B3, ANBIMA).
 
-## Overview
+> **Polars extracts → Spark refines → DuckDB serves.** One engine per lane, driven
+> by a single source registry. See [`docs/architecture/redesign.md`](docs/architecture/redesign.md)
+> for the full rationale.
 
-This is your new Kedro project with PySpark setup, which was generated using `kedro 0.19.12`.
+This is deliberately **small data** — no engine here is load-bearing for volume.
+Each is chosen as the right tool for its lane (and the strongest showcase).
 
-Take a look at the [Kedro documentation](https://docs.kedro.org) to get started.
+## Architecture
 
-## Rules and guidelines
+| Lane | Engine | Output |
+|------|--------|--------|
+| extract → `bronze` | **Polars** | one Delta table per series (windowed, idempotent, contract-checked) |
+| `bronze` → `silver` | **Spark + Delta** | conformed star schema via idempotent `MERGE` (`fact_observation`, `fact_treasury`, `dim_series`, `dim_date`, `series_metrics`) |
+| `silver` → `gold` | **DuckDB** | SQL marts (real interest, inflation panel, FX, macro dashboard, yield curve) |
 
-In order to get the best out of the template:
+Orchestrated by **Airflow 3 data-aware Asset DAGs** (per-domain ingest →
+asset-triggered silver → gold). Quality gates are **Pandera** contracts at ingest;
+lineage is **OpenLineage → OpenMetadata**. Everything — ingestion, DAG generation,
+dimensions, the catalog — is driven from [`sources/registry.yml`](sources/registry.yml).
 
-* Don't remove any lines from the `.gitignore` file we provide
-* Make sure your results can be reproduced by following a [data engineering convention](https://docs.kedro.org/en/stable/faq/faq.html#what-is-data-engineering-convention)
-* Don't commit data to your repository
-* Don't commit any credentials or your local configuration to your repository. Keep all your credentials and local configuration in `conf/local/`
-
-## How to install dependencies
-
-Declare any dependencies in `requirements.txt` for `pip` installation.
-
-To install them, run:
-
-```
-pip install -r requirements.txt
-```
-
-## How to run your Kedro pipeline
-
-You can run your Kedro project with:
+## Layout
 
 ```
-kedro run
+ofl/                      # the package
+  config.py               # pydantic settings (env-driven)
+  registry.py             # typed loader for sources/registry.yml
+  platform/               # spark session, MinIO/Delta IO, logging, lineage
+  ingestion/              # Polars extractors per source family
+  transform/spark/        # silver: conform, MERGE, window KPIs
+  transform/gold/         # DuckDB SQL marts + runner
+  quality/                # pandera contracts
+sources/registry.yml      # metadata that drives everything
+orchestration/airflow/    # per-domain + asset-driven DAGs
+docker/                   # offline cluster images (:slim, :spark) — see docker/README.md
+tests/  docs/architecture/
 ```
 
-## How to test your Kedro project
+## Quickstart
 
-Have a look at the files `src/tests/test_run.py` and `src/tests/pipelines/data_science/test_pipeline.py` for instructions on how to write your tests. Run the tests as follows:
+```bash
+uv sync                       # install (extras: .[spark,airflow,yahoo,lineage,dev])
 
-```
-pytest
-```
-
-To configure the coverage threshold, look at the `.coveragerc` file.
-
-## Project dependencies
-
-To see and update the dependency requirements for your project use `requirements.txt`. Install the project requirements with `pip install -r requirements.txt`.
-
-[Further information about project dependencies](https://docs.kedro.org/en/stable/kedro_project_setup/dependencies.html#project-specific-dependencies)
-
-## How to work with Kedro and notebooks
-
-> Note: Using `kedro jupyter` or `kedro ipython` to run your notebook provides these variables in scope: `catalog`, `context`, `pipelines` and `session`.
->
-> Jupyter, JupyterLab, and IPython are already included in the project requirements by default, so once you have run `pip install -r requirements.txt` you will not need to take any extra steps before you use them.
-
-### Jupyter
-To use Jupyter notebooks in your Kedro project, you need to install Jupyter:
-
-```
-pip install jupyter
+ofl registry                  # list the registered series
+ofl ingest --series selic     # one series → bronze (Polars)
+ofl ingest                    # all active series → bronze
+ofl silver                    # bronze → silver (Spark MERGE + dimensions)
+ofl gold                      # silver → gold marts (DuckDB)
 ```
 
-After installing Jupyter, you can start a local notebook server:
+Configuration is environment-driven (`MINIO_ENDPOINT`, `MINIO_USER`,
+`MINIO_PASSWORD`, `LAKEHOUSE_BUCKET`, `AWS_REGION`, `OFL_REGISTRY`). On the cluster
+the lanes run as `KubernetesPodOperator` pods using the prebuilt offline images
+(`docker/`): `:slim` for Polars ingest + DuckDB gold, `:spark` for the silver MERGE.
 
-```
-kedro jupyter notebook
-```
+## Tests
 
-### JupyterLab
-To use JupyterLab, you need to install it:
-
-```
-pip install jupyterlab
+```bash
+uv run pytest
 ```
 
-You can also start JupyterLab:
+## Notes
 
-```
-kedro jupyter lab
-```
-
-### IPython
-And if you want to run an IPython session:
-
-```
-kedro ipython
-```
-
-### How to ignore notebook output cells in `git`
-To automatically strip out all output cell contents before committing to `git`, you can use tools like [`nbstripout`](https://github.com/kynan/nbstripout). For example, you can add a hook in `.git/config` with `nbstripout --install`. This will run `nbstripout` before anything is committed to `git`.
-
-> *Note:* Your output cells will be retained locally.
-
-## Package your Kedro project
-
-[Further information about building project documentation and packaging your project](https://docs.kedro.org/en/stable/tutorial/package_a_project.html)
+- **Plano Real floor (1994-07-01):** BACEN/SGS ingestion is floored at the Real via
+  a registry `start_date` default — pre-Real cruzeiro/hyperinflation data is
+  economically incomparable and trips the quality contracts. Per-series overridable.
+- **ANBIMA** is implemented but `status: planned` until Feed API credentials are
+  provided (`ANBIMA_CLIENT_ID` / `ANBIMA_CLIENT_SECRET`).

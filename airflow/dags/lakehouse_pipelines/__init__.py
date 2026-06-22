@@ -1,2 +1,0 @@
-"""Lakehouse pipeline DAGs."""
-
