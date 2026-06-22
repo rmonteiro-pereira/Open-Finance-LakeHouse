@@ -36,6 +36,11 @@ class Series(BaseModel):
     max_value: float | None = None
     start_date: str | None = None  # ISO floor for the backfill walk (resolved from handler default)
     status: str = "active"  # active | planned
+    # Optional per-series freshness budget (e.g. "40d", "72h") for the staleness
+    # alert. When unset, the alert rule falls back to a threshold keyed off
+    # `frequency` (daily/monthly/...). Irregular release-calendar series
+    # (focus_pib, divida_pib, reservas_internacionais, anbima) should set this.
+    freshness_sla: str | None = None
     extra: dict[str, Any] = Field(default_factory=dict)
 
     @property
@@ -59,6 +64,10 @@ class Registry(BaseModel):
 
     def domains(self) -> list[str]:
         return sorted({s.domain for s in self.series.values()})
+
+    def handlers(self) -> list[str]:
+        """Distinct source handlers — the per-source DAG (blast-radius) axis."""
+        return sorted({s.handler for s in self.series.values()})
 
 
 def _coerce(key: str, body: dict[str, Any]) -> Series:
