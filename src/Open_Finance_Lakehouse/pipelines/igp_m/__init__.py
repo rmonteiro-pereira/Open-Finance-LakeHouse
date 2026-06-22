@@ -1,3 +1,0 @@
-"""
-IGP-M pipeline
-"""
