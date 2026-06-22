@@ -281,12 +281,12 @@ series:
     unit: mixed
     frequency: daily
     fact: treasury
-    # Creds ARE stored (OpenBao secret/claude/anbima -> k8s anbima-creds, wired into
-    # the DAG envFrom). OAuth authenticates, but the production data API still 403s:
-    # ANBIMA gates real data per-app until you email anbimafeed@anbima.com.br with the
-    # client_id. Flip to active once that approval lands (or set ANBIMA_BASE_URL to the
-    # sandbox host to exercise the path now).
-    status: planned
+    # ACTIVE against the ANBIMA *sandbox* (fictitious TPF data, no prod approval needed):
+    # the k8s `anbima-creds` secret carries ANBIMA_CLIENT_ID/SECRET + ANBIMA_BASE_URL=
+    # https://api-sandbox.anbima.com.br. OAuth still hits the prod host; only the data
+    # host is sandbox. For REAL production data, email anbimafeed@anbima.com.br with the
+    # client_id, then drop ANBIMA_BASE_URL from the secret (handler defaults to prod).
+    status: active
 
   # ------------------------------------------------------------- equities ----
   yahoo_etf:
