@@ -87,9 +87,20 @@ def _default_path() -> str:
         return _DEFAULT_REGISTRY
 
 
+#: Repo root (parent of the ``ofl`` package) — used to resolve a relative
+#: registry path independently of the process CWD.
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+
+
 @lru_cache
 def load_registry(path: str | None = None) -> Registry:
     p = Path(path or _default_path())
+    # A relative path (the default) is resolved against the repo root, not the
+    # CWD: the Airflow dag-processor parses DAGs from a different CWD and its
+    # image lacks pydantic-settings (so the OFL_REGISTRY override is unavailable),
+    # which otherwise leaves the bare "sources/registry.yml" unresolvable.
+    if not p.is_absolute() and not p.exists():
+        p = _REPO_ROOT / p
     raw = yaml.safe_load(p.read_text(encoding="utf-8"))
     defaults = raw.get("defaults", {})
     series = {key: _coerce(key, body) for key, body in raw.get("series", {}).items()}
