@@ -1,0 +1,53 @@
+# Cluster (Kubernetes) Spark overrides. Merged on top of conf/base/spark.yml by
+# Kedro's OmegaConfigLoader when run with `--env cluster`. Removes all Windows
+# `E:/...` paths and disables runtime Ivy resolution (jars are baked into the image).
+spark.master: local[*]
+spark.driver.bindAddress: 127.0.0.1
+
+# No Ivy/Maven at runtime — delta + hadoop-aws + aws-sdk jars are baked into pyspark/jars.
+spark.jars.packages: ""
+spark.jars.ivy: /tmp/.ivy2
+
+# Override the base Windows log4j/Ivy JVM options; keep Derby (Hive metastore) under /tmp.
+spark.driver.extraJavaOptions: "-Dderby.system.home=/tmp -Divy.silence=true"
+spark.executor.extraJavaOptions: "-Dderby.system.home=/tmp"
+spark.sql.warehouse.dir: /tmp/spark-warehouse
+spark.hadoop.hadoop.metrics2.config.file: /opt/app/conf/hadoop-metrics2.properties
+
+# Python interpreters (override base's ${env:...} so they never resolve to null).
+spark.pyspark.python: python3
+spark.pyspark.driver.python: python3
+
+# MinIO (in-cluster). Credentials are injected from env by SparkHooks.
+spark.hadoop.fs.s3a.endpoint: http://minio.minio.svc.cluster.local:9000
+spark.hadoop.fs.s3a.path.style.access: true
+spark.hadoop.fs.s3a.connection.ssl.enabled: false
+spark.hadoop.fs.s3a.aws.credentials.provider: org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
+spark.hadoop.fs.s3a.endpoint.region: us-east-1
+
+# OpenLineage: emit dataset/column-level lineage from the Spark logical plan to
+# the Redpanda topic openlineage-events, where the OpenMetadata OpenLineage
+# connector consumes it. The openlineage-spark + kafka-clients jars are baked
+# into the image (see Dockerfile); no runtime Ivy needed. The OM connector maps
+# emitted datasets to the cataloged Delta tables via lineageInformation.dbServiceNames.
+spark.extraListeners: io.openlineage.spark.agent.OpenLineageSparkListener
+spark.openlineage.transport.type: kafka
+spark.openlineage.transport.topicName: openlineage-events
+spark.openlineage.transport.messageKey: ofl-spark
+spark.openlineage.transport.properties.bootstrap.servers: redpanda.redpanda.svc.cluster.local:9093
+spark.openlineage.transport.properties.acks: all
+# openlineage-spark 1.50.0's KafkaTransport does NOT default the producer
+# (de)serializers, so without these the KafkaProducer ctor throws
+# "Invalid value null for configuration key.serializer" on app start and every
+# lineage event is dropped. Events are JSON strings, so StringSerializer both.
+spark.openlineage.transport.properties.key.serializer: org.apache.kafka.common.serialization.StringSerializer
+spark.openlineage.transport.properties.value.serializer: org.apache.kafka.common.serialization.StringSerializer
+spark.openlineage.namespace: ofl-spark
+# Don't let a broker hiccup fail a pipeline run — lineage is best-effort.
+# Kafka requires delivery.timeout.ms >= linger.ms + request.timeout.ms; the
+# default request.timeout.ms is 30000, so the bare 15000 below was rejected
+# ("delivery.timeout.ms should be equal to or larger than linger.ms +
+# request.timeout.ms"). Lower request.timeout.ms to keep the fast-fail budget.
+spark.openlineage.transport.properties.request.timeout.ms: "10000"
+spark.openlineage.transport.properties.delivery.timeout.ms: "20000"
+spark.openlineage.facets.disabled: "[spark_unknown;spark.logicalPlan]"
