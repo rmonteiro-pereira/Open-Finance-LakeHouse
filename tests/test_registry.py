@@ -16,6 +16,15 @@ def test_known_sgs_ids():
     assert reg.series["usd_brl"].sgs_id == 1
 
 
+def test_plano_real_floor_resolved_onto_sgs_series():
+    reg = load_registry("sources/registry.yml")
+    # Handler default floor lands on every bacen_sgs series...
+    assert reg.series["ipca"].start_date == "1994-07-01"
+    assert reg.series["usd_brl"].start_date == "1994-07-01"
+    # ...and not on series from other handlers.
+    assert reg.series["tesouro_direto"].start_date is None
+
+
 def test_active_excludes_planned():
     reg = load_registry("sources/registry.yml")
     active = {s.key for s in reg.active()}

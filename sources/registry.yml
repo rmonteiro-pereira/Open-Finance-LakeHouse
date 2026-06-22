@@ -17,6 +17,8 @@
 #   fact       : observation | security_price | treasury  (target silver fact)
 #   <handler-specific keys>:  sgs_id / symbols / dataset_id / ...
 #   max_value  : optional sanity bound used by quality contracts
+#   start_date : optional ISO floor for the backfill walk (per-series override of
+#                a handler default; pre-floor history is simply not ingested)
 # =============================================================================
 version: 1
 
@@ -29,6 +31,11 @@ defaults:
     base_url: "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{series_id}/dados"
     date_format: "%d/%m/%Y"
     window_years: 10          # SGS caps daily series at ~10y per request
+    # Plano Real (1994-07-01): pre-Real BRL series span the cruzeiro/cruzado
+    # currency regimes and hyperinflation (>50%/month), which are not comparable
+    # to the modern series and trip the quality contracts. Floor every SGS walk
+    # here by default; a series may override with its own `start_date`.
+    start_date: "1994-07-01"
 
 series:
   # ---------------------------------------------------------------- rates ----

@@ -34,6 +34,7 @@ class Series(BaseModel):
     bonds: list[dict[str, Any]] = Field(default_factory=list)
 
     max_value: float | None = None
+    start_date: str | None = None  # ISO floor for the backfill walk (resolved from handler default)
     status: str = "active"  # active | planned
     extra: dict[str, Any] = Field(default_factory=dict)
 
@@ -81,5 +82,10 @@ def _default_path() -> str:
 def load_registry(path: str | None = None) -> Registry:
     p = Path(path or _default_path())
     raw = yaml.safe_load(p.read_text(encoding="utf-8"))
+    defaults = raw.get("defaults", {})
     series = {key: _coerce(key, body) for key, body in raw.get("series", {}).items()}
-    return Registry(version=raw["version"], defaults=raw.get("defaults", {}), series=series)
+    # Resolve handler-level defaults onto each series (per-series value wins).
+    for s in series.values():
+        if s.start_date is None:
+            s.start_date = defaults.get(s.handler, {}).get("start_date")
+    return Registry(version=raw["version"], defaults=defaults, series=series)

@@ -124,6 +124,9 @@ def fetch_sgs(
 def ingest_bacen_sgs(series: Series) -> dict:
     if series.sgs_id is None:
         raise ValueError(f"series '{series.key}' has handler bacen_sgs but no sgs_id")
-    df = fetch_sgs(series.sgs_id)
-    log.info("sgs_fetched", series=series.key, sgs_id=series.sgs_id, rows=df.height)
+    # Floor the walk at the registry's start_date (Plano Real by default) so pre-Real
+    # cruzeiro/hyperinflation history is never fetched and can't trip the contracts.
+    since = date.fromisoformat(series.start_date) if series.start_date else None
+    df = fetch_sgs(series.sgs_id, since=since)
+    log.info("sgs_fetched", series=series.key, sgs_id=series.sgs_id, rows=df.height, since=str(since))
     return land_bronze(series, df)
