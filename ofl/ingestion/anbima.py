@@ -24,8 +24,12 @@ from ofl.registry import Series
 
 log = get_logger(__name__)
 
-TOKEN_URL = "https://api.anbima.com.br/oauth/access-token"
-TPF_URL = "https://api.anbima.com.br/feed/precos-indices/v1/titulos-publicos/mercado-secundario-TPF"
+# Base host is overridable so the sandbox can be exercised before production access
+# is granted (ANBIMA gates real data per-app; the prod data API 403s until then).
+# e.g. ANBIMA_BASE_URL=https://api-sandbox.anbima.com.br
+_BASE_URL = os.getenv("ANBIMA_BASE_URL", "https://api.anbima.com.br").rstrip("/")
+TOKEN_URL = f"{_BASE_URL}/oauth/access-token"
+TPF_URL = f"{_BASE_URL}/feed/precos-indices/v1/titulos-publicos/mercado-secundario-TPF"
 
 # bronze treasury schema (matches silver.fact_treasury inputs)
 _STR_SCHEMA = {
