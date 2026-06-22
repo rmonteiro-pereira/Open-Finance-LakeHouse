@@ -476,6 +476,43 @@ series:
     # host is sandbox. For REAL production data, email anbimafeed@anbima.com.br with the
     # client_id, then drop ANBIMA_BASE_URL from the secret (handler defaults to prod).
     status: active
+  # ANBIMA IMA fixed-income benchmark indices (same OAuth/handler as TPF; the
+  # `ima_code` slices the shared resultados-ima payload). PLANNED until the exact
+  # `indice` strings + sandbox availability are confirmed on-cluster (then flip to
+  # active, like the TPF series). fact: observation (index level = numero_indice).
+  anbima_ima_b:
+    domain: market
+    handler: anbima
+    name: "ANBIMA IMA-B (NTN-B / inflation-linked index level)"
+    category: fixed_income_index
+    unit: index
+    frequency: daily
+    fact: observation
+    status: planned
+    freshness_sla: "5d"
+    ima_code: "IMA-B"
+  anbima_ima_b5:
+    domain: market
+    handler: anbima
+    name: "ANBIMA IMA-B 5 (short inflation-linked index level)"
+    category: fixed_income_index
+    unit: index
+    frequency: daily
+    fact: observation
+    status: planned
+    freshness_sla: "5d"
+    ima_code: "IMA-B 5"
+  anbima_irf_m:
+    domain: market
+    handler: anbima
+    name: "ANBIMA IRF-M (fixed-rate LTN/NTN-F index level)"
+    category: fixed_income_index
+    unit: index
+    frequency: daily
+    fact: observation
+    status: planned
+    freshness_sla: "5d"
+    ima_code: "IRF-M"
 
   # ------------------------------------------------------------- equities ----
   yahoo_etf:
@@ -516,3 +553,20 @@ series:
     fact: security_price
     symbols:
       - { symbol: "USDBRL=X", currency: BRL, name: "USD/BRL spot" }
+  yahoo_global:
+    domain: market
+    handler: yahoo
+    name: "Global benchmarks (rates, USD, equities, EM FX)"
+    category: benchmark
+    unit: price
+    frequency: daily
+    fact: security_price
+    symbols:
+      - { symbol: "^GSPC",     currency: USD, name: "S&P 500" }
+      - { symbol: "^IXIC",     currency: USD, name: "Nasdaq Composite" }
+      - { symbol: "^VIX",      currency: USD, name: "CBOE Volatility Index" }
+      - { symbol: "^TNX",      currency: USD, name: "US 10Y Treasury yield" }
+      - { symbol: "DX-Y.NYB",  currency: USD, name: "US Dollar Index (DXY)" }
+      - { symbol: "BZ=F",      currency: USD, name: "Brent Crude Futures" }
+      - { symbol: "EURUSD=X",  currency: USD, name: "EUR/USD spot" }
+      - { symbol: "USDMXN=X",  currency: MXN, name: "USD/MXN spot (EM FX benchmark)" }
