@@ -281,7 +281,12 @@ series:
     unit: mixed
     frequency: daily
     fact: treasury
-    status: planned           # flip to active once ANBIMA_CLIENT_ID/SECRET are in env (via OpenBao)
+    # Creds ARE stored (OpenBao secret/claude/anbima -> k8s anbima-creds, wired into
+    # the DAG envFrom). OAuth authenticates, but the production data API still 403s:
+    # ANBIMA gates real data per-app until you email anbimafeed@anbima.com.br with the
+    # client_id. Flip to active once that approval lands (or set ANBIMA_BASE_URL to the
+    # sandbox host to exercise the path now).
+    status: planned
 
   # ------------------------------------------------------------- equities ----
   yahoo_etf:
