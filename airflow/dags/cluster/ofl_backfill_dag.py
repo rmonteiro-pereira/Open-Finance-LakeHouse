@@ -46,8 +46,14 @@ _env = [
     ),
 ]
 
+# The single Talos node sits at ~99% memory *requests* from baseline cluster
+# workloads (OM, ECK, Redpanda, Airflow, MinIO…) yet only ~66% actual RAM use,
+# so a 1Gi memory *request* per pod is unschedulable ("Insufficient memory" ->
+# PodLaunchFailedException after the 300s start timeout). These Kedro jobs touch
+# tiny BCB/Yahoo series; request a small slice to fit the request budget while
+# keeping a 3Gi limit so Spark can still burst into the node's free real RAM.
 _resources = k8s.V1ResourceRequirements(
-    requests={"cpu": "250m", "memory": "1Gi"},
+    requests={"cpu": "250m", "memory": "256Mi"},
     limits={"cpu": "1500m", "memory": "3Gi"},
 )
 
@@ -57,7 +63,9 @@ with DAG(
     schedule=None,
     start_date=pendulum.datetime(2024, 1, 1, tz="America/Sao_Paulo"),
     catchup=False,
-    max_active_tasks=3,
+    # Keep 2 concurrent pods so their summed memory requests stay within the
+    # node's thin request headroom (see _resources note above).
+    max_active_tasks=2,
     tags=["lakehouse", "backfill", "kedro"],
 ) as dag:
     for pipeline in PIPELINES:
@@ -77,6 +85,16 @@ with DAG(
             env_vars=_env,
             container_resources=_resources,
             in_cluster=True,
+            # Don't bind to the `kubernetes_default` Airflow connection. On
+            # Airflow 3 the KPO masks the connection's `extra` by shipping it
+            # over the task-SDK msgpack channel, which throws
+            # "NotImplementedError: Objects of type SerializationIterator are
+            # not supported" and fails the task before the pod is even built.
+            # With conn_id=None the hook's conn_extras short-circuits to {},
+            # skipping extra_dejson/masking, and in_cluster=True above is used
+            # directly. Also makes the DAG self-contained (no DB connection to
+            # provision), so a fresh metadata DB needs no manual `connections add`.
+            kubernetes_conn_id=None,
             get_logs=True,
             log_events_on_failure=True,
             on_finish_action="delete_succeeded_pod",
