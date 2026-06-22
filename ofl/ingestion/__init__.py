@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from ofl.ingestion.anbima import ingest_anbima
 from ofl.ingestion.b3 import ingest_b3
+from ofl.ingestion.b3_cotahist import ingest_b3_cotahist
 from ofl.ingestion.bacen import ingest_bacen_sgs
 from ofl.ingestion.bacen_focus import ingest_bacen_focus
 from ofl.ingestion.ibge import ingest_ibge
@@ -28,6 +29,7 @@ _HANDLERS = {
     "ibge": ingest_ibge,
     "ipea": ingest_ipea,
     "b3": ingest_b3,  # B3 indices via Yahoo
+    "b3_cotahist": ingest_b3_cotahist,  # official cash-market OHLCV (positional file)
     "anbima": ingest_anbima,  # real Feed API; series stays planned until creds are set
 }
 

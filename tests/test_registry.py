@@ -5,7 +5,7 @@ DOMAINS = {"rates", "inflation", "fx", "fiscal", "credit", "market", "equities"}
 
 def test_registry_loads_all_series():
     reg = load_registry("sources/registry.yml")
-    assert len(reg.series) == 47
+    assert len(reg.series) == 48
     assert set(reg.domains()) == DOMAINS
 
 
@@ -78,4 +78,5 @@ def test_active_excludes_planned():
     assert "anbima" in active
     # anbima_ima_* are planned, so excluded
     assert "anbima_ima_b" not in active
-    assert len(active) == 44
+    assert "b3_cotahist" in active
+    assert len(active) == 45
