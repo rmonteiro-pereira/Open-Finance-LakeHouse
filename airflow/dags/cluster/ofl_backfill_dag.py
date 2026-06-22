@@ -46,8 +46,14 @@ _env = [
     ),
 ]
 
+# The single Talos node sits at ~99% memory *requests* from baseline cluster
+# workloads (OM, ECK, Redpanda, Airflow, MinIO…) yet only ~66% actual RAM use,
+# so a 1Gi memory *request* per pod is unschedulable ("Insufficient memory" ->
+# PodLaunchFailedException after the 300s start timeout). These Kedro jobs touch
+# tiny BCB/Yahoo series; request a small slice to fit the request budget while
+# keeping a 3Gi limit so Spark can still burst into the node's free real RAM.
 _resources = k8s.V1ResourceRequirements(
-    requests={"cpu": "250m", "memory": "1Gi"},
+    requests={"cpu": "250m", "memory": "256Mi"},
     limits={"cpu": "1500m", "memory": "3Gi"},
 )
 
@@ -57,7 +63,9 @@ with DAG(
     schedule=None,
     start_date=pendulum.datetime(2024, 1, 1, tz="America/Sao_Paulo"),
     catchup=False,
-    max_active_tasks=3,
+    # Keep 2 concurrent pods so their summed memory requests stay within the
+    # node's thin request headroom (see _resources note above).
+    max_active_tasks=2,
     tags=["lakehouse", "backfill", "kedro"],
 ) as dag:
     for pipeline in PIPELINES:
