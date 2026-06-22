@@ -1,3 +1,0 @@
-"""
-Divida/PIB pipeline
-"""

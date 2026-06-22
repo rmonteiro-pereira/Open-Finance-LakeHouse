@@ -1,3 +1,0 @@
-"""
-Focus PIB pipeline
-"""
