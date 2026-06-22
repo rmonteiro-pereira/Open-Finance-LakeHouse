@@ -207,6 +207,9 @@ def run_silver(spark: "SparkSession", registry: Registry | None = None) -> dict:
     build_dim_series(spark, reg)
     build_dim_date(spark)
     result = conform_observations(spark, reg)
-    build_series_metrics(spark)
+    if result.get("merged", 0):
+        build_series_metrics(spark)
+    else:
+        log.warning("silver_metrics_skipped", reason="no fact_observation")
     conform_treasury(spark, reg)
     return result

@@ -19,6 +19,9 @@ dependencies = [
     "structlog>=24.1",
     "pandera>=0.20",
     "boto3>=1.34",
+    # Bronze write path: polars.to_arrow() + deltalake.write_deltalake both need
+    # pyarrow, and it is not pulled in transitively by deltalake>=0.21 — declare it.
+    "pyarrow>=14",
 ]
 
 # Heavy / lane-specific deps are extras so the core (Polars + DuckDB) installs light.

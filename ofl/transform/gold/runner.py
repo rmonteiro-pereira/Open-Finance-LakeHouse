@@ -51,11 +51,31 @@ def configure_minio(con: "duckdb.DuckDBPyConnection") -> None:
         con.execute(f"SET extension_directory='{ext_dir}'")
     con.execute("INSTALL httpfs; LOAD httpfs; INSTALL delta; LOAD delta;")
     endpoint = s.minio_endpoint.split("://", 1)[-1]
+    use_ssl = "true" if s.minio_endpoint.startswith("https") else "false"
+    # The `delta` extension (delta_scan) is backed by delta-kernel-rs / object_store
+    # and reads credentials from DuckDB's *secret manager* — it ignores the legacy
+    # `SET s3_*` session variables. Without an explicit S3 secret it falls through to
+    # the AWS default credential chain and hangs on the EC2 instance-metadata endpoint
+    # (169.254.169.254) inside the cluster. Register the secret so delta_scan binds to
+    # MinIO with static creds. (`SET s3_*` is kept for plain httpfs read_parquet paths.)
+    con.execute(
+        f"""
+        CREATE OR REPLACE SECRET minio (
+            TYPE S3,
+            KEY_ID '{s.minio_user}',
+            SECRET '{s.minio_password}',
+            ENDPOINT '{endpoint}',
+            URL_STYLE 'path',
+            USE_SSL {use_ssl},
+            REGION '{s.aws_region}'
+        )
+        """
+    )
     con.execute("SET s3_url_style='path'")
     con.execute(f"SET s3_endpoint='{endpoint}'")
     con.execute(f"SET s3_access_key_id='{s.minio_user}'")
     con.execute(f"SET s3_secret_access_key='{s.minio_password}'")
-    con.execute(f"SET s3_use_ssl={'true' if s.minio_endpoint.startswith('https') else 'false'}")
+    con.execute(f"SET s3_use_ssl={use_ssl}")
 
 
 def register_silver(con: "duckdb.DuckDBPyConnection") -> None:
