@@ -31,6 +31,6 @@ def test_active_excludes_planned():
     assert "selic" in active
     # real handlers (ipea replaces old synthetic ipea_receita; b3 via Yahoo)
     assert {"tesouro_direto", "ibge", "ipea_nfsp_primario", "b3"} <= active
-    # anbima handler is implemented but needs registered credentials -> planned
-    assert "anbima" not in active
-    assert len(active) == 25
+    # anbima is active against the sandbox (creds registered; ANBIMA_BASE_URL=sandbox)
+    assert "anbima" in active
+    assert len(active) == 26
