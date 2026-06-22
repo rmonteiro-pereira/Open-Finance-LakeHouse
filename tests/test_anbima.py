@@ -1,0 +1,31 @@
+from datetime import date
+
+import pytest
+
+from ofl.ingestion.anbima import _parse
+
+
+def test_parse_maps_tpf_records():
+    records = [
+        {
+            "codigo_selic": "100000",
+            "data_referencia": "2026-06-19",
+            "data_vencimento": "2029-01-01",
+            "taxa_compra": "13,10",
+            "taxa_venda": "13,00",
+            "taxa_indicativa": "13,05",
+            "pu": "950,123456",
+        }
+    ]
+    out = _parse(records)
+    assert out.columns == ["bond", "maturity", "date", "buy_rate", "sell_rate", "buy_price", "sell_price"]
+    r = out.row(0, named=True)
+    assert r["date"] == date(2026, 6, 19)
+    assert r["maturity"] == date(2029, 1, 1)
+    assert r["sell_rate"] == 13.05  # taxa_indicativa -> the curve yield
+    assert r["buy_rate"] == 13.10
+    assert r["buy_price"] == pytest.approx(950.123456)
+
+
+def test_parse_empty():
+    assert _parse([]).height == 0

@@ -1,0 +1,324 @@
+# =============================================================================
+# Source Registry — the single source of truth for the lakehouse.
+#
+# Everything is driven from this file: ingestion, Airflow DAG generation,
+# the silver `dim_series` dimension, and the OpenMetadata catalog.
+#
+# Adding a BACEN/SGS series = one entry under `series:`.
+# Adding a new KIND of source = one new `handler` in ofl/ingestion/.
+#
+# Schema (per series):
+#   domain     : rates | inflation | fx | fiscal | market | equities
+#   handler    : bacen_sgs | yahoo | tesouro_direto | ipea | b3 | ibge | anbima
+#   name       : human label (-> dim_series.name)
+#   category   : interest_rate | price_index | exchange_rate | fiscal | ...
+#   unit       : percent | percent_per_year | index | brl | brl_million | ...
+#   frequency  : daily | monthly | quarterly | annual
+#   fact       : observation | security_price | treasury  (target silver fact)
+#   <handler-specific keys>:  sgs_id / symbols / dataset_id / ...
+#   max_value  : optional sanity bound used by quality contracts
+#   start_date : optional ISO floor for the backfill walk (per-series override of
+#                a handler default; pre-floor history is simply not ingested)
+# =============================================================================
+version: 1
+
+defaults:
+  table_format: delta
+  storage:
+    bucket: lakehouse
+    layers: { raw: raw, bronze: bronze, silver: silver, gold: gold }
+  bacen_sgs:
+    base_url: "https://api.bcb.gov.br/dados/serie/bcdata.sgs.{series_id}/dados"
+    date_format: "%d/%m/%Y"
+    window_years: 10          # SGS caps daily series at ~10y per request
+    # Plano Real (1994-07-01): pre-Real BRL series span the cruzeiro/cruzado
+    # currency regimes and hyperinflation (>50%/month), which are not comparable
+    # to the modern series and trip the quality contracts. Floor every SGS walk
+    # here by default; a series may override with its own `start_date`.
+    start_date: "1994-07-01"
+
+series:
+  # ---------------------------------------------------------------- rates ----
+  selic:
+    domain: rates
+    handler: bacen_sgs
+    sgs_id: 11
+    name: "SELIC (Over/Selic effective daily rate)"
+    category: interest_rate
+    unit: percent
+    frequency: daily
+    fact: observation
+    max_value: 100.0
+  cdi:
+    domain: rates
+    handler: bacen_sgs
+    sgs_id: 12
+    name: "CDI (interbank deposit rate)"
+    category: interest_rate
+    unit: percent
+    frequency: daily
+    fact: observation
+    max_value: 100.0
+  over:
+    domain: rates
+    handler: bacen_sgs
+    sgs_id: 1178
+    name: "Over/Selic (annualized)"
+    category: interest_rate
+    unit: percent_per_year
+    frequency: daily
+    fact: observation
+    max_value: 100.0
+  selic_meta:
+    domain: rates
+    handler: bacen_sgs
+    sgs_id: 432
+    name: "SELIC target (Copom)"
+    category: interest_rate
+    unit: percent_per_year
+    frequency: daily
+    fact: observation
+    max_value: 100.0
+  tlp:
+    domain: rates
+    handler: bacen_sgs
+    sgs_id: 26192
+    name: "TLP (long-term rate)"
+    category: interest_rate
+    unit: percent_per_year
+    frequency: daily
+    fact: observation
+    max_value: 100.0
+
+  # ------------------------------------------------------------ inflation ----
+  ipca:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 433
+    name: "IPCA (headline CPI, monthly %)"
+    category: price_index
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+  ipca_15:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 1705
+    name: "IPCA-15 (CPI preview, monthly %)"
+    category: price_index
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+  inpc:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 188
+    name: "INPC (CPI low-income, monthly %)"
+    category: price_index
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+  igp_m:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 190
+    name: "IGP-M (general prices, monthly %)"
+    category: price_index
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+  igp_di:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 189
+    name: "IGP-DI (general prices, monthly %)"
+    category: price_index
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+  igp_10:
+    domain: inflation
+    handler: bacen_sgs
+    sgs_id: 7447
+    name: "IGP-10 (general prices, monthly %)"
+    category: price_index
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 50.0
+
+  # ------------------------------------------------------------------- fx ----
+  usd_brl:
+    domain: fx
+    handler: bacen_sgs
+    sgs_id: 1
+    name: "USD/BRL (commercial buy, avg)"
+    category: exchange_rate
+    unit: brl
+    frequency: daily
+    fact: observation
+    max_value: 20.0
+  eur_brl:
+    domain: fx
+    handler: bacen_sgs
+    sgs_id: 21619
+    name: "EUR/BRL (commercial buy, avg)"
+    category: exchange_rate
+    unit: brl
+    frequency: daily
+    fact: observation
+    max_value: 25.0
+
+  # --------------------------------------------------------------- fiscal ----
+  divida_pib:
+    domain: fiscal
+    handler: bacen_sgs
+    sgs_id: 4513
+    name: "Gross general government debt (% GDP)"
+    category: fiscal
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 200.0
+  focus_pib:
+    domain: fiscal
+    handler: bacen_sgs
+    sgs_id: 4389
+    name: "GDP-related Focus expectation series"
+    category: fiscal
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 100.0
+  reservas_internacionais:
+    domain: fiscal
+    handler: bacen_sgs
+    sgs_id: 3545
+    name: "International reserves (USD million)"
+    category: fiscal
+    unit: usd_million
+    frequency: daily
+    fact: observation
+    max_value: 1000000.0
+  ipea_nfsp_primario:
+    domain: fiscal
+    handler: ipea
+    sercodigo: BM12_NFSPPNS12   # NFSP - setor público - resultado primário (fluxo mensal)
+    name: "Primary balance — public sector (monthly, R$ million)"
+    category: fiscal
+    unit: brl_million
+    frequency: monthly
+    fact: observation
+  ipea_divida_liquida:
+    domain: fiscal
+    handler: ipea
+    sercodigo: WEO_DIVLIQGGWEOBRA   # net general government debt (% GDP, IMF WEO)
+    name: "Net general government debt (% GDP)"
+    category: fiscal
+    unit: percent
+    frequency: annual
+    fact: observation
+    max_value: 300.0
+  ipea_pib:
+    domain: fiscal
+    handler: ipea
+    sercodigo: BM12_PIB12   # GDP, current prices (monthly, R$ million)
+    name: "GDP — current prices (monthly, R$ million)"
+    category: macro
+    unit: brl_million
+    frequency: monthly
+    fact: observation
+
+  # --------------------------------------------------------------- market ----
+  tesouro_direto:
+    domain: market
+    handler: tesouro_direto
+    name: "Tesouro Direto (prices & yields by bond)"
+    category: government_bond
+    unit: mixed
+    frequency: daily
+    fact: treasury
+    dataset_id: "df56aa42-484a-4a59-8184-7676580c81e3"
+    base_url: "https://www.tesourotransparente.gov.br/ckan/api/3/action"
+    bonds:
+      - { code: "Tesouro Prefixado 2027",  type: prefixado, maturity: "2027-01-01" }
+      - { code: "Tesouro Prefixado 2031",  type: prefixado, maturity: "2031-01-01" }
+      - { code: "Tesouro IPCA+ 2029",      type: ipca_plus, maturity: "2029-08-15" }
+      - { code: "Tesouro IPCA+ 2035",      type: ipca_plus, maturity: "2035-05-15" }
+      - { code: "Tesouro IPCA+ 2045",      type: ipca_plus, maturity: "2045-05-15" }
+      - { code: "Tesouro Selic 2027",      type: selic,     maturity: "2027-03-01" }
+      - { code: "Tesouro Selic 2029",      type: selic,     maturity: "2029-03-01" }
+  b3:
+    domain: market
+    handler: b3              # B3 index levels sourced via Yahoo (no free official B3 API)
+    name: "B3 indices (Ibovespa)"
+    category: equity_index
+    unit: index
+    frequency: daily
+    fact: security_price
+    symbols:
+      - { symbol: "^BVSP", currency: BRL, name: "Ibovespa" }
+  ibge:
+    domain: market
+    handler: ibge
+    indicador: 4099            # PNAD Contínua unemployment rate
+    name: "IBGE unemployment rate (PNAD Contínua)"
+    category: labor
+    unit: percent
+    frequency: monthly
+    fact: observation
+    max_value: 100.0
+  anbima:
+    domain: market
+    handler: anbima           # real Feed API implemented; needs registered credentials
+    name: "ANBIMA secondary-market federal bond prices (TPF)"
+    category: fixed_income
+    unit: mixed
+    frequency: daily
+    fact: treasury
+    status: planned           # flip to active once ANBIMA_CLIENT_ID/SECRET are in env (via OpenBao)
+
+  # ------------------------------------------------------------- equities ----
+  yahoo_etf:
+    domain: equities
+    handler: yahoo
+    name: "Yahoo Finance ETFs"
+    category: etf
+    unit: price
+    frequency: daily
+    fact: security_price
+    symbols:
+      - { symbol: "BOVA11.SA", currency: BRL, name: "BOVA11 (Bovespa ETF)" }
+      - { symbol: "IVVB11.SA", currency: BRL, name: "IVVB11 (S&P 500 ETF)" }
+      - { symbol: "SMAL11.SA", currency: BRL, name: "SMAL11 (Small Caps ETF)" }
+      - { symbol: "NASD11.SA", currency: BRL, name: "NASD11 (Nasdaq ETF)" }
+      - { symbol: "SPXI11.SA", currency: BRL, name: "SPXI11 (S&P ETF)" }
+      - { symbol: "FIXA11.SA", currency: BRL, name: "FIXA11 (Fixed Income ETF)" }
+  yahoo_commodity:
+    domain: equities
+    handler: yahoo
+    name: "Yahoo Finance commodities"
+    category: commodity
+    unit: price
+    frequency: daily
+    fact: security_price
+    symbols:
+      - { symbol: "CL=F", currency: USD, name: "Crude Oil Futures" }
+      - { symbol: "GC=F", currency: USD, name: "Gold Futures" }
+      - { symbol: "ZS=F", currency: USD, name: "Soybean Futures" }
+      - { symbol: "KC=F", currency: USD, name: "Coffee Futures" }
+  yahoo_currency:
+    domain: equities
+    handler: yahoo
+    name: "Yahoo Finance currencies"
+    category: currency
+    unit: price
+    frequency: daily
+    fact: security_price
+    symbols:
+      - { symbol: "USDBRL=X", currency: BRL, name: "USD/BRL spot" }

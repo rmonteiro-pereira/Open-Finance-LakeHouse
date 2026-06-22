@@ -79,7 +79,8 @@ spark.hadoop.fs.s3a.access.key: ${env:MINIO_USER}
 spark.hadoop.fs.s3a.secret.key: ${env:MINIO_PASSWORD}
 spark.hadoop.fs.s3a.path.style.access: true
 
-# Credentials come from env (MINIO_USER / MINIO_PASSWORD) via SparkHooks — never hardcode.
+# Credentials come exclusively from the environment (see the s3a access/secret
+# keys above). Never commit credentials here.
 spark.hadoop.fs.s3a.connection.ssl.enabled: false
 spark.hadoop.fs.s3a.endpoint.region: us-east-1
 spark.hadoop.fs.s3a.aws.credentials.provider: org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider
