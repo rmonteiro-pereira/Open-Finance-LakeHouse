@@ -5,7 +5,7 @@ DOMAINS = {"rates", "inflation", "fx", "fiscal", "credit", "market", "equities"}
 
 def test_registry_loads_all_series():
     reg = load_registry("sources/registry.yml")
-    assert len(reg.series) == 43
+    assert len(reg.series) == 47
     assert set(reg.domains()) == DOMAINS
 
 
@@ -45,6 +45,19 @@ def test_focus_handler_series():
     assert reg.series["focus_selic_fim_ano"].extra["horizon"] == "current_year"
 
 
+def test_yahoo_global_and_anbima_ima():
+    reg = load_registry("sources/registry.yml")
+    # yahoo_global is an active multi-symbol benchmark source
+    yg = reg.series["yahoo_global"]
+    assert yg.handler == "yahoo" and yg.is_active
+    assert {"^GSPC", "^TNX", "DX-Y.NYB"} <= {s["symbol"] for s in yg.symbols}
+    # ANBIMA IMA indices ride the anbima handler via ima_code, but stay planned
+    ima = reg.series["anbima_ima_b"]
+    assert ima.handler == "anbima"
+    assert ima.extra["ima_code"] == "IMA-B"
+    assert not ima.is_active  # planned until validated on-cluster
+
+
 def test_plano_real_floor_resolved_onto_sgs_series():
     reg = load_registry("sources/registry.yml")
     # Handler default floor lands on every bacen_sgs series...
@@ -63,4 +76,6 @@ def test_active_excludes_planned():
     assert {"tesouro_direto", "ibge", "ipea_nfsp_primario", "b3"} <= active
     # anbima is active against the sandbox (creds registered; ANBIMA_BASE_URL=sandbox)
     assert "anbima" in active
-    assert len(active) == 43
+    # anbima_ima_* are planned, so excluded
+    assert "anbima_ima_b" not in active
+    assert len(active) == 44
