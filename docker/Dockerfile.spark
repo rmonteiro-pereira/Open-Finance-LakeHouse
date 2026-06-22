@@ -1,0 +1,69 @@
+# syntax=docker/dockerfile:1.7
+# OFL Spark image — bronze -> silver conform/MERGE (the Spark lane).
+#
+# The Delta + S3A (hadoop-aws) jars are baked into pyspark's own classpath so the
+# silver job runs fully OFFLINE — cluster pods have no egress for Ivy resolution.
+# OFL_SPARK_JARS_PACKAGED=1 (set below) makes build_spark_session skip Ivy.
+#
+# Jar versions are pinned to the Spark/Hadoop the pip `pyspark` wheel ships:
+#   pyspark 3.5.x -> hadoop 3.3.4  | delta-spark 3.2.x pairs with Spark 3.5.
+ARG PYTHON_VERSION=3.11
+
+# ----------------------------------------------------------------------------
+FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-bookworm-slim AS build
+ENV UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never
+WORKDIR /app
+
+COPY pyproject.toml README.md ./
+COPY ofl ./ofl
+COPY sources ./sources
+
+# Core + spark extra (pyspark + delta-spark python).
+RUN uv venv /opt/venv \
+ && VIRTUAL_ENV=/opt/venv uv pip install --no-cache ".[spark]"
+
+# Bake the jars Spark needs for Delta + s3a directly into pyspark/jars.
+RUN /opt/venv/bin/python - <<'PY'
+import os
+import urllib.request
+
+import pyspark
+
+jars = os.path.join(os.path.dirname(pyspark.__file__), "jars")
+base = "https://repo1.maven.org/maven2"
+# (maven path, version, artifact) — pinned to pyspark 3.5 / hadoop 3.3.4.
+artifacts = [
+    ("io/delta/delta-spark_2.12", "3.2.1", "delta-spark_2.12"),
+    ("io/delta/delta-storage", "3.2.1", "delta-storage"),
+    ("org/apache/hadoop/hadoop-aws", "3.3.4", "hadoop-aws"),
+    ("com/amazonaws/aws-java-sdk-bundle", "1.12.262", "aws-java-sdk-bundle"),
+]
+for path, ver, name in artifacts:
+    fn = f"{name}-{ver}.jar"
+    dst = os.path.join(jars, fn)
+    urllib.request.urlretrieve(f"{base}/{path}/{ver}/{fn}", dst)
+    print("baked", fn, os.path.getsize(dst), "bytes")
+PY
+
+# ----------------------------------------------------------------------------
+FROM python:${PYTHON_VERSION}-slim-bookworm AS runtime
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    OFL_REGISTRY=/app/sources/registry.yml \
+    OFL_SPARK_JARS_PACKAGED=1
+WORKDIR /app
+
+# Headless JRE 17 (Debian bookworm `default-jre`) + ps for Spark's driver.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends default-jre-headless procps \
+ && rm -rf /var/lib/apt/lists/*
+
+COPY --from=build /opt/venv /opt/venv
+COPY --from=build /app/sources /app/sources
+
+RUN useradd -u 10001 -m ofl && chown -R ofl:ofl /app
+USER ofl
+
+ENTRYPOINT ["ofl"]
+CMD ["silver"]
