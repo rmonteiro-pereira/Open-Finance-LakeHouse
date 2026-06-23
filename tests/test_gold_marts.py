@@ -36,9 +36,22 @@ def con():
         }
     )
 
+    sec = pl.DataFrame(
+        {
+            "symbol": ["PETR4"] * 3 + ["VALE3"] * 3,
+            "date": [date(2024, 1, 2), date(2024, 1, 3), date(2024, 1, 4)] * 2,
+            "open": [10.0, 10.5, 11.0, 50.0, 55.0, 54.0],
+            "high": [10.6, 10.8, 11.2, 56.0, 56.0, 55.0],
+            "low": [9.9, 10.4, 10.8, 49.0, 53.0, 53.0],
+            "close": [10.0, 10.5, 10.0, 50.0, 55.0, 55.0],
+            "volume": [1000.0, 1200.0, 900.0, 2000.0, 2100.0, 1800.0],
+        }
+    )
+
     c = duckdb.connect()
     c.register("fact_observation", fact.to_arrow())
     c.register("fact_treasury", treasury.to_arrow())
+    c.register("fact_security_price", sec.to_arrow())
     return c
 
 
@@ -50,6 +63,7 @@ def test_all_marts_execute(con):
         "mart_fx",
         "mart_macro_dashboard",
         "mart_yield_curve",
+        "mart_equity_daily",
     }
     assert all(v > 0 for v in counts.values())
 
@@ -77,3 +91,13 @@ def test_inflation_panel_accumulation(con):
 def test_fx_daily_return(con):
     fx = con.execute(_model_sql("mart_fx")).pl().filter(pl.col("series_id") == "usd_brl").sort("date")
     assert fx.row(1, named=True)["daily_return_pct"] == pytest.approx(1.0, abs=1e-9)
+
+
+def test_equity_daily_return_and_range(con):
+    eq = (
+        con.execute(_model_sql("mart_equity_daily")).pl().filter(pl.col("symbol") == "PETR4").sort("date")
+    )
+    # day 2: close 10.5 vs 10.0 -> +5%
+    assert eq.row(1, named=True)["daily_return_pct"] == pytest.approx(5.0, abs=1e-9)
+    # 52w high tracks the running max of `high` (10.6 -> 10.8 by day 2)
+    assert eq.row(1, named=True)["high_52w"] == pytest.approx(10.8, abs=1e-9)
