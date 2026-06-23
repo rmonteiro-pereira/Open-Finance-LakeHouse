@@ -2,7 +2,8 @@ from datetime import date
 
 import pytest
 
-from ofl.ingestion.anbima import _parse
+from ofl.ingestion import anbima
+from ofl.ingestion.anbima import _parse, fetch_anbima_ima
 
 
 def test_parse_maps_tpf_records():
@@ -29,3 +30,24 @@ def test_parse_maps_tpf_records():
 
 def test_parse_empty():
     assert _parse([]).height == 0
+
+
+def test_fetch_ima_parses_levels(monkeypatch):
+    payload = [
+        {"indice": "IMA-B", "data_referencia": "2026-06-19", "numero_indice": 5234.123456},
+        {"indice": "IRF-M", "data_referencia": "2026-06-19", "numero_indice": 17890.5},
+    ]
+
+    class _Resp:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return payload
+
+    monkeypatch.setattr(anbima.requests, "get", lambda *a, **k: _Resp())
+    df = fetch_anbima_ima("cid", "tok")
+    assert set(df["indice"].to_list()) == {"IMA-B", "IRF-M"}
+    imab = df.filter(df["indice"] == "IMA-B").row(0, named=True)
+    assert imab["date"] == date(2026, 6, 19)
+    assert imab["value"] == pytest.approx(5234.123456)
