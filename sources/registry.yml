@@ -68,7 +68,9 @@ series:
     unit: percent_per_year
     frequency: daily
     fact: observation
-    max_value: 100.0
+    # Early-Real (1994-97) annualized rates legitimately peaked ~173%/yr during the
+    # stabilization; 300 is the corruption gate without clipping that valid history.
+    max_value: 300.0
   selic_meta:
     domain: rates
     handler: bacen_sgs
@@ -98,7 +100,8 @@ series:
     unit: percent_per_year
     frequency: daily
     fact: observation
-    max_value: 100.0
+    # See `over`: annualized CDI also peaked ~173%/yr in the early Real (1994-97).
+    max_value: 300.0
   tr:
     domain: rates
     handler: bacen_sgs

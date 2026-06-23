@@ -30,6 +30,14 @@ def test_corrected_sgs_codes():
     assert reg.series["cdi_anual"].sgs_id == 4389
 
 
+def test_annualized_rate_bounds_allow_early_real():
+    reg = load_registry("sources/registry.yml")
+    # Annualized daily rates peaked ~173%/yr in the early Real (1994-97); the
+    # contract bound must clear that legit history, not clip it.
+    assert reg.series["cdi_anual"].max_value == 300.0
+    assert reg.series["over"].max_value == 300.0
+
+
 def test_credit_domain():
     reg = load_registry("sources/registry.yml")
     assert "credit" in reg.domains()
