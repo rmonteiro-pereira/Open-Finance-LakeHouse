@@ -84,7 +84,7 @@ series:
   tlp:
     domain: rates
     handler: bacen_sgs
-    sgs_id: 26192
+    sgs_id: 27572            # TLP rate (% a.a.); 26192 was a mislabeled index series
     name: "TLP (long-term rate)"
     category: interest_rate
     unit: percent_per_year
