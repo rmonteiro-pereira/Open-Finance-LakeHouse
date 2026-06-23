@@ -28,10 +28,12 @@ MODELS = [
     "mart_fx",
     "mart_macro_dashboard",
     "mart_yield_curve",
+    "mart_equity_daily",
 ]
 
 # Silver tables each mart depends on — used to skip marts whose inputs aren't ready.
-_SILVER_TABLES = ["fact_observation", "dim_series", "fact_treasury"]
+# `mart_equity_daily` reads `fact_security_price`.
+_SILVER_TABLES = ["fact_observation", "dim_series", "fact_treasury", "fact_security_price"]
 
 
 def _model_sql(name: str) -> str:

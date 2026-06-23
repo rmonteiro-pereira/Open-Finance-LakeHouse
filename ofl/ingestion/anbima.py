@@ -32,6 +32,10 @@ log = get_logger(__name__)
 TOKEN_URL = "https://api.anbima.com.br/oauth/access-token"
 _DATA_BASE = os.getenv("ANBIMA_BASE_URL", "https://api.anbima.com.br").rstrip("/")
 TPF_URL = f"{_DATA_BASE}/feed/precos-indices/v1/titulos-publicos/mercado-secundario-TPF"
+# IMA family (IMA-B, IRF-M, ...): one call returns every sub-index for the date;
+# each record carries `indice` (name), `data_referencia`, `numero_indice` (level).
+# fact: observation — a series filters its own `indice` out of the shared payload.
+IMA_URL = f"{_DATA_BASE}/feed/precos-indices/v1/indices/resultados-ima"
 
 # bronze treasury schema (matches silver.fact_treasury inputs)
 _STR_SCHEMA = {
@@ -117,9 +121,47 @@ def fetch_anbima_tpf(client_id: str, token: str, *, data: str | None = None) -> 
     return _parse(resp.json())
 
 
+def fetch_anbima_ima(client_id: str, token: str, *, data: str | None = None) -> pl.DataFrame:
+    """Fetch the IMA results for a date as ``(indice, date, value)`` — every
+    sub-index in one payload; the caller filters its own ``indice``."""
+    params = {"data": data} if data else {}
+    resp = requests.get(
+        IMA_URL,
+        headers={"client_id": client_id, "access_token": token},
+        params=params,
+        timeout=60,
+    )
+    resp.raise_for_status()
+    rows = [
+        {
+            "indice": r.get("indice"),
+            "date": str(r.get("data_referencia") or "")[:10],
+            "value": _num(r.get("numero_indice")),
+        }
+        for r in resp.json()
+    ]
+    schema = {"indice": pl.String, "date": pl.String, "value": pl.Float64}
+    if not rows:
+        return pl.DataFrame(schema={**schema, "date": pl.Date})
+    return (
+        pl.DataFrame(rows, schema=schema)
+        .with_columns(pl.col("date").str.strptime(pl.Date, "%Y-%m-%d", strict=False))
+        .drop_nulls("date")
+    )
+
+
 def ingest_anbima(series: Series) -> dict:
     client_id, client_secret = _credentials()
     token = _access_token(client_id, client_secret)
+
+    # IMA-family series (fact: observation) pin an `ima_code` and slice the shared
+    # results payload; the default ANBIMA series is the TPF treasury snapshot.
+    ima_code = series.extra.get("ima_code")
+    if ima_code:
+        df = fetch_anbima_ima(client_id, token).filter(pl.col("indice") == ima_code).select("date", "value")
+        log.info("anbima_ima_fetched", series=series.key, ima=ima_code, rows=df.height)
+        return land_bronze(series, df, mode="append")
+
     df = fetch_anbima_tpf(client_id, token)
     log.info("anbima_fetched", series=series.key, rows=df.height)
     return land_bronze(series, df, mode="append")  # daily snapshot; silver MERGE dedups
