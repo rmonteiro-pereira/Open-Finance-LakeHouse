@@ -39,7 +39,7 @@ class Series(BaseModel):
     # Optional per-series freshness budget (e.g. "40d", "72h") for the staleness
     # alert. When unset, the alert rule falls back to a threshold keyed off
     # `frequency` (daily/monthly/...). Irregular release-calendar series
-    # (focus_pib, divida_pib, reservas_internacionais, anbima) should set this.
+    # (divida_pib, reservas_internacionais, anbima, focus_*) should set this.
     freshness_sla: str | None = None
     extra: dict[str, Any] = Field(default_factory=dict)
 

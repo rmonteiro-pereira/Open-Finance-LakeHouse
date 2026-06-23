@@ -164,6 +164,85 @@ def conform_treasury(spark: "SparkSession", registry: Registry | None = None) ->
     return {"merged": count, "uri": uri}
 
 
+_FACT_SECURITY_PRICE_DDL = (
+    "symbol STRING, date DATE, open DOUBLE, high DOUBLE, low DOUBLE, close DOUBLE, "
+    "volume DOUBLE, source STRING, ingested_at TIMESTAMP, load_id STRING"
+)
+_OHLCV = ["open", "high", "low", "close", "volume"]
+
+
+def conform_security_prices(spark: "SparkSession", registry: Registry | None = None) -> dict:
+    """MERGE bronze security_price series into ``silver.fact_security_price``.
+
+    Unions every ``fact: security_price`` source (Yahoo families, b3 index,
+    b3_cotahist) on the common OHLCV schema (grain: symbol x date). Sources carry
+    different extra columns (cotahist adds volume_brl/trades/fatcot; some Yahoo
+    index symbols lack volume), so we union allowing missing columns and project
+    the canonical OHLCV.
+    """
+    from delta.tables import DeltaTable
+    from pyspark.sql import functions as F
+    from pyspark.sql.utils import AnalysisException
+    from pyspark.sql.window import Window
+
+    reg = registry or load_registry()
+    frames = []
+    for s in reg.active():
+        if s.fact != "security_price":
+            continue
+        uri = to_spark_path(bronze_uri("security_price", s.key))
+        try:
+            frames.append(spark.read.format("delta").load(uri))
+        except AnalysisException:
+            log.warning("bronze_missing", series=s.key, uri=uri)
+
+    if not frames:
+        log.warning("no_bronze_security_prices")
+        return {"merged": 0}
+
+    unioned = frames[0]
+    for f in frames[1:]:
+        unioned = unioned.unionByName(f, allowMissingColumns=True)
+
+    for c in _OHLCV:  # a source may not carry every OHLCV column (e.g. index symbols)
+        if c not in unioned.columns:
+            unioned = unioned.withColumn(c, F.lit(None))
+
+    dedup = Window.partitionBy("symbol", "date").orderBy(F.col("ingested_at").desc())
+    source = (
+        unioned.withColumn("_rn", F.row_number().over(dedup))
+        .filter(F.col("_rn") == 1)
+        .select(
+            F.col("symbol").cast("string"),
+            F.col("date").cast("date"),
+            *[F.col(c).cast("double") for c in _OHLCV],
+            F.col("source").cast("string"),
+            F.col("ingested_at").cast("timestamp"),
+            F.col("load_id").cast("string"),
+        )
+    )
+
+    uri = to_spark_path(silver_uri("fact_security_price"))
+    (
+        DeltaTable.createIfNotExists(spark)
+        .location(uri)
+        .addColumns(spark.createDataFrame([], _FACT_SECURITY_PRICE_DDL).schema)
+        .partitionedBy("source")
+        .execute()
+    )
+    target = DeltaTable.forPath(spark, uri)
+    (
+        target.alias("t")
+        .merge(source.alias("s"), "t.symbol = s.symbol AND t.date = s.date")
+        .whenMatchedUpdateAll()
+        .whenNotMatchedInsertAll()
+        .execute()
+    )
+    count = spark.read.format("delta").load(uri).count()
+    log.info("fact_security_price_merged", total_rows=count, uri=uri)
+    return {"merged": count, "uri": uri}
+
+
 def build_series_metrics(spark: "SparkSession") -> dict:
     """Derive ``silver.series_metrics`` (pct change + rolling avg/vol) via windows."""
     from pyspark.sql import functions as F
@@ -212,4 +291,5 @@ def run_silver(spark: "SparkSession", registry: Registry | None = None) -> dict:
     else:
         log.warning("silver_metrics_skipped", reason="no fact_observation")
     conform_treasury(spark, reg)
+    conform_security_prices(spark, reg)
     return result
