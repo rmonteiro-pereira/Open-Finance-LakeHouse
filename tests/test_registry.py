@@ -28,6 +28,8 @@ def test_corrected_sgs_codes():
     # lives as the correctly-named cdi_anual.
     assert "focus_pib" not in reg.series
     assert reg.series["cdi_anual"].sgs_id == 4389
+    # tlp pointed at 26192 (a mislabeled index, values 596..10448); 27572 is the TLP rate
+    assert reg.series["tlp"].sgs_id == 27572
 
 
 def test_annualized_rate_bounds_allow_early_real():
