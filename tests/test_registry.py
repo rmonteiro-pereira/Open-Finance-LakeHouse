@@ -59,11 +59,11 @@ def test_yahoo_global_and_anbima_ima():
     yg = reg.series["yahoo_global"]
     assert yg.handler == "yahoo" and yg.is_active
     assert {"^GSPC", "^TNX", "DX-Y.NYB"} <= {s["symbol"] for s in yg.symbols}
-    # ANBIMA IMA indices ride the anbima handler via ima_code, but stay planned
+    # ANBIMA IMA indices ride the anbima handler via ima_code (active vs sandbox)
     ima = reg.series["anbima_ima_b"]
     assert ima.handler == "anbima"
     assert ima.extra["ima_code"] == "IMA-B"
-    assert not ima.is_active  # planned until validated on-cluster
+    assert ima.is_active  # validated on-cluster against the ANBIMA sandbox
 
 
 def test_plano_real_floor_resolved_onto_sgs_series():
@@ -82,9 +82,6 @@ def test_active_excludes_planned():
     assert "selic" in active
     # real handlers (ipea replaces old synthetic ipea_receita; b3 via Yahoo)
     assert {"tesouro_direto", "ibge", "ipea_nfsp_primario", "b3"} <= active
-    # anbima is active against the sandbox (creds registered; ANBIMA_BASE_URL=sandbox)
-    assert "anbima" in active
-    # anbima_ima_* are planned, so excluded
-    assert "anbima_ima_b" not in active
-    assert "b3_cotahist" in active
-    assert len(active) == 45
+    # anbima TPF + IMA all active against the sandbox (creds registered)
+    assert {"anbima", "anbima_ima_b", "b3_cotahist"} <= active
+    assert len(active) == 48

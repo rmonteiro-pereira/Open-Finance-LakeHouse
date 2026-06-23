@@ -480,9 +480,10 @@ series:
     # client_id, then drop ANBIMA_BASE_URL from the secret (handler defaults to prod).
     status: active
   # ANBIMA IMA fixed-income benchmark indices (same OAuth/handler as TPF; the
-  # `ima_code` slices the shared resultados-ima payload). PLANNED until the exact
-  # `indice` strings + sandbox availability are confirmed on-cluster (then flip to
-  # active, like the TPF series). fact: observation (index level = numero_indice).
+  # `ima_code` slices the shared resultados-ima payload). ACTIVE against the ANBIMA
+  # sandbox (validated on-cluster 2026-06-23: /feed/precos-indices/v1/indices/
+  # resultados-ima -> 200, the IMA-B / IMA-B 5 / IRF-M `indice` strings present).
+  # fact: observation (index level = numero_indice).
   anbima_ima_b:
     domain: market
     handler: anbima
@@ -491,7 +492,7 @@ series:
     unit: index
     frequency: daily
     fact: observation
-    status: planned
+    status: active
     freshness_sla: "5d"
     ima_code: "IMA-B"
   anbima_ima_b5:
@@ -502,7 +503,7 @@ series:
     unit: index
     frequency: daily
     fact: observation
-    status: planned
+    status: active
     freshness_sla: "5d"
     ima_code: "IMA-B 5"
   anbima_irf_m:
@@ -513,7 +514,7 @@ series:
     unit: index
     frequency: daily
     fact: observation
-    status: planned
+    status: active
     freshness_sla: "5d"
     ima_code: "IRF-M"
 
