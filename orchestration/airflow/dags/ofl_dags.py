@@ -81,6 +81,14 @@ _RESOURCES = k8s.V1ResourceRequirements(
     requests={"cpu": "250m", "memory": "256Mi"},
     limits={"cpu": "1500m", "memory": "3Gi"},
 )
+# The silver lane runs a Spark JVM that MERGEs each fact's full bronze every run;
+# the largest (fact_derivatives_quote, ~1.6M rows) needs a ~4g driver heap (see
+# OFL_SPARK_DRIVER_MEMORY), so its pod gets a bigger limit to host that heap +
+# overhead. Request stays tiny (node is oversubscribed on requests, not real RAM).
+_SPARK_RESOURCES = k8s.V1ResourceRequirements(
+    requests={"cpu": "250m", "memory": "256Mi"},
+    limits={"cpu": "2000m", "memory": "6Gi"},
+)
 
 _DEFAULTS = {"retries": 2, "retry_delay": pendulum.duration(minutes=2)}
 
@@ -100,6 +108,7 @@ def _pod(
     *,
     image: str = SLIM_IMAGE,
     pool: str = INGEST_POOL,
+    resources: "k8s.V1ResourceRequirements" = _RESOURCES,
     **kwargs,
 ) -> KubernetesPodOperator:
     return KubernetesPodOperator(
@@ -112,7 +121,7 @@ def _pod(
         env_from=_ENV_FROM,
         env_vars=_POD_ENV,
         image_pull_secrets=_PULL,
-        container_resources=_RESOURCES,
+        container_resources=resources,
         pool=pool,
         # Don't bind the kubernetes_default connection: on Airflow 3 the KPO masks
         # the connection extra over the task-SDK msgpack channel and crashes with
@@ -165,7 +174,14 @@ with DAG(
     max_active_runs=1,  # coalesce an asset-event burst into one idempotent MERGE
     tags=["ofl", "silver"],
 ) as silver_dag:
-    _pod("conform_silver", ["silver"], image=SPARK_IMAGE, pool=SPARK_POOL, outlets=[ASSET_SILVER])
+    _pod(
+        "conform_silver",
+        ["silver"],
+        image=SPARK_IMAGE,
+        pool=SPARK_POOL,
+        resources=_SPARK_RESOURCES,
+        outlets=[ASSET_SILVER],
+    )
 
 # --- gold: triggered when silver refreshes ------------------------------------
 with DAG(
@@ -189,6 +205,6 @@ with DAG(
     tags=["ofl", "backfill", "manual"],
 ) as backfill_dag:
     ingest_all = _pod("ingest_all", ["ingest"])
-    silver = _pod("silver", ["silver"], image=SPARK_IMAGE, pool=SPARK_POOL)
+    silver = _pod("silver", ["silver"], image=SPARK_IMAGE, pool=SPARK_POOL, resources=_SPARK_RESOURCES)
     gold = _pod("gold", ["gold"])
     ingest_all >> silver >> gold
