@@ -63,6 +63,10 @@ def _download(file_name: str, day: date) -> bytes | None:
         return None
     f = requests.get(f"{BASE_URL}/", params={"token": token}, headers=_HEADERS, timeout=300)
     f.raise_for_status()
+    # Over a long backfill some dates return HTTP 200 with an EMPTY body (a token
+    # is issued but no file exists) — treat those as missing, not a hard error.
+    if not f.content or not f.content.strip():
+        return None
     return f.content
 
 
@@ -217,12 +221,18 @@ def ingest_b3_arquivos(series: Series) -> dict:
 
     frames: list[pl.DataFrame] = []
     fetched = 0
+    skipped = 0
     for d in dates:
         raw = _download(file_name, d)
         if raw is None:
             continue
+        try:
+            frames.append(parser(raw))
+        except Exception as exc:  # noqa: BLE001 - one malformed file must not abort a multi-year walk
+            skipped += 1
+            log.warning("b3_arquivos_parse_skip", series=series.key, date=d.isoformat(), error=str(exc))
+            continue
         fetched += 1
-        frames.append(parser(raw))
 
     if not frames:  # every date was a holiday / not yet published — nothing to land
         log.warning("b3_arquivos_no_files", series=series.key, file=file_name, dates=len(dates))
@@ -247,6 +257,7 @@ def ingest_b3_arquivos(series: Series) -> dict:
         file=file_name,
         dates=len(dates),
         files=fetched,
+        skipped=skipped,
         rows=df.height,
         mode=mode,
     )
