@@ -91,3 +91,12 @@ def test_resolve_window_default_lookback_is_not_backfill():
     assert is_backfill is False
     assert len(dates) == 3
     assert all(d.weekday() < 5 for d in dates)
+
+
+def test_resolve_window_allow_env_false_ignores_backfill_override(monkeypatch):
+    # The instrument snapshot must keep pulling a single latest day even when a
+    # range backfill of the fact tables is configured via OFL_B3_WINDOW.
+    monkeypatch.setenv("OFL_B3_WINDOW", "2026-06-01..2026-06-19")
+    dates, is_backfill = _resolve_window({"lookback_days": 1}, allow_env=False)
+    assert is_backfill is False
+    assert len(dates) == 1

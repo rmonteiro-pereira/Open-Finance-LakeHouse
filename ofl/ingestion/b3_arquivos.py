@@ -171,14 +171,19 @@ def _weekdays(start: date, end: date) -> list[date]:
     return days
 
 
-def _resolve_window(extra: dict) -> tuple[list[date], bool]:
-    """Return (dates, is_backfill). Backfill walks an explicit inclusive range."""
-    env = os.environ.get("OFL_B3_WINDOW", "")
+def _resolve_window(extra: dict, *, allow_env: bool = True) -> tuple[list[date], bool]:
+    """Return (dates, is_backfill). Backfill walks an explicit inclusive range.
+
+    ``allow_env=False`` ignores the ``OFL_B3_WINDOW`` backfill override — used by
+    the instrument snapshot, which must always pull just the latest day even while
+    a range backfill of the fact tables is in flight.
+    """
+    env = os.environ.get("OFL_B3_WINDOW", "") if allow_env else ""
     start = end = None
     if ".." in env:
         a, b = env.split("..", 1)
         start, end = date.fromisoformat(a.strip()), date.fromisoformat(b.strip())
-    elif extra.get("start"):
+    elif allow_env and extra.get("start"):
         start = date.fromisoformat(str(extra["start"]))
         end = date.fromisoformat(str(extra["end"])) if extra.get("end") else date.today()
     if start:
@@ -204,7 +209,9 @@ def ingest_b3_arquivos(series: Series) -> dict:
     # so we never walk a range — fetch the most recent available day and overwrite.
     instruments = file_name == "InstrumentsConsolidated"
     if instruments:
-        dates, is_backfill = _resolve_window({"lookback_days": 1})
+        # Snapshot dimension: always just the latest day, even during a windowed
+        # backfill of the fact tables (so it ignores OFL_B3_WINDOW / start-end).
+        dates, is_backfill = _resolve_window({"lookback_days": 1}, allow_env=False)
     else:
         dates, is_backfill = _resolve_window(extra)
 
