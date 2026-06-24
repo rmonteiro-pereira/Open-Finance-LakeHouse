@@ -233,9 +233,12 @@ def ingest_b3_arquivos(series: Series) -> dict:
     # so we never walk a range — fetch the most recent available day and overwrite.
     instruments = file_name == "InstrumentsConsolidated"
     if instruments:
-        # Snapshot dimension: always just the latest day, even during a windowed
-        # backfill of the fact tables (so it ignores OFL_B3_WINDOW / start-end).
-        dates, is_backfill = _resolve_window({"lookback_days": 1}, allow_env=False)
+        # Snapshot dimension: look back a few weekdays (not just today, whose file
+        # may not be published yet) and keep the latest — ignoring OFL_B3_WINDOW /
+        # start-end so it never walks the multi-month backfill range.
+        dates, is_backfill = _resolve_window(
+            {"lookback_days": extra.get("lookback_days", 3)}, allow_env=False
+        )
     else:
         dates, is_backfill = _resolve_window(extra)
 
