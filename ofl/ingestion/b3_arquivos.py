@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import io
 import os
+import time
 from datetime import date, timedelta
 
 import polars as pl
@@ -47,27 +48,46 @@ _DEFAULT_SEGMENTS = ["FINANCIAL", "AGRIBUSINESS"]
 
 
 # --------------------------------------------------------------------------- io
-def _download(file_name: str, day: date) -> bytes | None:
-    """Fetch one daily file via the token handshake. ``None`` if absent (holiday)."""
+def _download(file_name: str, day: date, *, retries: int = 3) -> bytes | None:
+    """Fetch one daily file via the token handshake. ``None`` if unavailable.
+
+    Resilient by design — over a multi-month walk the portal intermittently
+    returns 401 (a token races/expires) or times out. Such transients are retried
+    with linear backoff and, if still failing, the date is **skipped** (``None``)
+    rather than raising, so one bad response never aborts the whole backfill. A
+    genuine "no data" (non-200 requestname, missing token, empty body) skips at once.
+    """
     iso = day.isoformat()
-    r = requests.get(
-        f"{BASE_URL}/requestname",
-        params={"fileName": file_name, "date": iso},
-        headers=_HEADERS,
-        timeout=120,
-    )
-    if r.status_code != 200:
-        return None
-    token = (r.json() or {}).get("token")
-    if not token:
-        return None
-    f = requests.get(f"{BASE_URL}/", params={"token": token}, headers=_HEADERS, timeout=300)
-    f.raise_for_status()
-    # Over a long backfill some dates return HTTP 200 with an EMPTY body (a token
-    # is issued but no file exists) — treat those as missing, not a hard error.
-    if not f.content or not f.content.strip():
-        return None
-    return f.content
+    for attempt in range(retries):
+        try:
+            r = requests.get(
+                f"{BASE_URL}/requestname",
+                params={"fileName": file_name, "date": iso},
+                headers=_HEADERS,
+                timeout=120,
+            )
+            if r.status_code != 200:
+                return None
+            token = (r.json() or {}).get("token")
+            if not token:
+                return None
+            f = requests.get(f"{BASE_URL}/", params={"token": token}, headers=_HEADERS, timeout=300)
+            if f.status_code != 200:  # 401/5xx — transient; retry then skip
+                if attempt < retries - 1:
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                return None
+            # Some dates return HTTP 200 with an EMPTY body (token issued but no
+            # file exists, e.g. older than the portal's ~12-month retention) — skip.
+            if not f.content or not f.content.strip():
+                return None
+            return f.content
+        except requests.RequestException:
+            if attempt < retries - 1:
+                time.sleep(1.5 * (attempt + 1))
+                continue
+            return None
+    return None
 
 
 def _read_csv(raw: bytes) -> pl.DataFrame:
