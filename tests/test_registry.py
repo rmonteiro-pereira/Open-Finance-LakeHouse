@@ -1,11 +1,11 @@
 from ofl.registry import load_registry
 
-DOMAINS = {"rates", "inflation", "fx", "fiscal", "credit", "market", "equities"}
+DOMAINS = {"rates", "inflation", "fx", "fiscal", "credit", "market", "equities", "derivatives", "reference"}
 
 
 def test_registry_loads_all_series():
     reg = load_registry("sources/registry.yml")
-    assert len(reg.series) == 48
+    assert len(reg.series) == 51
     assert set(reg.domains()) == DOMAINS
 
 
@@ -86,4 +86,6 @@ def test_active_excludes_planned():
     assert {"tesouro_direto", "ibge", "ipea_nfsp_primario", "b3"} <= active
     # anbima TPF + IMA all active against the sandbox (creds registered)
     assert {"anbima", "anbima_ima_b", "b3_cotahist"} <= active
-    assert len(active) == 48
+    # B3 derivatives portal: open interest, settlement quotes, instrument dim
+    assert {"b3_oi", "b3_deriv_quotes", "b3_instruments"} <= active
+    assert len(active) == 51

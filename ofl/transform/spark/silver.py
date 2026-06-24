@@ -243,6 +243,102 @@ def conform_security_prices(spark: "SparkSession", registry: Registry | None = N
     return {"merged": count, "uri": uri}
 
 
+_FACT_OPEN_INTEREST_DDL = (
+    "symbol STRING, date DATE, asset STRING, expiration_code STRING, segment STRING, "
+    "isin STRING, open_interest DOUBLE, open_interest_var DOUBLE, "
+    "source STRING, ingested_at TIMESTAMP, load_id STRING"
+)
+_OI_COLS = ["symbol", "date", "asset", "expiration_code", "segment", "isin", "open_interest", "open_interest_var"]
+
+_FACT_DERIV_QUOTE_DDL = (
+    "symbol STRING, date DATE, segment STRING, isin STRING, "
+    "min_price DOUBLE, max_price DOUBLE, avg_price DOUBLE, last_price DOUBLE, oscillation_pct DOUBLE, "
+    "settlement_price DOUBLE, settlement_rate DOUBLE, ref_price DOUBLE, "
+    "trades DOUBLE, contracts DOUBLE, notional DOUBLE, "
+    "source STRING, ingested_at TIMESTAMP, load_id STRING"
+)
+_DQ_COLS = [
+    "symbol", "date", "segment", "isin", "min_price", "max_price", "avg_price", "last_price",
+    "oscillation_pct", "settlement_price", "settlement_rate", "ref_price", "trades", "contracts", "notional",
+]
+
+
+def _conform_b3_fact(
+    spark: "SparkSession", reg: Registry, *, fact: str, table: str, cols: list[str], ddl: str
+) -> dict:
+    """Generic MERGE of a B3-portal fact (grain symbol x date) into silver.
+
+    Both ``fact_open_interest`` and ``fact_derivatives_quote`` union their bronze
+    tables, keep the latest ingestion per (symbol, date), and upsert. Sources share
+    one schema per fact, so a plain ``unionByName`` (no missing-column fill) holds.
+    """
+    from delta.tables import DeltaTable
+    from pyspark.sql import functions as F
+    from pyspark.sql.utils import AnalysisException
+    from pyspark.sql.window import Window
+
+    frames = []
+    for s in reg.active():
+        if s.fact != fact:
+            continue
+        uri = to_spark_path(bronze_uri(fact, s.key))
+        try:
+            frames.append(spark.read.format("delta").load(uri))
+        except AnalysisException:
+            log.warning("bronze_missing", series=s.key, uri=uri)
+
+    if not frames:
+        log.warning("no_bronze", fact=fact)
+        return {"merged": 0}
+
+    unioned = frames[0]
+    for f in frames[1:]:
+        unioned = unioned.unionByName(f, allowMissingColumns=True)
+
+    dedup = Window.partitionBy("symbol", "date").orderBy(F.col("ingested_at").desc())
+    source = (
+        unioned.withColumn("_rn", F.row_number().over(dedup))
+        .filter(F.col("_rn") == 1)
+        .select(*cols, F.col("source"), F.col("ingested_at"), F.col("load_id"))
+    )
+
+    uri = to_spark_path(silver_uri(table))
+    (
+        DeltaTable.createIfNotExists(spark)
+        .location(uri)
+        .addColumns(spark.createDataFrame([], ddl).schema)
+        .partitionedBy("source")
+        .execute()
+    )
+    target = DeltaTable.forPath(spark, uri)
+    (
+        target.alias("t")
+        .merge(source.alias("s"), "t.symbol = s.symbol AND t.date = s.date")
+        .whenMatchedUpdateAll()
+        .whenNotMatchedInsertAll()
+        .execute()
+    )
+    count = spark.read.format("delta").load(uri).count()
+    log.info("b3_fact_merged", table=table, total_rows=count, uri=uri)
+    return {"merged": count, "uri": uri}
+
+
+def conform_open_interest(spark: "SparkSession", registry: Registry | None = None) -> dict:
+    """MERGE bronze ``open_interest`` series into ``silver.fact_open_interest``."""
+    reg = registry or load_registry()
+    return _conform_b3_fact(
+        spark, reg, fact="open_interest", table="fact_open_interest", cols=_OI_COLS, ddl=_FACT_OPEN_INTEREST_DDL
+    )
+
+
+def conform_derivatives_quotes(spark: "SparkSession", registry: Registry | None = None) -> dict:
+    """MERGE bronze ``derivatives_quote`` series into ``silver.fact_derivatives_quote``."""
+    reg = registry or load_registry()
+    return _conform_b3_fact(
+        spark, reg, fact="derivatives_quote", table="fact_derivatives_quote", cols=_DQ_COLS, ddl=_FACT_DERIV_QUOTE_DDL
+    )
+
+
 def build_series_metrics(spark: "SparkSession") -> dict:
     """Derive ``silver.series_metrics`` (pct change + rolling avg/vol) via windows."""
     from pyspark.sql import functions as F
@@ -280,11 +376,12 @@ def maintain(spark: "SparkSession", retain_hours: int = 168) -> None:
 
 def run_silver(spark: "SparkSession", registry: Registry | None = None) -> dict:
     """Full silver build: dimensions + conformed fact + metrics."""
-    from ofl.transform.spark.dimensions import build_dim_date, build_dim_series
+    from ofl.transform.spark.dimensions import build_dim_date, build_dim_instrument, build_dim_series
 
     reg = registry or load_registry()
     build_dim_series(spark, reg)
     build_dim_date(spark)
+    build_dim_instrument(spark, reg)
     result = conform_observations(spark, reg)
     if result.get("merged", 0):
         build_series_metrics(spark)
@@ -292,4 +389,6 @@ def run_silver(spark: "SparkSession", registry: Registry | None = None) -> dict:
         log.warning("silver_metrics_skipped", reason="no fact_observation")
     conform_treasury(spark, reg)
     conform_security_prices(spark, reg)
+    conform_open_interest(spark, reg)
+    conform_derivatives_quotes(spark, reg)
     return result
