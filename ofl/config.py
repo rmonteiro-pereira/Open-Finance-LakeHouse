@@ -29,6 +29,12 @@ class Settings(BaseSettings):
     # skip Ivy resolution at session-build time.
     spark_jars_packaged: bool = Field(False, alias="OFL_SPARK_JARS_PACKAGED")
 
+    # Driver heap for the silver lane. The conform MERGEs re-read each fact's full
+    # bronze every run (not just the daily delta), so the largest fact
+    # (fact_derivatives_quote, ~1.6M rows and growing) drives the requirement; the
+    # 1g pyspark default OOMs on it. Keep within the pod memory limit.
+    spark_driver_memory: str = Field("4g", alias="OFL_SPARK_DRIVER_MEMORY")
+
 
 @lru_cache
 def get_settings() -> Settings:
