@@ -29,11 +29,22 @@ MODELS = [
     "mart_macro_dashboard",
     "mart_yield_curve",
     "mart_equity_daily",
+    "mart_futures_curve",
+    "mart_open_interest",
 ]
 
 # Silver tables each mart depends on — used to skip marts whose inputs aren't ready.
-# `mart_equity_daily` reads `fact_security_price`.
-_SILVER_TABLES = ["fact_observation", "dim_series", "fact_treasury", "fact_security_price"]
+# `mart_equity_daily` reads `fact_security_price`; the derivatives marts read
+# `fact_derivatives_quote` / `fact_open_interest` joined to `dim_instrument`.
+_SILVER_TABLES = [
+    "fact_observation",
+    "dim_series",
+    "fact_treasury",
+    "fact_security_price",
+    "fact_open_interest",
+    "fact_derivatives_quote",
+    "dim_instrument",
+]
 
 
 def _model_sql(name: str) -> str:

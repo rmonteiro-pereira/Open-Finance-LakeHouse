@@ -592,3 +592,47 @@ series:
     tpmerc: ["010"]          # mercado à vista (cash)
     tickers: ["PETR4", "PETR3", "VALE3", "ITUB4", "BBDC4", "ABEV3", "B3SA3",
               "WEGE3", "BBAS3", "ITSA4", "RENT3", "PRIO3", "SUZB3", "GGBR4", "MGLU3"]
+
+  # ----------------------------------------------------------- derivatives ----
+  # B3 public market-data portal (arquivos.b3.com.br): free daily CSVs. By default
+  # only the futures segments (FINANCIAL: DI1/DOL/IND/WIN/WDO...; AGRIBUSINESS:
+  # boi/milho/café/soja/etanol) are kept — add EQUITY CALL/PUT to `segments` to
+  # ingest single-stock options. Backfill a window with the OFL_B3_WINDOW env
+  # ("YYYY-MM-DD..YYYY-MM-DD") or a `start:`/`end:` here; steady-state daily pulls
+  # the last `lookback_days` weekdays. (LoanBalance/BTB is NOT here — it 400s on
+  # the public endpoint; gated to the paid Up2Data tier.)
+  b3_oi:
+    domain: derivatives
+    handler: b3_arquivos
+    name: "B3 derivatives open interest (DerivativesOpenPosition)"
+    category: derivative
+    unit: contracts
+    frequency: daily
+    fact: open_interest
+    freshness_sla: "5d"
+    file: DerivativesOpenPosition
+    lookback_days: 3
+  b3_deriv_quotes:
+    domain: derivatives
+    handler: b3_arquivos
+    name: "B3 derivatives prices & settlement (TradeInformationConsolidated)"
+    category: derivative
+    unit: price
+    frequency: daily
+    fact: derivatives_quote
+    freshness_sla: "5d"
+    file: TradeInformationConsolidated
+    lookback_days: 3
+  # Instrument registry (listed) — the dimension that resolves expiry, multiplier,
+  # strike and ISIN for every contract. Snapshot: the handler always pulls the
+  # latest available day and overwrites (kept full-universe so any fact joins).
+  b3_instruments:
+    domain: reference
+    handler: b3_arquivos
+    name: "B3 instrument registry (InstrumentsConsolidated)"
+    category: reference
+    unit: none
+    frequency: daily
+    fact: instrument
+    freshness_sla: "5d"
+    file: InstrumentsConsolidated
