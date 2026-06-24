@@ -18,7 +18,7 @@ Medallion lakehouse, engine-per-lane: **Polars** extracts public financial/macro
 APIs → **bronze** (one Delta table per series); **Spark** conforms bronze →
 **silver** star schema (idempotent Delta MERGE); **DuckDB** builds **gold** marts
 from silver. Everything is driven by a metadata registry (`sources/registry.yml`,
-48 series). All three layers are **Delta Lake** tables in MinIO. A dashboard only
+51 series). All three layers are **Delta Lake** tables in MinIO. A dashboard only
 needs the **silver** and **gold** layers.
 
 ```
@@ -134,6 +134,18 @@ Build custom views from these. Grain and columns:
 `symbol STRING, date DATE, open DOUBLE, high DOUBLE, low DOUBLE, close DOUBLE, volume DOUBLE, source STRING, ingested_at TIMESTAMP, load_id STRING`
 - Grain: `(symbol, date)`. Sources: `yahoo` (global + BR ETFs/commodities/FX), `b3` (Ibovespa index), `b3_cotahist` (official B3 cash-market equities).
 
+### `fact_open_interest` — daily B3 derivatives open interest (per contract)
+`symbol STRING, date DATE, asset STRING, expiration_code STRING, segment STRING, isin STRING, open_interest DOUBLE, open_interest_var DOUBLE, source STRING, ingested_at TIMESTAMP, load_id STRING`
+- Grain: `(symbol, date)`. `asset` is the underlying (DI1, DOL, IND, WIN, WDO, agro…); `expiration_code` the maturity code (e.g. `F27`). Futures segments only (`FINANCIAL` + `AGRIBUSINESS`).
+
+### `fact_derivatives_quote` — daily B3 derivatives prices + settlement
+`symbol STRING, date DATE, segment STRING, isin STRING, min_price DOUBLE, max_price DOUBLE, avg_price DOUBLE, last_price DOUBLE, oscillation_pct DOUBLE, settlement_price DOUBLE, settlement_rate DOUBLE, ref_price DOUBLE, trades DOUBLE, contracts DOUBLE, notional DOUBLE, source STRING, ingested_at TIMESTAMP, load_id STRING`
+- Grain: `(symbol, date)`. `settlement_rate` is the daily ajuste rate (e.g. DI in % p.a.); `settlement_price` the ajuste PU. `contracts` = volume, `notional` = financial volume (R$).
+
+### `dim_instrument` — B3 instrument registry (latest snapshot, the contract dimension)
+`symbol STRING, asset STRING, asset_desc STRING, segment STRING, market STRING, security_category STRING, expiration_date DATE, expiration_code STRING, isin STRING, cfi_code STRING, option_type STRING, contract_multiplier DOUBLE, round_lot DOUBLE, trading_ccy STRING, strike DOUBLE, option_style STRING, underlying STRING, date DATE, source STRING, ingested_at TIMESTAMP`
+- Grain: `symbol` (latest day). Join to the derivatives facts on `symbol` for maturity, multiplier, strike, ISIN. Full-universe (all segments), so any contract resolves.
+
 ### `dim_series` — business metadata for every series (the catalog as a table)
 `series_id STRING, name STRING, domain STRING, source STRING, category STRING, unit STRING, frequency STRING, fact STRING`
 
@@ -155,16 +167,19 @@ Build custom views from these. Grain and columns:
 | **mart_fx** | symbol × date | `series_id, date, rate, daily_return_pct, vol_21d, mtd_return_pct` | USD/BRL & EUR/BRL levels, returns, 21d realized vol. |
 | **mart_yield_curve** | bond × date | `date, bond, maturity, years_to_maturity, yield, buy_rate, sell_price, bond_type` | Treasury yield curve over time (`bond_type` ∈ ipca_plus/prefixado/selic). |
 | **mart_equity_daily** | symbol × date | `symbol, date, open, high, low, close, volume, daily_return_pct, sma_21, vol_21d, high_52w, low_52w` | Per-security daily analytics for all equities/indices/FX/commodities. |
+| **mart_futures_curve** | symbol × date | `date, asset, symbol, expiration_code, maturity, days_to_maturity, segment, last_price, settlement_price, settlement_rate, ref_price, contracts, notional, open_interest, open_interest_var, contract_multiplier, trading_ccy` | Daily futures **term structure** (DI1, DOL, IND, WIN, agro…). Plot `settlement_rate` vs `days_to_maturity` for the DI curve; animate over `date`. |
+| **mart_open_interest** | asset × date | `date, asset, segment, total_open_interest, total_open_interest_var, n_contracts` | Daily **open interest** by underlying (crowd positioning), summed across all live maturities. |
 
 > Marts are full overwrites each gold run. They're small — safe to load entirely
 > into the dashboard process and slice client-side.
 
 ---
 
-## 6. Series catalog (48 series)
+## 6. Series catalog (51 series)
 
 `domain` → `series_id` (what it is). Query `dim_series` for the live list. All land
-in `fact_observation` unless marked **[T]** (fact_treasury) or **[S]** (fact_security_price).
+in `fact_observation` unless marked **[T]** (fact_treasury), **[S]** (fact_security_price),
+**[OI]** (fact_open_interest), **[DQ]** (fact_derivatives_quote) or **[I]** (dim_instrument).
 
 - **rates:** `selic` (Selic over, daily), `cdi` (CDI daily), `over` (Selic annualized),
   `selic_meta` (Copom target), `tlp`, `cdi_anual` (CDI annualized base-252), `tr`,
@@ -181,6 +196,10 @@ in `fact_observation` unless marked **[T]** (fact_treasury) or **[S]** (fact_sec
   `b3` **[S]** (Ibovespa index via Yahoo), `ibge` (unemployment %).
 - **equities [S]:** `yahoo_etf`, `yahoo_commodity`, `yahoo_currency`, `yahoo_global`
   (S&P/Nasdaq/VIX/US10Y/DXY/Brent/EUR-USD/USD-MXN), `b3_cotahist` (official B3 cash-market OHLCV).
+- **derivatives:** `b3_oi` **[OI]** (open interest per futures contract), `b3_deriv_quotes`
+  **[DQ]** (futures prices + daily settlement rate). Both from the free B3 public portal
+  (`arquivos.b3.com.br`), **futures segments only** (FINANCIAL + AGRIBUSINESS); history from ~Oct 2019.
+- **reference:** `b3_instruments` **[I]** (B3 instrument registry → `dim_instrument`).
 
 **Notes / caveats**
 - BRL macro series are floored at the **Plano Real (1994-07-01)**; no pre-1994 history.
@@ -189,6 +208,13 @@ in `fact_observation` unless marked **[T]** (fact_treasury) or **[S]** (fact_sec
 - `value` units differ by series (percent, R$ million, index, BRL) — always read
   `dim_series.unit`; don't mix units on one axis.
 - Annualized rates (`cdi_anual`, `over`) legitimately reach ~173% in 1994-97.
+- Derivatives (`fact_open_interest` / `fact_derivatives_quote`) cover **futures only**
+  by default (FINANCIAL + AGRIBUSINESS); single-stock equity options are excluded.
+  History starts ~**Oct 2019** (the public portal's earliest). Securities lending /
+  BTB (`LoanBalance`) is **not** ingested — it's gated to B3's paid Up2Data tier.
+- For the DI curve, `fact_derivatives_quote.settlement_rate` (or `mart_futures_curve`)
+  is the daily ajuste in **% p.a.**; `last_price` is the last traded rate. Use
+  `dim_instrument.expiration_date` (already in `mart_futures_curve` as `maturity`).
 
 ---
 
@@ -200,6 +226,8 @@ in `fact_observation` unless marked **[T]** (fact_treasury) or **[S]** (fact_sec
 4. **FX** — `mart_fx` (USD/BRL level + 21d vol) with global context from `mart_equity_daily` (DXY, ^TNX).
 5. **Yield curve** — `mart_yield_curve` (animate `yield` vs `years_to_maturity` over `date`; color by `bond_type`).
 6. **Equities** — `mart_equity_daily` (blue-chip watchlist: close, 21d vol, 52w range).
+7. **DI futures curve** — `mart_futures_curve` filtered to `asset='DI1'` (animate `settlement_rate` vs `days_to_maturity` over `date`); pair with `mart_open_interest` for OI by maturity.
+8. **Positioning / open interest** — `mart_open_interest` (`total_open_interest` by `asset` over time: DI1, DOL, IND, WIN, agro) as a crowd-positioning panel.
 
 ---
 
