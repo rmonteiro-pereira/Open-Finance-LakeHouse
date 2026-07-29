@@ -7,7 +7,8 @@ over closed periods. This lane runs continuously over a live market feed:
                                                    →  bronze Delta (+ dead letter)
                                                    →  silver Delta (1-min OHLC bars)
 
-Milestone status: **M0 (producer), M1 (bronze stream) and M2 (event-time silver)
-are implemented.** The ``Trigger.AvailableNow`` cron mode and the R2 backend are
-M3+; see ``docs/STREAMING.md``.
+Milestone status: **M0 (producer), M1 (bronze stream), M2 (event-time silver),
+M3 (``Trigger.AvailableNow`` with a measured idempotence check) and M4's metrics
+snapshot are implemented.** The R2 backend that would make the committed
+``workflow_dispatch`` workflow live is human-gated; see ``docs/STREAMING.md``.
 """

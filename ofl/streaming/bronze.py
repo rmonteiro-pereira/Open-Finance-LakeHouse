@@ -85,6 +85,27 @@ def build_streaming_session(app_name: str = APP_ID) -> "SparkSession":
     return spark
 
 
+def trigger_for(*, available_now: bool, interval: str) -> dict:
+    """The ``writeStream.trigger(**kwargs)`` for one of the lane's two modes.
+
+    * **Processing-time** (``interval``) is the *continuous* mode: the query stays
+      up and fires a micro-batch on a clock. It is how M0–M2 were developed, and
+      what you want when watching a live feed.
+    * **``Trigger.AvailableNow``** is the *cron* mode: the query claims everything
+      the source has right now, processes it in as many micro-batches as
+      ``maxFilesPerTrigger`` implies, and **exits on its own**. That is what makes a
+      GitHub Actions run possible — a scheduled job must terminate.
+
+    The same query, the same checkpoint, the same code path. Only the trigger
+    differs, which is the point: the exactly-once story is carried by the
+    checkpoint plus ``txnAppId``/``txnVersion``, not by the mode. Two consecutive
+    ``AvailableNow`` runs over an unchanged source therefore have to leave the
+    tables byte-for-byte equivalent — that is what ``tools/streaming_idempotence.py``
+    measures rather than asserts.
+    """
+    return {"availableNow": True} if available_now else {"processingTime": interval}
+
+
 def _prepare(raw: "DataFrame") -> "DataFrame":
     """Parse the raw text lines against the explicit schema and tag admissibility.
 
@@ -178,6 +199,7 @@ def run_bronze_stream(
     *,
     seconds: float | None = 120.0,
     trigger_interval: str = "10 seconds",
+    available_now: bool = False,
     max_files_per_trigger: int | None = None,
     app_id: str = APP_ID,
 ) -> dict:
@@ -185,8 +207,10 @@ def run_bronze_stream(
 
     Args:
         spark: session from :func:`build_streaming_session`.
-        seconds: wall-clock cap on the run; ``None`` runs until interrupted.
+        seconds: wall-clock cap on the run; ``None`` runs until interrupted (or,
+            under ``available_now``, until the landing directory is drained).
         trigger_interval: micro-batch cadence (processing-time trigger).
+        available_now: use ``Trigger.AvailableNow`` instead — see :func:`trigger_for`.
         max_files_per_trigger: backpressure bound; defaults to the setting.
         app_id: Delta idempotency identity. Must be stable across restarts.
     """
@@ -231,10 +255,11 @@ def run_bronze_stream(
         finally:
             batch.unpersist()
 
+    trigger = trigger_for(available_now=available_now, interval=trigger_interval)
     query = (
         prepared.writeStream.queryName(QUERY_NAME)
         .option("checkpointLocation", to_local_uri(checkpoint))
-        .trigger(processingTime=trigger_interval)
+        .trigger(**trigger)
         .foreachBatch(write_batch)
         .start()
     )
@@ -244,7 +269,7 @@ def run_bronze_stream(
         bronze=bronze_path,
         checkpoint=str(checkpoint),
         max_files_per_trigger=max_files,
-        trigger=trigger_interval,
+        trigger="availableNow" if available_now else trigger_interval,
     )
 
     try:

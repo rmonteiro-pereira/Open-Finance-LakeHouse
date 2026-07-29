@@ -1,0 +1,75 @@
+==============================================================================
+streaming idempotence check — Trigger.AvailableNow, one process per run
+started 2026-07-29T04:31:54+00:00
+window=1 minute  watermark=2 minutes  runs=2
+==============================================================================
+
+--- before any run ---------------------------------------------------------
+{
+  "exists": true,
+  "rows": 17,
+  "distinct_keys": 17,
+  "duplicate_keys": 0,
+  "symbols": 3,
+  "total_trades": 9021,
+  "min_window_start": "2026-07-28 23:56:00",
+  "max_window_end": "2026-07-29 04:24:00",
+  "max_event_time": "2026-07-29 04:23:58.948000",
+  "delta_version": 2
+}
+
+--- run 1 — ofl stream-silver --available-now ------------------------------
+exit=0  elapsed=28.0s
+{"bronze": "file:///E:/Projetos/Portifolio/_wt-OFL-streaming/data/streaming/bronze/trades", "silver": "file:///E:/Projetos/Portifolio/_wt-OFL-streaming/data/streaming/silver/fact_trade_ohlc_1m", "checkpoint": "data\\streaming\\_checkpoints\\silver_ohlc_1m", "window": "1 minute", "watermark": "2 minutes", "max_files_per_trigger": 64, "trigger": "availableNow", "event": "silver_stream_started", "level": "info", "timestamp": "2026-07-29T04:32:12.383905Z"}
+{"batch_id": 7, "windows": 0, "event": "micro_batch", "level": "info", "timestamp": "2026-07-29T04:32:16.936129Z"}
+{"batch_id": 8, "windows": 9, "event": "micro_batch", "level": "info", "timestamp": "2026-07-29T04:32:21.846705Z"}
+{"batchId": 8, "numInputRows": 0, "durationMs": 4896, "watermark": "2026-07-29T04:29:09.190Z", "maxEventTime": null, "stateRows": 9334, "droppedByWatermark": 0, "event": "last_progress", "level": "info", "timestamp": "2026-07-29T04:32:22.225334Z"}
+{"batches": 2, "windows": 9, "mode": "availableNow", "silver_uri": "file:///E:/Projetos/Portifolio/_wt-OFL-streaming/data/streaming/silver/fact_trade_ohlc_1m", "dropped_late": 0, "watermark": "2026-07-29T04:29:09.190Z", "run_max_event_time": "2026-07-29T04:31:09.190Z", "state_rows": 9334, "open_windows": ["04:29:00", "04:30:00", "04:31:00"], "event": "silver_stream_stopped", "level": "info", "timestamp": "2026-07-29T04:32:22.225334Z"}
+{"batches": 2, "windows": 9, "dropped_late": 0, "event": "stream_silver_done", "level": "info", "timestamp": "2026-07-29T04:32:22.225334Z"}
+{"path": "data\\streaming\\_metrics\\silver-availablenow-run1.json", "exists": true, "rows": 26, "distinct_keys": 26, "duplicate_keys": 0, "symbols": 3, "total_trades": 24199, "min_window_start": "2026-07-28 23:56:00", "max_window_end": "2026-07-29 04:27:00", "max_event_time": "2026-07-29 04:26:11.563000", "delta_version": 3, "event": "metrics_snapshot", "level": "info", "timestamp": "2026-07-29T04:32:23.160110Z"}
+
+--- silver table after run 1 ----------------------------------------------
+{
+  "exists": true,
+  "rows": 26,
+  "distinct_keys": 26,
+  "duplicate_keys": 0,
+  "symbols": 3,
+  "total_trades": 24199,
+  "min_window_start": "2026-07-28 23:56:00",
+  "max_window_end": "2026-07-29 04:27:00",
+  "max_event_time": "2026-07-29 04:26:11.563000",
+  "delta_version": 3
+}
+
+--- run 2 — ofl stream-silver --available-now ------------------------------
+exit=0  elapsed=18.5s
+{"bronze": "file:///E:/Projetos/Portifolio/_wt-OFL-streaming/data/streaming/bronze/trades", "silver": "file:///E:/Projetos/Portifolio/_wt-OFL-streaming/data/streaming/silver/fact_trade_ohlc_1m", "checkpoint": "data\\streaming\\_checkpoints\\silver_ohlc_1m", "window": "1 minute", "watermark": "2 minutes", "max_files_per_trigger": 64, "trigger": "availableNow", "event": "silver_stream_started", "level": "info", "timestamp": "2026-07-29T04:32:40.852442Z"}
+{"batchId": 9, "numInputRows": 0, "durationMs": 81, "watermark": "2026-07-29T04:29:09.190Z", "maxEventTime": null, "stateRows": 0, "droppedByWatermark": 0, "event": "last_progress", "level": "info", "timestamp": "2026-07-29T04:32:41.008852Z"}
+{"batches": 0, "windows": 0, "mode": "availableNow", "silver_uri": "file:///E:/Projetos/Portifolio/_wt-OFL-streaming/data/streaming/silver/fact_trade_ohlc_1m", "dropped_late": 0, "watermark": "2026-07-29T04:29:09.190Z", "run_max_event_time": null, "state_rows": 0, "open_windows": ["04:29:00", "04:30:00", "04:31:00"], "event": "silver_stream_stopped", "level": "info", "timestamp": "2026-07-29T04:32:41.008852Z"}
+{"batches": 0, "windows": 0, "dropped_late": 0, "event": "stream_silver_done", "level": "info", "timestamp": "2026-07-29T04:32:41.008852Z"}
+{"path": "data\\streaming\\_metrics\\silver-availablenow-run2.json", "exists": true, "rows": 26, "distinct_keys": 26, "duplicate_keys": 0, "symbols": 3, "total_trades": 24199, "min_window_start": "2026-07-28 23:56:00", "max_window_end": "2026-07-29 04:27:00", "max_event_time": "2026-07-29 04:26:11.563000", "delta_version": 3, "event": "metrics_snapshot", "level": "info", "timestamp": "2026-07-29T04:32:41.726576Z"}
+
+--- silver table after run 2 ----------------------------------------------
+{
+  "exists": true,
+  "rows": 26,
+  "distinct_keys": 26,
+  "duplicate_keys": 0,
+  "symbols": 3,
+  "total_trades": 24199,
+  "min_window_start": "2026-07-28 23:56:00",
+  "max_window_end": "2026-07-29 04:27:00",
+  "max_event_time": "2026-07-29 04:26:11.563000",
+  "delta_version": 3
+}
+
+==============================================================================
+verdict
+==============================================================================
+compared fields: rows, distinct_keys, duplicate_keys, symbols, total_trades
+IDEMPOTENT — 2 consecutive AvailableNow runs left the table identical
+  rows          26  (all runs)
+  distinct keys 26  (all runs)
+  duplicate keys 0
+  total trades  24199
