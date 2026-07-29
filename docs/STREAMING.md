@@ -15,9 +15,11 @@ same medallion layers — a different clock.
                                      (offsets + commits)           (offsets + commits + window state)
 ```
 
-**Implemented here: M0 (producer), M1 (bronze stream) and M2 (event-time silver).**
-`Trigger.AvailableNow` and the R2/cron "live at R$0" tier are M3+ — see
-[Roadmap](#roadmap) and the full spec in [`spec-streaming.md`](spec-streaming.md).
+**Implemented here: M0 (producer), M1 (bronze stream), M2 (event-time silver),
+M3 (`Trigger.AvailableNow` + a measured idempotence check) and M4's metrics
+snapshot plus an inert `workflow_dispatch` workflow.** Provisioning the R2 bucket
+that would make the cron tier live is human-gated and deliberately not done here —
+see [Roadmap](#roadmap) and the full spec in [`spec-streaming.md`](spec-streaming.md).
 
 ## Why this source
 
@@ -40,6 +42,13 @@ uv run ofl stream-bronze --seconds 120 --trigger "10 seconds"
 
 # M2 — stream bronze Delta into 1-minute event-time OHLC bars
 uv run ofl stream-silver --seconds 120 --window "1 minute" --watermark "2 minutes"
+
+# M3 — the same two jobs on a trigger that terminates (the cron mode)
+uv run ofl stream-bronze --available-now
+uv run ofl stream-silver --available-now --snapshot my-run
+
+# M3 — prove it: two AvailableNow runs, one process each, counts compared
+uv run python tools/streaming_idempotence.py --out transcript.txt
 ```
 
 All three commands are **capped by design**. The producer stops on `--max-seconds`,
@@ -66,6 +75,7 @@ data/streaming/
   bronze/trades/               bronze Delta: well-formed events
   bronze/trades_dead_letter/   bronze Delta: rejects, kept verbatim for replay
   silver/fact_trade_ohlc_1m/   silver Delta: 1-minute event-time OHLC bars
+  _metrics/                    per-run metrics snapshots (JSON)
 ```
 
 `_landing_tmp` is a **sibling** of `_landing`, not a child. Spark's file source lists
@@ -432,6 +442,196 @@ inside the minute, and the chain would break by far more than a tick.
 run 3's nine. Bars are written once and never rewritten, which is what append mode
 buys and why the sink needs no MERGE.
 
+## M3 — the same job, on a trigger that ends
+
+A processing-time trigger runs forever. That is right for a laptop watching a live
+feed and impossible for anything scheduled: a cron job that never exits is not a
+cron job. `Trigger.AvailableNow` is the other mode — the query claims **everything
+the source has right now**, processes it in as many micro-batches as
+`maxFilesPerTrigger` implies, and **terminates on its own**.
+
+```bash
+ofl stream-bronze --available-now                       # drain _landing, exit
+ofl stream-silver --available-now --snapshot my-run     # drain bronze, exit
+```
+
+What changes is one argument:
+
+```python
+trigger = {"availableNow": True} if available_now else {"processingTime": interval}
+query = bars.writeStream.outputMode("append").trigger(**trigger)...
+```
+
+What does **not** change is everything that matters. Same query, same checkpoint,
+same `txnAppId`/`txnVersion` guard, same watermark. The exactly-once story is
+carried by the checkpoint and the Delta log, not by the trigger — which is exactly
+the claim worth testing, because it is the claim the cron tier rests on.
+
+`--available-now` also drops the default 120-second wall-clock cap: capping a
+drain would silently truncate a backlog, and the trigger already guarantees
+termination. `--seconds` is still honoured if you pass it, as a safety net.
+
+### The idempotence check
+
+[`tools/streaming_idempotence.py`](../tools/streaming_idempotence.py) runs the
+silver job twice under `AvailableNow` and compares the table before, between and
+after. Three details are what make it evidence rather than decoration:
+
+1. **Each run is a separate OS process.** A second call inside one Python process
+   would reuse a warm `SparkSession`. A fresh JVM knows nothing except what the
+   checkpoint on disk tells it — which is the thing under test.
+2. **The counts are read with delta-rs, not with Spark.** The writer is not the
+   witness. `ofl/streaming/metrics.py` opens the Delta log independently, after
+   the JVM has exited.
+3. **The comparison is on the table, not on the run.** Run 1 and run 2 *should*
+   differ in batches, input rows and throughput. Requiring those to match would
+   test the wrong thing.
+
+It exits non-zero on a mismatch, so it is usable as a gate and not only as a demo.
+
+### Evidence — two consecutive AvailableNow runs
+
+Captured 2026-07-29, same machine and versions as the M0–M2 evidence above, over
+a bronze table grown to **33,527 rows** by two further live captures (15,908 and
+9,325 events) drained with `ofl stream-bronze --available-now`. Full transcript:
+[`docs/evidence/streaming/idempotence-availablenow.txt`](evidence/streaming/idempotence-availablenow.txt).
+
+**Run 1** — resumes from the silver checkpoint, drains the 9,325 rows bronze had
+gained, and publishes the bars the advanced watermark released:
+
+```json
+{"window": "1 minute", "watermark": "2 minutes", "max_files_per_trigger": 64, "trigger": "availableNow", "event": "silver_stream_started"}
+{"batch_id": 7, "windows": 0, "event": "micro_batch"}
+{"batch_id": 8, "windows": 9, "event": "micro_batch"}
+{"batchId": 8, "numInputRows": 0, "durationMs": 4896, "watermark": "2026-07-29T04:29:09.190Z", "stateRows": 9334, "droppedByWatermark": 0, "event": "last_progress"}
+{"batches": 2, "windows": 9, "mode": "availableNow", "dropped_late": 0, "watermark": "2026-07-29T04:29:09.190Z", "run_max_event_time": "2026-07-29T04:31:09.190Z", "state_rows": 9334, "open_windows": ["04:29:00", "04:30:00", "04:31:00"], "event": "silver_stream_stopped"}
+```
+
+**Run 2** — a fresh process started as soon as run 1 exited, nothing changed
+underneath it:
+
+```json
+{"batchId": 9, "numInputRows": 0, "durationMs": 81, "watermark": "2026-07-29T04:29:09.190Z", "stateRows": 0, "droppedByWatermark": 0, "event": "last_progress"}
+{"batches": 0, "windows": 0, "mode": "availableNow", "dropped_late": 0, "watermark": "2026-07-29T04:29:09.190Z", "run_max_event_time": null, "state_rows": 0, "open_windows": ["04:29:00", "04:30:00", "04:31:00"], "event": "silver_stream_stopped"}
+```
+
+`batches: 0` means `foreachBatch` was never invoked: Spark opened a trigger,
+found the source had not moved, and stopped. No Delta commit was attempted, which
+is why the idempotency guard never even had to fire — `txnAppId`/`txnVersion` is
+the *second* line of defence, behind the checkpoint.
+
+`stateRows: 0` on that trigger is Spark reporting no state-operator progress for a
+batch that read nothing — **not** an eviction. That distinction is load-bearing:
+had run 2 discarded the 9,334 held rows, every bar built from them afterwards
+would come out short. So it was checked rather than assumed. A further live
+capture was drained in later, pushing the watermark past `04:31` and releasing the
+three windows run 1 had left open:
+
+```
+04:29  BTCUSDT 2233 | ETHUSDT 1798 | SOLUSDT 238
+04:30  BTCUSDT 2019 | ETHUSDT 1840 | SOLUSDT 452
+04:31  BTCUSDT  338 | ETHUSDT  344 | SOLUSDT  63      sum = 9,325
+```
+
+**9,325** — exactly the dedup state that was being held when run 2 reported zero,
+and exactly the count of bronze rows at or after that watermark. Nothing was lost
+across the restart.
+
+The table, read back independently after each run:
+
+| | before | after run 1 | after run 2 |
+|---|---:|---:|---:|
+| rows | 17 | **26** | **26** |
+| distinct (`window_start`, `symbol`) | 17 | **26** | **26** |
+| duplicate keys | 0 | **0** | **0** |
+| `sum(trades)` | 9,021 | **24,199** | **24,199** |
+| Delta version | 2 | 3 | **3** |
+
+Run 1 wrote; run 2 did not even bump the Delta version. That is the whole claim.
+
+**Reconciliation.** The three destinations account for every bronze row exactly:
+
+| | rows | how it is known |
+|---|---:|---|
+| bronze | 33,527 | `count(*)`, all `event_key`s distinct |
+| in published bars | 24,199 | `sum(trades)` over the 26 silver rows |
+| dropped as late | 3 | M2's injected late trades, counted by `dropped_late` |
+| still in dedup state | 9,325 | `stateRows` 9,334 − 9 open bars (3 symbols × 3 windows) |
+
+24,199 + 3 + 9,325 = **33,527**. The last line is independently checkable against
+bronze itself: exactly 9,325 rows have a `trade_time` at or after the checkpointed
+watermark of `04:29:09.190`, and 24,202 are behind it — 24,199 published plus the
+3 that were dropped. The two derivations are computed from different tables and
+agree.
+
+## M4 — the metrics snapshot, and a workflow that cannot fire
+
+### The snapshot
+
+Every `--available-now` silver run can write a JSON receipt
+(`--snapshot <name>` → `data/streaming/_metrics/<name>.json`). It is split in two
+halves on purpose:
+
+```json
+{
+  "mode": "availableNow",
+  "run":   {"batches": 2, "rows_written": 9, "input_rows": 9325, "trigger_ms": 9749,
+            "throughput_rows_per_second": 956.51, "dropped_late": 0,
+            "watermark": "2026-07-29T04:29:09.190Z",
+            "open_windows": ["04:29:00", "04:30:00", "04:31:00"]},
+  "state": {"rows": 26, "distinct_keys": 26, "duplicate_keys": 0, "symbols": 3,
+            "total_trades": 24199, "max_event_time": "2026-07-29 04:26:11.563000",
+            "delta_version": 3}
+}
+```
+
+* `run` comes from Spark's own `StreamingQueryProgress` and describes *this
+  execution*. It is gone when the JVM exits.
+* `state` comes from reading the Delta table back with delta-rs and describes *the
+  world after the run*. It is what a second run has to reproduce exactly.
+
+Mixing them would make the idempotence check either vacuous or impossible: run 2's
+`run` block legitimately differs (0 batches, 81 ms, 0 rows/s) while its `state`
+block is identical to run 1's. Both snapshots are committed:
+[run 1](evidence/streaming/silver-availablenow-run1.json) ·
+[run 2](evidence/streaming/silver-availablenow-run2.json).
+
+`throughput_rows_per_second` divides by Spark's trigger-execution time, not by
+wall clock. Wall clock on a bounded run is dominated by JVM start-up — run 2 took
+18.5 s end to end for 81 ms of actual trigger.
+
+### The workflow
+
+[`.github/workflows/streaming.yml`](../.github/workflows/streaming.yml) is the
+"live at R$0" tier: a GitHub-hosted runner captures a bounded slice of the feed,
+runs both Spark passes under `AvailableNow`, and uploads the snapshot as an
+artifact. R2 has no egress fee and public-repo runners are free, so the recurring
+cost is zero.
+
+It is committed **inert**, and deliberately so:
+
+| | |
+|---|---|
+| trigger | `workflow_dispatch` only — **no `schedule:` block**. The cron line is present as a comment so the intent is reviewable and the trigger is not. |
+| preflight | a separate job that fails in seconds with a readable annotation if `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` or `R2_BUCKET` is missing, rather than burning ten minutes to die inside Spark with an S3 stack trace |
+| concurrency | `group: streaming-lane`, `cancel-in-progress: false` — two runs sharing one checkpoint directory would corrupt it |
+
+**What is honestly not done.** Creating the R2 bucket, its API token and the
+repository secrets is account configuration, not code, and it is a human-gated
+step this repository does not perform. Neither is the object-store repoint:
+`OFL_STREAMING_ROOT` is consumed by `ofl.platform.io.streaming_dir` as a local
+filesystem path today, so pointing it at `s3://` needs that one function taught
+about object-store URIs. The env block in the workflow is written down as the
+intended contract; the secrets gate is what stops the workflow being run
+half-finished in the meantime. Everything above it — the producer, both Spark
+passes, the trigger, the snapshot — is real and is what produced the numbers on
+this page.
+
+[`tests/test_streaming_metrics.py`](../tests/test_streaming_metrics.py) pins the
+inertness (the workflow parses, `workflow_dispatch` is its only trigger, both
+Spark steps carry `--available-now`, the gate names all four secrets and exits 1)
+alongside the throughput arithmetic and the comparison logic.
+
 ## Bronze schema
 
 | column | type | note |
@@ -495,8 +695,8 @@ storage rather than sharing the batch bucket.
 | **M0** producer | **done** | live WS → append-only JSONL landing |
 | **M1** bronze stream | **done** | `readStream` → `writeStream` Delta, checkpoint, explicit schema, dead letter |
 | **M2** event-time silver | **done** | tumbling 1-min OHLC/volume with a watermark; `dropDuplicatesWithinWatermark` on `event_key`; own checkpoint |
-| M3 `Trigger.AvailableNow` | next | same code, processes the delta since the checkpoint and exits — proves idempotency by running twice |
-| M4 zero-cost live | | GitHub Actions cron + Cloudflare R2 for Delta/checkpoint; metrics snapshot → dashboard |
+| **M3** `Trigger.AvailableNow` | **done** | same code, drains what the source has and exits; idempotence measured by a scripted double-run |
+| **M4** zero-cost live | **authored, inert** | metrics snapshot JSON per run; `workflow_dispatch`-only GitHub Actions workflow, fail-fast on missing R2 secrets. The bucket itself is human-gated and not provisioned here |
 | M5 integration | | silver/gold consume the streaming table; batch + streaming writeup and diagram |
 
 The order matters: **local continuous first** to get the semantics right, then
@@ -513,6 +713,10 @@ exactly-once in both modes — that is why it is the piece M1 builds properly.
   `bin/winutils.exe` and `bin/hadoop.dll` to write local files.
 - Tests for the parts that don't need a JVM live in
   [`tests/test_streaming.py`](../tests/test_streaming.py) (wire contract, dedup key,
-  atomic flush, frame unwrapping) and
+  atomic flush, frame unwrapping),
   [`tests/test_streaming_windows.py`](../tests/test_streaming_windows.py) (window
-  boundary math, watermark and late-event handling).
+  boundary math, watermark and late-event handling) and
+  [`tests/test_streaming_metrics.py`](../tests/test_streaming_metrics.py) (trigger
+  selection, throughput arithmetic, the idempotence comparison, workflow inertness).
+  The claims that genuinely need Spark are measured against real Delta tables and
+  the output is committed under `docs/evidence/streaming/`.

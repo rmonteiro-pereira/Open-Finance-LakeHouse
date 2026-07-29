@@ -10,6 +10,8 @@
       bronze/trades/               bronze Delta table (well-formed events)
       bronze/trades_dead_letter/   bronze Delta table (unparseable / incomplete)
       silver/fact_trade_ohlc_1m/   silver Delta table (event-time OHLC windows)
+      gold/ofl_streaming_nrt.duckdb  near-real-time DuckDB mart (M5)
+      _metrics/                    per-run metrics snapshots (JSON)
 
 Everything here is generated data and is gitignored. ``_landing_tmp`` is a sibling
 of ``_landing`` rather than a child so that Spark's file source never sees a
@@ -39,6 +41,11 @@ BRONZE_TRADES = ("bronze", "trades")
 DEAD_LETTER = ("bronze", "trades_dead_letter")
 #: Silver Delta table: 1-minute event-time OHLC/volume windows per symbol.
 SILVER_OHLC_1M = ("silver", "fact_trade_ohlc_1m")
+#: Per-run metrics snapshots (JSON). Generated, like everything else here — the
+#: copies that serve as evidence are committed under ``docs/`` by hand.
+METRICS = ("_metrics",)
+#: The near-real-time DuckDB mart materialised from the silver table (M5).
+NRT_MART = ("gold", "ofl_streaming_nrt.duckdb")
 
 
 def landing_dir() -> Path:
@@ -67,3 +74,11 @@ def silver_checkpoint_dir() -> Path:
 
 def silver_ohlc_dir() -> Path:
     return streaming_dir(*SILVER_OHLC_1M)
+
+
+def metrics_dir() -> Path:
+    return streaming_dir(*METRICS)
+
+
+def nrt_mart_path() -> Path:
+    return streaming_dir(*NRT_MART)

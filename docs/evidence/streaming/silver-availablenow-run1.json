@@ -1,0 +1,31 @@
+{
+  "captured_at": "2026-07-29T04:32:22+00:00",
+  "mode": "availableNow",
+  "table": "silver/fact_trade_ohlc_1m",
+  "run": {
+    "batches": 2,
+    "rows_written": 9,
+    "input_rows": 9325,
+    "trigger_ms": 9749,
+    "throughput_rows_per_second": 956.51,
+    "dropped_late": 0,
+    "watermark": "2026-07-29T04:29:09.190Z",
+    "open_windows": [
+      "04:29:00",
+      "04:30:00",
+      "04:31:00"
+    ]
+  },
+  "state": {
+    "exists": true,
+    "rows": 26,
+    "distinct_keys": 26,
+    "duplicate_keys": 0,
+    "symbols": 3,
+    "total_trades": 24199,
+    "min_window_start": "2026-07-28 23:56:00",
+    "max_window_end": "2026-07-29 04:27:00",
+    "max_event_time": "2026-07-29 04:26:11.563000",
+    "delta_version": 3
+  }
+}

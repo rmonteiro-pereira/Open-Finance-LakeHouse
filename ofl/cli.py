@@ -63,13 +63,28 @@ def _stream_produce(args: argparse.Namespace) -> int:
     return 0
 
 
+def _run_seconds(args: argparse.Namespace) -> float | None:
+    """``--seconds`` means "cap this run"; ``Trigger.AvailableNow`` ends by itself.
+
+    So an unspecified ``--seconds`` under ``--available-now`` is *no cap* rather
+    than the continuous mode's 120s default — otherwise a backlog larger than two
+    minutes would be silently truncated mid-drain.
+    """
+    if args.seconds is not None:
+        return args.seconds
+    return None if args.available_now else 120.0
+
+
 def _stream_bronze(args: argparse.Namespace) -> int:
     from ofl.streaming.bronze import build_streaming_session, run_bronze_stream
 
     spark = build_streaming_session()
     try:
         result = run_bronze_stream(
-            spark, seconds=args.seconds, trigger_interval=args.trigger
+            spark,
+            seconds=_run_seconds(args),
+            trigger_interval=args.trigger,
+            available_now=args.available_now,
         )
         log.info(
             "stream_bronze_done",
@@ -90,8 +105,9 @@ def _stream_silver(args: argparse.Namespace) -> int:
     try:
         result = run_silver_stream(
             spark,
-            seconds=args.seconds,
+            seconds=_run_seconds(args),
             trigger_interval=args.trigger,
+            available_now=args.available_now,
             window=args.window,
             watermark=args.watermark,
         )
@@ -102,7 +118,25 @@ def _stream_silver(args: argparse.Namespace) -> int:
             dropped_late=result["dropped_late"],
         )
     finally:
+        # The snapshot reads the table back with delta-rs, deliberately *after* the
+        # session is gone: an independent reader observing committed state.
         spark.stop()
+    if args.snapshot:
+        _write_stream_snapshot(result, name=args.snapshot)
+    return 0
+
+
+def _write_stream_snapshot(result: dict, *, name: str) -> None:
+    from ofl.streaming.metrics import snapshot, write_snapshot
+
+    write_snapshot(snapshot(result, mode=result.get("mode", "unknown")), name=name)
+
+
+def _stream_snapshot(args: argparse.Namespace) -> int:
+    """Table-only snapshot: no run, just what the silver table looks like now."""
+    from ofl.streaming.metrics import snapshot, write_snapshot
+
+    write_snapshot(snapshot(None, mode="observe"), name=args.name)
     return 0
 
 
@@ -138,16 +172,31 @@ def main(argv: list[str] | None = None) -> int:
     prod.set_defaults(func=_stream_produce)
 
     sbr = sub.add_parser("stream-bronze", help="_landing -> bronze Delta (Spark streaming)")
-    sbr.add_argument("--seconds", type=float, default=120.0, help="wall-clock cap")
+    sbr.add_argument("--seconds", type=float, help="wall-clock cap (default 120s, none with --available-now)")
     sbr.add_argument("--trigger", default="10 seconds", help="micro-batch interval")
+    sbr.add_argument(
+        "--available-now",
+        action="store_true",
+        help="Trigger.AvailableNow: drain what exists now, then exit (cron mode)",
+    )
     sbr.set_defaults(func=_stream_bronze)
 
     ssv = sub.add_parser("stream-silver", help="bronze Delta -> event-time OHLC silver")
-    ssv.add_argument("--seconds", type=float, default=120.0, help="wall-clock cap")
+    ssv.add_argument("--seconds", type=float, help="wall-clock cap (default 120s, none with --available-now)")
     ssv.add_argument("--trigger", default="10 seconds", help="micro-batch interval")
+    ssv.add_argument(
+        "--available-now",
+        action="store_true",
+        help="Trigger.AvailableNow: drain bronze, then exit (cron mode)",
+    )
     ssv.add_argument("--window", default="1 minute", help="tumbling window width")
     ssv.add_argument("--watermark", default="2 minutes", help="allowed lateness on trade_time")
+    ssv.add_argument("--snapshot", metavar="NAME", help="write a metrics snapshot JSON under _metrics/")
     ssv.set_defaults(func=_stream_silver)
+
+    snap = sub.add_parser("stream-snapshot", help="metrics snapshot of the silver table (no run)")
+    snap.add_argument("--name", default="silver-observed", help="snapshot file stem")
+    snap.set_defaults(func=_stream_snapshot)
 
     reg = sub.add_parser("registry", help="list the source registry")
     reg.set_defaults(func=_registry)

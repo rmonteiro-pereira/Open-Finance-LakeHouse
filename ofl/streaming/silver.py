@@ -56,6 +56,7 @@ from typing import TYPE_CHECKING
 
 from ofl.platform.io import to_local_uri
 from ofl.platform.logging import get_logger
+from ofl.streaming.bronze import trigger_for
 from ofl.streaming.paths import (
     bronze_trades_dir,
     silver_checkpoint_dir,
@@ -144,6 +145,7 @@ def run_silver_stream(
     *,
     seconds: float | None = 120.0,
     trigger_interval: str = "10 seconds",
+    available_now: bool = False,
     window: str = DEFAULT_WINDOW,
     watermark: str = DEFAULT_WATERMARK,
     max_files_per_trigger: int | None = None,
@@ -153,8 +155,10 @@ def run_silver_stream(
 
     Args:
         spark: session from :func:`ofl.streaming.bronze.build_streaming_session`.
-        seconds: wall-clock cap on the run; ``None`` runs until interrupted.
+        seconds: wall-clock cap on the run; ``None`` runs until interrupted (or,
+            under ``available_now``, until the source is drained).
         trigger_interval: micro-batch cadence (processing-time trigger).
+        available_now: use ``Trigger.AvailableNow`` instead — see :func:`trigger_for`.
         window: tumbling window width, e.g. ``"1 minute"``.
         watermark: allowed lateness on ``trade_time``.
         max_files_per_trigger: backpressure bound; defaults to the setting.
@@ -218,11 +222,12 @@ def run_silver_stream(
         finally:
             out.unpersist()
 
+    trigger = trigger_for(available_now=available_now, interval=trigger_interval)
     query = (
         bars.writeStream.queryName(QUERY_NAME)
         .outputMode("append")
         .option("checkpointLocation", to_local_uri(checkpoint))
-        .trigger(processingTime=trigger_interval)
+        .trigger(**trigger)
         .foreachBatch(write_batch)
         .start()
     )
@@ -234,7 +239,7 @@ def run_silver_stream(
         window=window,
         watermark=watermark,
         max_files_per_trigger=max_files,
-        trigger=trigger_interval,
+        trigger="availableNow" if available_now else trigger_interval,
     )
 
     try:
@@ -248,7 +253,8 @@ def run_silver_stream(
         progress = [_progress_row(p) for p in query.recentProgress]
         query.stop()
 
-    summary = {**stats, "silver_uri": silver_path, "progress": progress}
+    mode = "availableNow" if available_now else f"processingTime:{trigger_interval}"
+    summary = {**stats, "mode": mode, "silver_uri": silver_path, "progress": progress}
     summary.update(_late_data_report(progress, window=window, watermark=watermark))
     if progress:
         log.info("last_progress", **progress[-1])
