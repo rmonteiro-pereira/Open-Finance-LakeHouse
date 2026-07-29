@@ -82,6 +82,30 @@ def _stream_bronze(args: argparse.Namespace) -> int:
     return 0
 
 
+def _stream_silver(args: argparse.Namespace) -> int:
+    from ofl.streaming.bronze import build_streaming_session
+    from ofl.streaming.silver import run_silver_stream
+
+    spark = build_streaming_session("ofl-streaming-silver")
+    try:
+        result = run_silver_stream(
+            spark,
+            seconds=args.seconds,
+            trigger_interval=args.trigger,
+            window=args.window,
+            watermark=args.watermark,
+        )
+        log.info(
+            "stream_silver_done",
+            batches=result["batches"],
+            windows=result["windows"],
+            dropped_late=result["dropped_late"],
+        )
+    finally:
+        spark.stop()
+    return 0
+
+
 def _registry(_args: argparse.Namespace) -> int:
     reg = load_registry()
     for domain in reg.domains():
@@ -117,6 +141,13 @@ def main(argv: list[str] | None = None) -> int:
     sbr.add_argument("--seconds", type=float, default=120.0, help="wall-clock cap")
     sbr.add_argument("--trigger", default="10 seconds", help="micro-batch interval")
     sbr.set_defaults(func=_stream_bronze)
+
+    ssv = sub.add_parser("stream-silver", help="bronze Delta -> event-time OHLC silver")
+    ssv.add_argument("--seconds", type=float, default=120.0, help="wall-clock cap")
+    ssv.add_argument("--trigger", default="10 seconds", help="micro-batch interval")
+    ssv.add_argument("--window", default="1 minute", help="tumbling window width")
+    ssv.add_argument("--watermark", default="2 minutes", help="allowed lateness on trade_time")
+    ssv.set_defaults(func=_stream_silver)
 
     reg = sub.add_parser("registry", help="list the source registry")
     reg.set_defaults(func=_registry)
