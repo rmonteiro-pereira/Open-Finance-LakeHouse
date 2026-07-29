@@ -106,14 +106,22 @@ export MINIO_ENDPOINT=https://minio-api.vanir.dev.br
 kubectl port-forward svc/minio -n minio 9000:9000 &
 export MINIO_ENDPOINT=http://localhost:9000
 
-export MINIO_USER=$(kubectl get secret minio-creds -n default -o jsonpath='{.data.MINIO_USER}' | base64 -d)
-export MINIO_PASSWORD=$(kubectl get secret minio-creds -n default -o jsonpath='{.data.MINIO_PASSWORD}' | base64 -d)
+export MINIO_USER=$(kubectl get secret minio-secrets -n minio -o jsonpath='{.data.root-user}' | base64 -d)
+export MINIO_PASSWORD=$(kubectl get secret minio-secrets -n minio -o jsonpath='{.data.root-password}' | base64 -d)
 
 python tools/export_gold_duckdb.py
 ```
 
 If a checkout's `.env` still points at an older MinIO hostname, the environment
 variable above wins — `.env` is the fallback, not the override.
+
+### Troubleshooting
+
+| Symptom | Cause |
+|---|---|
+| Every mart reports `missing` with `SignatureDoesNotMatch` (403) | The credentials are stale, not the path. MinIO answers a wrong secret key with a signature error rather than `AccessDenied`. Re-export `MINIO_PASSWORD` from `minio-secrets` as above. |
+| Every mart reports `missing` with a connection error | `MINIO_ENDPOINT` is unreachable. The API ingress serves **https** and 308-redirects plain http, which S3 request signing does not survive — use `https://minio-api.vanir.dev.br`. |
+| A single mart reports `missing` | That mart was never materialized under `gold/`. Run the gold transformation (`ofl gold`) first; the export never invents rows. |
 
 ---
 
@@ -127,7 +135,8 @@ con.execute("SHOW TABLES").fetchall()
 con.execute("SELECT mart, status, rows FROM _export_manifest ORDER BY mart").fetchall()
 ```
 
-A healthy export at the time of writing (2026-07-29):
+A healthy export, measured on 2026-07-29 against `https://minio-api.vanir.dev.br`
+(8/8 marts `ok`):
 
 | mart | rows |
 |---|---:|
@@ -140,8 +149,10 @@ A healthy export at the time of writing (2026-07-29):
 | `mart_equity_daily` | 158,764 |
 | `mart_futures_curve` | 1,621,818 |
 
-≈71 MB of DuckDB plus ≈24 MB of parquet. Row counts grow with each pipeline run —
-treat these as an order-of-magnitude sanity check, not a fixture.
+≈38 MB of DuckDB plus ≈24 MB of parquet. Row counts grow with each pipeline run —
+treat these as an order-of-magnitude sanity check, not a fixture. (A DuckDB file
+never shrinks in place, so a database reused across many runs can be noticeably
+larger than a freshly created one holding the same rows.)
 
 ---
 
