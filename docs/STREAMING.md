@@ -1,4 +1,4 @@
-# Streaming lane — Spark Structured Streaming (M0–M2)
+# Streaming lane — Spark Structured Streaming (M0–M5)
 
 The batch lanes run on a schedule over closed periods. This lane runs **continuously
 over a live market feed**, so the lakehouse tells a **batch + streaming (Lambda/Kappa)**
@@ -15,11 +15,12 @@ same medallion layers — a different clock.
                                      (offsets + commits)           (offsets + commits + window state)
 ```
 
-**Implemented here: M0 (producer), M1 (bronze stream), M2 (event-time silver),
-M3 (`Trigger.AvailableNow` + a measured idempotence check) and M4's metrics
-snapshot plus an inert `workflow_dispatch` workflow.** Provisioning the R2 bucket
-that would make the cron tier live is human-gated and deliberately not done here —
-see [Roadmap](#roadmap) and the full spec in [`spec-streaming.md`](spec-streaming.md).
+**Implemented here: M0 → M5.** Producer, bronze stream, event-time silver,
+`Trigger.AvailableNow` with a measured idempotence check, per-run metrics
+snapshots with an inert `workflow_dispatch` workflow, and a served near-real-time
+DuckDB mart. Provisioning the R2 bucket that would make the cron tier *live* is
+human-gated and deliberately not done here — see [Roadmap](#roadmap) and the full
+spec in [`spec-streaming.md`](spec-streaming.md).
 
 ## Why this source
 
@@ -49,6 +50,10 @@ uv run ofl stream-silver --available-now --snapshot my-run
 
 # M3 — prove it: two AvailableNow runs, one process each, counts compared
 uv run python tools/streaming_idempotence.py --out transcript.txt
+
+# M5 — materialise the bars into the served DuckDB mart
+uv run ofl stream-mart
+duckdb data/streaming/gold/ofl_streaming_nrt.duckdb -c "SELECT * FROM mart_trade_latest_nrt"
 ```
 
 All three commands are **capped by design**. The producer stops on `--max-seconds`,
@@ -75,6 +80,7 @@ data/streaming/
   bronze/trades/               bronze Delta: well-formed events
   bronze/trades_dead_letter/   bronze Delta: rejects, kept verbatim for replay
   silver/fact_trade_ohlc_1m/   silver Delta: 1-minute event-time OHLC bars
+  gold/ofl_streaming_nrt.duckdb  the served near-real-time mart
   _metrics/                    per-run metrics snapshots (JSON)
 ```
 
@@ -669,13 +675,174 @@ Grain: **one row per (`window_start`, `symbol`)**.
 | `first_trade_time`, `last_trade_time` | timestamp | observed event-time span *inside* the window, which is not the window's own span |
 | `source`, `ingested_at`, `load_id` | | same lineage columns as bronze; `load_id` is `ofl-streaming-silver:<batch_id>` |
 
+## M5 — the near-real-time mart, and what the two lanes look like together
+
+### The whole lakehouse, both clocks
+
+This is the diagram the lane exists to make true: one storage format, one set of
+medallion layers, one serving engine — and two clocks.
+
+```mermaid
+flowchart LR
+    classDef store fill:#eef4ff,stroke:#4a72c4,color:#12294f
+    classDef job fill:#ffffff,stroke:#8a8f98,color:#1c2024
+    classDef serve fill:#eefaf1,stroke:#3aa06a,color:#0e3d24
+
+    subgraph COLD["cold path — batch lane (scheduled, over closed periods)"]
+        direction LR
+        BSRC["BCB · IBGE · IPEA<br/>B3 · Tesouro · Yahoo"]
+        BEXT["ofl ingest<br/>Polars extract"]
+        BBRZ[("bronze Delta<br/>one table per series")]
+        BSIL["ofl silver<br/>Spark MERGE on a business key"]
+        BSTAR[("silver star schema<br/>fact_observation · dim_series")]
+        BSRC --> BEXT --> BBRZ --> BSIL --> BSTAR
+    end
+
+    subgraph HOT["hot path — streaming lane (continuous, or AvailableNow on a cron)"]
+        direction LR
+        SSRC["Binance public WS<br/>symbol@trade"]
+        SLAND["ofl stream-produce<br/>atomic JSONL landing"]
+        SBRZ["ofl stream-bronze<br/>readStream · explicit DDL · from_json"]
+        SDLQ[("bronze/trades_dead_letter<br/>rejects, kept verbatim")]
+        SBTAB[("bronze/trades<br/>append-only, event_key")]
+        SSIL["ofl stream-silver<br/>watermark · dedup · 1-min windows"]
+        SSTAR[("silver/fact_trade_ohlc_1m<br/>one row per window x symbol")]
+        CKPT["_checkpoints/bronze_trades<br/>_checkpoints/silver_ohlc_1m<br/>offsets · commits · window state"]
+        SSRC --> SLAND --> SBRZ
+        SBRZ -->|"malformed / incomplete"| SDLQ
+        SBRZ -->|"well-formed"| SBTAB --> SSIL --> SSTAR
+        CKPT -.->|"restart resumes here,<br/>not at the source"| SBRZ
+        CKPT -.-> SSIL
+    end
+
+    subgraph SERVE["serving — DuckDB, query-on-the-lake"]
+        direction LR
+        GBATCH["ofl gold<br/>8 SQL marts -> gold Delta"]
+        GNRT["ofl stream-mart<br/>mart_trade_ohlc_1m_nrt · mart_trade_latest_nrt"]
+        BI["dashboard / notebooks / agent SQL"]
+        GBATCH --> BI
+        GNRT --> BI
+    end
+
+    BSTAR --> GBATCH
+    SSTAR --> GNRT
+
+    class BBRZ,BSTAR,SBTAB,SDLQ,SSTAR store
+    class BEXT,BSIL,SLAND,SBRZ,SSIL,GBATCH,GNRT job
+    class BI serve
+```
+
+**Lambda between the lanes, Kappa inside the hot one.** The picture is Lambda-shaped
+at the top level: a cold path over closed periods and a hot path over a live feed,
+meeting at the serving layer. What it is *not* is Lambda's classic failure mode —
+the same business logic written twice, once in a batch engine and once in a
+streaming engine, drifting apart. Nothing is recomputed here by two different code
+paths, because the two lanes ingest **different sources at different grains**:
+monthly macro series and daily prices on one side, individual trades on the other.
+There is no duplicated logic to keep in sync, and so no reconciliation job.
+
+Inside the streaming lane the shape is Kappa: one code path, one append-only log
+(`bronze/trades`), and replay driven by deleting a checkpoint rather than by
+running a separate backfill program. `ofl stream-silver` does not care whether it
+is draining four hours of backlog or tailing a live socket — that is the same
+property that let `Trigger.AvailableNow` be a one-argument change in M3.
+
+The seam is at **silver**, deliberately. Both bronzes are raw and append-only;
+both silvers are conformed and keyed; both golds are DuckDB SQL over the silver
+below them. A reader who understands one lane can read the other.
+
+### The mart
+
+`ofl stream-mart` materialises the silver bars into a DuckDB database file, using
+the same shape as the batch gold layer — SQL files in `models/` plus a thin runner
+([`ofl/streaming/mart.py`](../ofl/streaming/mart.py)). Three things about it are
+different from the batch marts, and each is a decision:
+
+| | batch gold | NRT gold |
+|---|---|---|
+| reads with | DuckDB `delta_scan` over MinIO | delta-rs, **no JVM and no cluster** |
+| writes to | gold Delta, for many readers | a **single DuckDB file**, for one dashboard to open read-only |
+| refresh | recompute the mart | recompute the mart |
+
+The read path is the important one. Serving must not depend on the streaming job
+being up: the mart is refreshed *after* the Spark process has exited, by a
+consumer whose only inputs are the committed Delta log and DuckDB. That is also
+why the whole mart is rebuilt each pass — the derived columns are all *relative*
+(rolling windows, returns against the previous bar, freshness against the newest
+event), so the last rows change every time a new bar lands. Recomputing a table
+this size is cheaper and far safer than working out which derived rows a new bar
+invalidated.
+
+**`mart_trade_ohlc_1m_nrt`** — grain symbol × `window_start`. The bar plus
+`return_pct`, `gap_bps`, `range_bps`, `sell_share`, 5-bar `vwap_sma_5` /
+`volume_5m` / `vol_5m`, `quiet_tail_seconds`, and `follows_previous`.
+
+That last column is the one a minute-grain mart needs and a daily one never does.
+A gap between consecutive bars is *normal* here — nobody traded that minute, or
+the capture was bounded — so a return computed across a gap is a return over an
+unknown span, not a one-minute return. It is still computed, because a consumer
+may well want it, but it is flagged rather than silently averaged in with the
+comparable ones. Over the run below, 11 of 35 bars do not follow their
+predecessor, which is exactly what three bounded captures separated by idle gaps
+should produce.
+
+**`mart_trade_latest_nrt`** — grain symbol. The newest bar per symbol plus
+freshness. Freshness is stated **relative to the stream**, not to wall clock: the
+producer always terminates by design, so "seconds since now" would report hours of
+staleness for a table that is perfectly consistent with the data it was given —
+and would say the same thing about a genuinely stalled feed. `behind_stream_seconds`
+compares a symbol against the newest event time in the table, which is a real
+signal: a thin symbol falls behind an active one. `built_at` is recorded alongside,
+so a consumer that *does* want wall-clock age can compute it and own that call.
+
+### Evidence — a query over the mart
+
+```
+$ ofl stream-mart
+{"model": "mart_trade_ohlc_1m_nrt", "rows": 35, "event": "nrt_model"}
+{"model": "mart_trade_latest_nrt", "rows": 3, "event": "nrt_model"}
+{"path": "data\\streaming\\gold\\ofl_streaming_nrt.duckdb", "silver_version": 4, "silver_rows": 35, "event": "nrt_mart_built"}
+```
+
+```sql
+SELECT symbol, window_start, close, round(vwap, 2) AS vwap,
+       behind_stream_seconds, bars_published, trades_published
+FROM mart_trade_latest_nrt;
+```
+
+```
+┌─────────┬─────────────────────┬──────────┬──────────┬───────────────────────┬────────────────┬──────────────────┐
+│ symbol  │    window_start     │  close   │   vwap   │ behind_stream_seconds │ bars_published │ trades_published │
+├─────────┼─────────────────────┼──────────┼──────────┼───────────────────────┼────────────────┼──────────────────┤
+│ BTCUSDT │ 2026-07-29 04:31:00 │ 63809.83 │ 63815.66 │                     1 │             12 │            14970 │
+│ ETHUSDT │ 2026-07-29 04:31:00 │  1895.10 │  1895.46 │                     0 │             12 │            15640 │
+│ SOLUSDT │ 2026-07-29 04:31:00 │    73.15 │    73.16 │                     4 │             11 │             2914 │
+└─────────┴─────────────────────┴──────────┴──────────┴───────────────────────┴────────────────┴──────────────────┘
+```
+
+14,970 + 15,640 + 2,914 = **33,524**, which is `sum(trades)` over all 35 bars, and
+which is the 33,527 bronze rows minus the 3 that M2 dropped as late. The mart
+inherits the reconciliation instead of restating it.
+
+`behind_stream_seconds` reads correctly too: SOLUSDT is the thinnest of the three
+and its last trade is 4 seconds older than the newest trade in the table, while
+ETHUSDT — the busiest — *is* the newest. A `nrt_build` table in the same file
+records `built_at` alongside the **silver Delta version** the numbers came from,
+so a stale dashboard is diagnosable rather than merely suspicious.
+
+Full query output, including the bar mart and the `nrt_build` lineage row:
+[`docs/evidence/streaming/nrt-mart-query.txt`](evidence/streaming/nrt-mart-query.txt).
+Hand-calculated checks on every derived column live in
+[`tests/test_streaming_mart.py`](../tests/test_streaming_mart.py), against a
+fixture built to contain a deliberate gap.
+
 ## Where it plugs into the medallion layers
 
 | Layer | Batch lane | Streaming lane |
 |---|---|---|
 | bronze | Polars → one Delta table per series (`bronze/{fact}/{series}`) | Spark Structured Streaming → `bronze/trades` **+ dead letter** |
 | silver | Spark idempotent `MERGE` → conformed star schema | watermarked event-time windows → `silver/fact_trade_ohlc_1m` |
-| gold | DuckDB SQL marts | **M5:** a near-real-time mart beside the batch marts |
+| gold | DuckDB SQL marts → gold Delta | DuckDB SQL marts → a served `.duckdb` file (`mart_trade_ohlc_1m_nrt`, `mart_trade_latest_nrt`) |
 
 The join is at **silver**, not bronze: the streaming bronze table is deliberately raw
 and append-only, exactly like the batch bronze tables. `event_key` exists precisely so
@@ -697,7 +864,7 @@ storage rather than sharing the batch bucket.
 | **M2** event-time silver | **done** | tumbling 1-min OHLC/volume with a watermark; `dropDuplicatesWithinWatermark` on `event_key`; own checkpoint |
 | **M3** `Trigger.AvailableNow` | **done** | same code, drains what the source has and exits; idempotence measured by a scripted double-run |
 | **M4** zero-cost live | **authored, inert** | metrics snapshot JSON per run; `workflow_dispatch`-only GitHub Actions workflow, fail-fast on missing R2 secrets. The bucket itself is human-gated and not provisioned here |
-| M5 integration | | silver/gold consume the streaming table; batch + streaming writeup and diagram |
+| **M5** integration | **done** | `ofl stream-mart` materialises the silver bars into a served DuckDB mart; batch + streaming (Lambda/Kappa) diagram and writeup |
 
 The order matters: **local continuous first** to get the semantics right, then
 `AvailableNow` + cron for the cost story. The checkpoint is what guarantees
@@ -717,6 +884,8 @@ exactly-once in both modes — that is why it is the piece M1 builds properly.
   [`tests/test_streaming_windows.py`](../tests/test_streaming_windows.py) (window
   boundary math, watermark and late-event handling) and
   [`tests/test_streaming_metrics.py`](../tests/test_streaming_metrics.py) (trigger
-  selection, throughput arithmetic, the idempotence comparison, workflow inertness).
+  selection, throughput arithmetic, the idempotence comparison, workflow inertness)
+  and [`tests/test_streaming_mart.py`](../tests/test_streaming_mart.py) (every
+  derived mart column, hand-calculated, over a fixture containing a gap).
   The claims that genuinely need Spark are measured against real Delta tables and
   the output is committed under `docs/evidence/streaming/`.

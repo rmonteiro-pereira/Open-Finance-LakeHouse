@@ -144,6 +144,11 @@ jobs:
           --watermark "${{ inputs.watermark }}"
           --snapshot "silver-${{ github.run_id }}-${{ github.run_attempt }}"
 
+      # Serving does not depend on the JVM being up: the mart is refreshed after
+      # both Spark passes have exited, reading the committed Delta log with delta-rs.
+      - name: M5 — refresh the near-real-time DuckDB mart
+        run: uv run ofl stream-mart
+
       # The snapshot is the run's receipt: rows, distinct keys, max event time and
       # throughput. Keeping it as an artifact is what makes a dashboard possible
       # without giving the dashboard credentials to the lake.
@@ -154,4 +159,5 @@ jobs:
           name: streaming-metrics-${{ github.run_id }}
           path: |
             data/streaming/_metrics/*.json
+            data/streaming/gold/ofl_streaming_nrt.duckdb
           if-no-files-found: warn
