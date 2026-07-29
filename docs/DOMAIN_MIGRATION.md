@@ -61,7 +61,12 @@ Hostname strings only — no restructuring, reformatting, or unrelated edits.
 - `scripts/setup_env.sh`
 - `notebooks/lakehouse_data_visualization.ipynb` (a stored cell output printed the old endpoint)
 
-Verification: `git grep -i duckdns` returns nothing.
+Verification: `git grep -i duckdns` returns nothing outside this file, which necessarily names the
+old hostnames in order to record the mapping. To check the rest of the tree:
+
+```bash
+git grep -i duckdns -- ':!docs/DOMAIN_MIGRATION.md'
+```
 
 ## Observed but deliberately left alone
 
