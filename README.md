@@ -73,11 +73,13 @@ s3://lakehouse/
 
 ### Orchestration topology
 
-Airflow 3 **data-aware Asset scheduling** — not one mega-DAG, not 51 DAGs to babysit:
+Airflow 3 **data-aware Asset scheduling** — not one mega-DAG, not 51 DAGs to babysit. The whole
+topology is generated from the registry at parse time, so it is **13 DAGs / 51 bronze assets**
+today and re-derives itself the moment a series is added:
 
 ```
-ofl_ingest_<handler>   (one DAG per source handler — the unit that actually fails together)
-   └── one static task per series ──emit──▶ Asset(lakehouse://bronze/<series>)
+ofl_ingest_<handler>   (x10 — one DAG per source handler, the unit that actually fails together)
+   └── one static task per series ──emit──▶ Asset(lakehouse://bronze/<series>)   (x51)
                                                     │  any bronze asset
                                                     ▼
                           ofl_silver  (Spark MERGE) ──emit──▶ Asset(silver/fact_observation)
