@@ -132,6 +132,14 @@ def _write_stream_snapshot(result: dict, *, name: str) -> None:
     write_snapshot(snapshot(result, mode=result.get("mode", "unknown")), name=name)
 
 
+def _stream_mart(args: argparse.Namespace) -> int:
+    from ofl.streaming.mart import build_nrt_mart
+
+    result = build_nrt_mart()
+    log.info("stream_mart_done", **result)
+    return 0
+
+
 def _stream_snapshot(args: argparse.Namespace) -> int:
     """Table-only snapshot: no run, just what the silver table looks like now."""
     from ofl.streaming.metrics import snapshot, write_snapshot
@@ -193,6 +201,9 @@ def main(argv: list[str] | None = None) -> int:
     ssv.add_argument("--watermark", default="2 minutes", help="allowed lateness on trade_time")
     ssv.add_argument("--snapshot", metavar="NAME", help="write a metrics snapshot JSON under _metrics/")
     ssv.set_defaults(func=_stream_silver)
+
+    mart = sub.add_parser("stream-mart", help="silver OHLC -> near-real-time DuckDB mart")
+    mart.set_defaults(func=_stream_mart)
 
     snap = sub.add_parser("stream-snapshot", help="metrics snapshot of the silver table (no run)")
     snap.add_argument("--name", default="silver-observed", help="snapshot file stem")
