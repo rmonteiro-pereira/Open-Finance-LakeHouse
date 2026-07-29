@@ -55,6 +55,33 @@ def _gold(args: argparse.Namespace) -> int:
     return 0
 
 
+def _stream_produce(args: argparse.Namespace) -> int:
+    from ofl.streaming.producer import run_producer
+
+    symbols = [s for s in (args.symbols or "").split(",") if s.strip()] or None
+    run_producer(symbols, max_seconds=args.max_seconds, max_events=args.max_events)
+    return 0
+
+
+def _stream_bronze(args: argparse.Namespace) -> int:
+    from ofl.streaming.bronze import build_streaming_session, run_bronze_stream
+
+    spark = build_streaming_session()
+    try:
+        result = run_bronze_stream(
+            spark, seconds=args.seconds, trigger_interval=args.trigger
+        )
+        log.info(
+            "stream_bronze_done",
+            batches=result["batches"],
+            bronze_rows=result["bronze_rows"],
+            dead_rows=result["dead_rows"],
+        )
+    finally:
+        spark.stop()
+    return 0
+
+
 def _registry(_args: argparse.Namespace) -> int:
     reg = load_registry()
     for domain in reg.domains():
@@ -79,6 +106,17 @@ def main(argv: list[str] | None = None) -> int:
     gold = sub.add_parser("gold", help="build DuckDB gold marts from silver")
     gold.add_argument("--dry-run", action="store_true", help="compute marts without writing")
     gold.set_defaults(func=_gold)
+
+    prod = sub.add_parser("stream-produce", help="capture the live trade feed to _landing")
+    prod.add_argument("--symbols", help="comma-separated, e.g. btcusdt,ethusdt")
+    prod.add_argument("--max-seconds", type=float, default=120.0, help="wall-clock cap")
+    prod.add_argument("--max-events", type=int, default=20_000, help="landed-event cap")
+    prod.set_defaults(func=_stream_produce)
+
+    sbr = sub.add_parser("stream-bronze", help="_landing -> bronze Delta (Spark streaming)")
+    sbr.add_argument("--seconds", type=float, default=120.0, help="wall-clock cap")
+    sbr.add_argument("--trigger", default="10 seconds", help="micro-batch interval")
+    sbr.set_defaults(func=_stream_bronze)
 
     reg = sub.add_parser("registry", help="list the source registry")
     reg.set_defaults(func=_registry)
