@@ -10,7 +10,7 @@ OpenMetadata, Grafana), so a human has to take them.
 ## Before you start
 
 - **Redact secrets.** Blur or crop anything showing credentials, tokens, access keys, the
-  `.env` contents, internal IPs, or the DuckDNS hostname if you'd rather not publish it.
+  `.env` contents, internal IPs, or the `vanir.dev.br` hostnames if you'd rather not publish them.
   MinIO's console shows the access key in the top bar — crop it out.
 - **Use a wide window** (~1600px) and light-on-dark or the tool's default theme, consistently.
   Mixed themes across shots look sloppy.
