@@ -15,7 +15,10 @@ if TYPE_CHECKING:
     from pyspark.sql import SparkSession
 
 
-def build_spark_session(app_name: str = "ofl-silver") -> "SparkSession":
+def build_spark_session(
+    app_name: str = "ofl-silver", extra_conf: dict[str, str] | None = None
+) -> "SparkSession":
+    """Build the shared Delta+S3A session; ``extra_conf`` adds lane-specific keys."""
     from pyspark.sql import SparkSession
 
     s = get_settings()
@@ -39,6 +42,9 @@ def build_spark_session(app_name: str = "ofl-silver") -> "SparkSession":
         .config("spark.sql.shuffle.partitions", "8")
         .config("spark.databricks.delta.optimizeWrite.enabled", "true")
     )
+
+    for key, value in (extra_conf or {}).items():
+        builder = builder.config(key, value)
 
     if s.spark_jars_packaged:
         return builder.getOrCreate()

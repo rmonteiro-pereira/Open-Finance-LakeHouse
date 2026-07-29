@@ -35,6 +35,16 @@ class Settings(BaseSettings):
     # 1g pyspark default OOMs on it. Keep within the pod memory limit.
     spark_driver_memory: str = Field("4g", alias="OFL_SPARK_DRIVER_MEMORY")
 
+    # Streaming lane. Landing files, bronze Delta and checkpoints live on the local
+    # filesystem: the production ``lakehouse`` bucket is read-only for this lane, and
+    # the zero-cost "live" tier (M3+) repoints this root at object storage instead.
+    streaming_root: str = Field("data/streaming", alias="OFL_STREAMING_ROOT")
+
+    # Backpressure for the file source: how many landing files a micro-batch may
+    # claim. Bounds batch size (and driver memory) when the job restarts on a
+    # backlog rather than tailing a live producer.
+    streaming_max_files_per_trigger: int = Field(64, alias="OFL_STREAM_MAX_FILES_PER_TRIGGER")
+
 
 @lru_cache
 def get_settings() -> Settings:
