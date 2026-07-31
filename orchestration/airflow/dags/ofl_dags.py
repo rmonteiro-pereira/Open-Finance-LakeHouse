@@ -1,9 +1,11 @@
 """Airflow 3 DAGs for the Open-Finance LakeHouse — generated from the registry.
 
-Topology (data-aware, isolated per series, shared layers):
+Topology (data-aware, isolated per series, shared layers). The shape is derived
+from ``sources/registry.yml`` at parse time, so the counts below are whatever the
+registry currently yields — today 10 handlers / 51 active series:
 
-    ofl_ingest_<source>  (x7, one per HANDLER)
-        └─ one static task per series  --emit--> Asset(bronze/<series>)   (24 assets)
+    ofl_ingest_<source>  (x10, one per HANDLER with >=1 active series)
+        └─ one static task per series  --emit--> Asset(bronze/<series>)   (51 assets)
                                                       |
     ofl_silver  (schedule = ANY bronze asset)  --emit--> Asset(silver/fact_observation)
                                                       |
@@ -163,7 +165,7 @@ for handler in registry.handlers():
 
     globals()[dag_id] = dag
 
-# --- silver: triggered on ANY bronze series refresh (no all-24 barrier) -------
+# --- silver: triggered on ANY bronze series refresh (no all-series barrier) ---
 _silver_schedule = AssetAny(*_ALL_BRONZE) if AssetAny is not None else _ALL_BRONZE
 with DAG(
     dag_id="ofl_silver",
