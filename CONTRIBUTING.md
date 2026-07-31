@@ -18,12 +18,12 @@ pip install -e ".[dev]"
 dependency is the point of the change.
 
 Optional extras, installed only when you need that lane: `spark`, `streaming`, `airflow`,
-`yahoo`, `lineage`, `dbt`.
+`yahoo`, `lineage`.
 
 ## Tests
 
 ```bash
-pytest -q          # 119 tests, offline, a few seconds
+pytest -q          # 134 tests, offline, a few seconds
 ```
 
 These are the tests CI runs. They need **no cluster, no MinIO, no Spark session, no Airflow

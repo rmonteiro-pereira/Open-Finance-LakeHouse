@@ -4,7 +4,7 @@
 #   * no cluster, no MinIO, no Airflow, no Spark session;
 #   * no API keys and no calls to the upstream data sources;
 #   * only the base dependency set plus `dev` — the `spark`, `streaming`,
-#     `airflow`, `yahoo`, `lineage` and `dbt` extras are NOT installed.
+#     `airflow`, `yahoo` and `lineage` extras are NOT installed.
 #
 # The tests that run here are pure-Python unit tests over the parsers, the
 # registry, the data contracts and the window/watermark logic. They pass
