@@ -25,8 +25,11 @@
 # object-store repoint itself: `OFL_STREAMING_ROOT` is consumed by
 # `ofl.platform.io.streaming_dir` as a local filesystem path today, so pointing it
 # at `s3://` needs that one function taught about object-store URIs. The env block
-# below is the intended contract, written down so the shape is reviewable; the
-# secrets gate is what stops the workflow being run half-finished in the meantime.
+# below is the intended contract, written down so the shape is reviewable — and
+# `streaming_dir` REFUSES a URI-shaped root with a readable NotImplementedError,
+# so even a fully-provisioned run fails in its first step rather than silently
+# writing "durable" state to the runner's local disk under a mangled path. The
+# secrets gate stops the workflow being run half-finished in the meantime.
 #
 # The cron line that turns this into the "live" tier is a single addition, kept
 # here as a comment so the intent is reviewable now and the trigger is not:
