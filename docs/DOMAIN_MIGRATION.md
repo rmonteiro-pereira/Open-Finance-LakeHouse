@@ -26,9 +26,11 @@ Only hostnames that a real Ingress actually serves appear in this repo.
 | MinIO S3 API | `minio-api.vanir-proxmox.duckdns.org` | `minio-api.vanir.dev.br` | `minio/minio-api-ingress` |
 | Base domain (prose) | `vanir-proxmox.duckdns.org` | `vanir.dev.br` | — |
 
-Other Ingresses exist in the cluster but were never referenced by this repo, so nothing was
-changed for them: `openmetadata.vanir.dev.br`, `dashboard.vanir.dev.br`, `openbao.vanir.dev.br`,
-`opencost.vanir.dev.br`, `fluxo.vanir.dev.br`, `powersync.vanir.dev.br`.
+At the time of this migration, other Ingresses existed in the cluster but were not referenced by
+this repo, so nothing was changed for them: `dashboard.vanir.dev.br`, `openbao.vanir.dev.br`,
+`opencost.vanir.dev.br`, `fluxo.vanir.dev.br`, `powersync.vanir.dev.br`. (OpenMetadata was in that
+list too; the access runbook has since been corrected to mention it — see
+[the follow-up below](#follow-up-the-access-runbook-no-longer-hardcodes-hostnames-at-all).)
 
 ## Services that could **not** be mapped
 
@@ -68,15 +70,19 @@ old hostnames in order to record the mapping. To check the rest of the tree:
 git grep -i duckdns -- ':!docs/DOMAIN_MIGRATION.md'
 ```
 
-## Observed but deliberately left alone
+## Follow-up: the access runbook no longer hardcodes hostnames at all
 
-These are real inaccuracies noticed while migrating, but they are not hostname strings and the
-files are work-in-progress, so they were not touched:
+Three inaccuracies were noticed while migrating and were out of scope for a hostname-only
+change. They were all resolved later, when `GUIA_ACESSO_FERRAMENTAS.md` was rewritten as a
+**generic runbook** — it now carries placeholders (`<BASE_DOMAIN>`, `<INGRESS_IP>`,
+`<NODE_IP>`) and `kubectl` lookups instead of literal addresses, so it cannot drift again:
 
-1. **Ingress controller IP.** `GUIA_ACESSO_FERRAMENTAS.md` says DNS must point at `192.168.32.24`.
-   The Ingress address today is `192.168.32.70`.
-2. **OpenMetadata exposure.** The summary table says "Port-forward necessário / Não exposto via
-   Ingress", but `openmetadata/openmetadata` now serves `openmetadata.vanir.dev.br`.
+1. **Ingress controller IP.** The runbook used to name a specific LAN address, which had since
+   changed. Private-range IPs are no longer published in this repo; the current one comes from
+   `kubectl get svc -n ingress-nginx -o wide`.
+2. **OpenMetadata exposure.** The summary table said "Port-forward necessário / Não exposto via
+   Ingress"; `openmetadata/openmetadata` does serve an Ingress today. The table now points at
+   `openmetadata.<BASE_DOMAIN>` and tells the reader to confirm with `kubectl get ingress`.
 3. **Scheme.** No Ingress in the cluster declares a `spec.tls` block — they all listen on port 80.
-   The docs still show `https://minio-ui.vanir.dev.br/console/` while every other entry is `http://`.
-   Schemes were left exactly as found because this migration was scoped to hostnames.
+   The runbook now shows `http://` consistently and lists TLS via cert-manager as a hardening
+   item rather than implying it is already in place.
