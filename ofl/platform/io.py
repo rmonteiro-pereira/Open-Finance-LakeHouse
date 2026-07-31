@@ -42,8 +42,23 @@ def streaming_dir(*parts: str) -> Path:
     The streaming lane deliberately does *not* share the batch lane's object-store
     layout: its landing files and checkpoints are hot, high-churn state, and the
     production bucket is read-only for it. See ``ofl.streaming.paths``.
+
+    The root must be a **local filesystem path**. The lane's producer relies on
+    atomic renames and the mart is a DuckDB file, so an object-store root
+    (``s3://…``) is not supported yet — and ``Path("s3://…")`` would silently
+    mangle the URI into a local directory literally named ``s3:``. Refuse loudly
+    instead of corrupting the exactly-once story; the repoint is a tracked
+    roadmap item (README §Roadmap, ``docs/STREAMING.md``).
     """
-    return Path(get_settings().streaming_root).joinpath(*parts)
+    root = get_settings().streaming_root
+    if "://" in root:
+        raise NotImplementedError(
+            f"OFL_STREAMING_ROOT={root!r} looks like an object-store URI, but the "
+            "streaming lane only supports local filesystem roots today (atomic "
+            "landing renames + a DuckDB mart file). Point it at a local directory, "
+            "or see the roadmap for the object-store repoint."
+        )
+    return Path(root).joinpath(*parts)
 
 
 def to_local_uri(path: Path | str) -> str:

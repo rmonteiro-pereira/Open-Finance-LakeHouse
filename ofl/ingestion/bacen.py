@@ -24,6 +24,17 @@ _MIN_YEAR = 1900
 _BR_DATE = "%d/%m/%Y"
 
 
+def _with_year(d: date, year: int) -> date:
+    """``d.replace(year=year)``, clamping Feb 29 to Feb 28 when ``year`` is not
+    a leap year. A plain ``replace`` raises ``ValueError`` there — which used to
+    crash every ``bacen_sgs`` walk whose anchor date was Feb 29 (e.g. any
+    scheduled run on a leap day, since ``end`` defaults to ``date.today()``)."""
+    try:
+        return d.replace(year=year)
+    except ValueError:
+        return d.replace(year=year, day=28)
+
+
 def _get_window(series_id: int, start: date, end: date) -> tuple[str, list | None]:
     """Fetch one SGS window. Returns ``(status, payload)`` where status is
     ``ok`` (data), ``empty`` (no data in range — 200 ``[]`` or 404), or
@@ -76,7 +87,7 @@ def fetch_sgs(
     retries = 0
 
     while end >= floor:
-        start = end.replace(year=max(floor.year, end.year - window_years + 1))
+        start = _with_year(end, max(floor.year, end.year - window_years + 1))
         if start < floor:
             start = floor
         status, payload = _get_window(series_id, start, end)

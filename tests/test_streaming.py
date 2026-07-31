@@ -1,5 +1,8 @@
 import json
 
+import pytest
+
+from ofl.platform import io as platform_io
 from ofl.streaming.producer import LandingWriter, unwrap_frame, ws_url
 from ofl.streaming.schema import (
     REQUIRED_FIELDS,
@@ -101,3 +104,25 @@ def test_ws_url_builds_a_combined_trade_stream():
     url = ws_url(["BTCUSDT", "ethusdt"])
     assert url.endswith("?streams=btcusdt@trade/ethusdt@trade")
     assert url.startswith("wss://")
+
+
+def test_streaming_root_refuses_object_store_uris(monkeypatch):
+    """``Path("s3://…")`` mangles the URI into a local dir named ``s3:`` — the
+    lane would then "succeed" against the runner's disk while claiming durable
+    state. The root must be rejected loudly until the repoint is implemented."""
+    monkeypatch.setenv("OFL_STREAMING_ROOT", "s3://some-bucket/streaming")
+    platform_io.get_settings.cache_clear()
+    try:
+        with pytest.raises(NotImplementedError, match="OFL_STREAMING_ROOT"):
+            platform_io.streaming_dir("_landing")
+    finally:
+        platform_io.get_settings.cache_clear()
+
+
+def test_streaming_root_accepts_local_paths(monkeypatch, tmp_path):
+    monkeypatch.setenv("OFL_STREAMING_ROOT", str(tmp_path))
+    platform_io.get_settings.cache_clear()
+    try:
+        assert platform_io.streaming_dir("_landing") == tmp_path / "_landing"
+    finally:
+        platform_io.get_settings.cache_clear()
