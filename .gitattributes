@@ -1,0 +1,15 @@
+# Language statistics
+#
+# GitHub's linguist counts committed bytes, so the three exploratory notebooks
+# (~4.3 MB, dominated by embedded base64 plot output) drown out the ~234 KB of
+# Python that is the actual engineering. The repo therefore reports as ~95%
+# "Jupyter Notebook".
+#
+# The notebooks are analysis and documentation, not the shipped codebase, so
+# they are marked linguist-documentation and excluded from the language bar.
+# They remain fully present, versioned and browsable — this changes the stats
+# only, not the contents.
+#
+# https://github.com/github-linguist/linguist/blob/main/docs/overrides.md
+notebooks/** linguist-documentation
+*.ipynb linguist-documentation
