@@ -231,7 +231,7 @@ docker build -f docker/Dockerfile       -t ghcr.io/rmonteiro-pereira/open-financ
 docker build -f docker/Dockerfile.spark -t ghcr.io/rmonteiro-pereira/open-finance-lakehouse:spark .
 ```
 
-**Tests** — 119 offline unit tests covering the registry loader, the extractor parsing paths, the
+**Tests** — 128 offline unit tests covering the registry loader, the extractor parsing paths, the
 Pandera contracts, the gold SQL models and the streaming window/watermark logic. They need no
 cluster, no MinIO, no Spark session and no API keys, which is what makes the CI badge mean
 something (see [`.github/workflows/tests.yml`](.github/workflows/tests.yml)):
