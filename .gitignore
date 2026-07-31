@@ -166,3 +166,11 @@ temp/*
 **test**.py
 **teste**.py
 .ivy2/*
+
+# The scratch-file guard above (`**test**.py`, from the Kedro template) also
+# swallows this repo's own pytest suite. tests/ is source — keep it tracked.
+!tests/**/*.py
+
+# Streaming lane: landing JSONL, bronze Delta and Spark checkpoints are generated,
+# hot and large. Covered by `data/**` already; spelled out so it stays that way.
+data/streaming/

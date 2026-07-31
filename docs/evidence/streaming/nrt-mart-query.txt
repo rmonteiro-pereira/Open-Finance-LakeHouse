@@ -1,0 +1,81 @@
+==============================================================================
+near-real-time DuckDB mart — data/streaming/gold/ofl_streaming_nrt.duckdb
+==============================================================================
+
+--- what is in the file -------------------------------------------------------
+SHOW TABLES
+
+┌────────────────────────┐
+│          name          │
+│        varchar         │
+├────────────────────────┤
+│ mart_trade_latest_nrt  │
+│ mart_trade_ohlc_1m_nrt │
+│ nrt_build              │
+└────────────────────────┘
+
+
+--- lineage: which silver version these numbers came from ---------------------
+SELECT * FROM nrt_build
+
+┌─────────────────────┬────────────────┬─────────────┐
+│      built_at       │ silver_version │ silver_rows │
+│      timestamp      │     int64      │    int64    │
+├─────────────────────┼────────────────┼─────────────┤
+│ 2026-07-29 04:43:31 │              4 │          35 │
+└─────────────────────┴────────────────┴─────────────┘
+
+
+--- mart_trade_latest_nrt — one row per symbol --------------------------------
+SELECT symbol, window_start, close, round(vwap, 2) AS vwap, trades,
+       behind_stream_seconds, bars_published, trades_published
+FROM mart_trade_latest_nrt
+
+┌─────────┬─────────────────────┬──────────┬──────────┬───┬───────────────────────┬────────────────┬──────────────────┐
+│ symbol  │    window_start     │  close   │   vwap   │ … │ behind_stream_seconds │ bars_published │ trades_published │
+│ varchar │      timestamp      │  double  │  double  │ … │         int64         │     int64      │      int128      │
+├─────────┼─────────────────────┼──────────┼──────────┼───┼───────────────────────┼────────────────┼──────────────────┤
+│ BTCUSDT │ 2026-07-29 04:31:00 │ 63809.83 │ 63815.66 │ … │                     1 │             12 │            14970 │
+│ ETHUSDT │ 2026-07-29 04:31:00 │   1895.1 │  1895.46 │ … │                     0 │             12 │            15640 │
+│ SOLUSDT │ 2026-07-29 04:31:00 │    73.15 │    73.16 │ … │                     4 │             11 │             2914 │
+└─────────┴─────────────────────┴──────────┴──────────┴───┴───────────────────────┴────────────────┴──────────────────┘
+  3 rows                                                                                          8 columns (7 shown)
+
+
+--- mart_trade_ohlc_1m_nrt — the newest BTCUSDT bars --------------------------
+SELECT window_start, close, round(return_pct, 4) AS return_pct,
+       round(gap_bps, 2) AS gap_bps, round(range_bps, 2) AS range_bps,
+       round(sell_share, 3) AS sell_share, follows_previous,
+       round(vwap_sma_5, 2) AS vwap_sma_5, round(vol_5m, 4) AS vol_5m
+FROM mart_trade_ohlc_1m_nrt WHERE symbol = 'BTCUSDT'
+ORDER BY window_start DESC LIMIT 8
+
+┌─────────────────────┬──────────┬────────────┬─────────┬───┬────────────┬──────────────────┬────────────┬────────┐
+│    window_start     │  close   │ return_pct │ gap_bps │ … │ sell_share │ follows_previous │ vwap_sma_5 │ vol_5m │
+│      timestamp      │  double  │   double   │ double  │ … │   double   │     boolean      │   double   │ double │
+├─────────────────────┼──────────┼────────────┼─────────┼───┼────────────┼──────────────────┼────────────┼────────┤
+│ 2026-07-29 04:31:00 │ 63809.83 │    -0.0159 │     0.0 │ … │       0.97 │ true             │   63793.67 │ 0.0404 │
+│ 2026-07-29 04:30:00 │  63820.0 │     0.0188 │    -0.0 │ … │      0.293 │ true             │   63778.42 │ 0.0663 │
+│ 2026-07-29 04:29:00 │  63808.0 │     0.0731 │    7.62 │ … │      0.064 │ false            │   63757.38 │ 0.2519 │
+│ 2026-07-29 04:26:00 │ 63761.38 │     -0.009 │     0.0 │ … │      0.312 │ true             │   63799.58 │ 0.2422 │
+│ 2026-07-29 04:25:00 │ 63767.11 │    -0.0281 │    -0.0 │ … │      0.758 │ true             │    63855.9 │ 0.2412 │
+│ 2026-07-29 04:24:00 │ 63785.04 │     0.1349 │     0.0 │ … │      0.061 │ true             │   63909.67 │ 0.2441 │
+│ 2026-07-29 04:23:00 │ 63699.11 │    -0.5012 │  -50.66 │ … │      0.822 │ false            │    63966.7 │  0.227 │
+│ 2026-07-29 00:17:00 │  64020.0 │    -0.0219 │   -2.19 │ … │        0.0 │ false            │   64031.19 │ 0.0317 │
+└─────────────────────┴──────────┴────────────┴─────────┴───┴────────────┴──────────────────┴────────────┴────────┘
+  8 rows                                                                                      9 columns (8 shown)
+
+
+--- reconciliation against silver ---------------------------------------------
+SELECT count(*) AS bars, count(DISTINCT symbol) AS symbols, sum(trades) AS trades,
+       sum(NOT follows_previous)::INT AS bars_after_a_gap
+FROM mart_trade_ohlc_1m_nrt
+
+┌───────┬─────────┬────────┬──────────────────┐
+│ bars  │ symbols │ trades │ bars_after_a_gap │
+│ int64 │  int64  │ int128 │      int32       │
+├───────┼─────────┼────────┼──────────────────┤
+│    35 │       3 │  33524 │               11 │
+└───────┴─────────┴────────┴──────────────────┘
+
+

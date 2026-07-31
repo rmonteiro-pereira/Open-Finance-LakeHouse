@@ -6,6 +6,8 @@ Layout: ``s3://{bucket}/{layer}/{...}`` where layer is raw|bronze|silver|gold.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from ofl.config import get_settings
 
 
@@ -32,6 +34,21 @@ def gold_uri(table: str) -> str:
 def to_spark_path(uri: str) -> str:
     """Spark/Hadoop addresses MinIO via the ``s3a://`` scheme; delta-rs uses ``s3://``."""
     return uri.replace("s3://", "s3a://", 1)
+
+
+def streaming_dir(*parts: str) -> Path:
+    """A directory under the streaming root (``OFL_STREAMING_ROOT``, local by default).
+
+    The streaming lane deliberately does *not* share the batch lane's object-store
+    layout: its landing files and checkpoints are hot, high-churn state, and the
+    production bucket is read-only for it. See ``ofl.streaming.paths``.
+    """
+    return Path(get_settings().streaming_root).joinpath(*parts)
+
+
+def to_local_uri(path: Path | str) -> str:
+    """Spark addresses local paths by URI — mandatory on Windows (``file:///E:/...``)."""
+    return Path(path).resolve().as_uri()
 
 
 def delta_storage_options() -> dict[str, str]:
