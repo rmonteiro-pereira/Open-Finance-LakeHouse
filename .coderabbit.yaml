@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+#
+# Every key below is taken from the official schema above. Nothing here is invented.
+language: en-US
+
+reviews:
+  profile: chill
+
+  # Keep review attention on the engineering. The notebooks are ~4.3 MB of
+  # embedded base64 plot output (see .gitattributes), data/ is generated, and
+  # uv.lock is machine-resolved — reviewing any of them is pure noise.
+  path_filters:
+    - "!notebooks/**"
+    - "!data/**"
+    - "!uv.lock"
+    - "!docs/evidence/**"
+
+  path_instructions:
+    - path: "ofl/**/*.py"
+      instructions: >-
+        Core library. Prioritise correctness of the medallion contracts:
+        idempotent writes (MERGE on a stable business key), lineage columns
+        (source, ingested_at, load_id) populated on every row, and no silent
+        coercion of nulls or dtypes. Flag anything that would make a re-run
+        produce different output from the same input.
+    - path: "tests/**/*.py"
+      instructions: >-
+        Tests must run offline with no cluster, no MinIO, no Spark session and
+        no API keys — that is what CI installs. Flag any new test that requires
+        a network service or a credential, and any assertion loose enough to
+        pass on wrong data.
+    - path: "orchestration/airflow/dags/**/*.py"
+      instructions: >-
+        DAG topology is derived from sources/registry.yml at parse time. Flag
+        any hand-counted number in a docstring or comment that could drift from
+        load_registry(), and any change that makes one failing series block or
+        mask its siblings.
+    - path: "ofl/streaming/**/*.py"
+      instructions: >-
+        Streaming lane. Watch event-time correctness: watermarks,
+        dropDuplicatesWithinWatermark, and that a re-run under
+        Trigger.AvailableNow leaves row counts and distinct keys unchanged.
+
+  auto_review:
+    enabled: true
+    drafts: false
