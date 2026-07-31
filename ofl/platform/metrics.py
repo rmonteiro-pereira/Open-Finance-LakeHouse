@@ -92,6 +92,22 @@ def record_dq_failure(series: Series, *, check: str, breaches: int = 0) -> None:
     _push(series.key, body)
 
 
+def record_gold_check_failure(mart: str, *, check: str, violations: int) -> None:
+    """Flag a gold post-build check violation (task will fail; the mart withheld).
+
+    Marts aren't registry series, so the labels are fixed rather than derived;
+    the Pushgateway group key is the mart name — one group per gold table, just
+    as ingestion keeps one per bronze series (the names don't collide: marts are
+    ``mart_*``). Reuses the ``ofl_dq_*`` metric family so the same Alertmanager
+    routes fire for a gold breach as for a bronze one.
+    """
+    labels = {"source": "gold", "domain": "gold", "cadence": "on_build", "check": check}
+    body = _line("ofl_dq_failed", 1, labels)
+    body += _line("ofl_dq_passed", 0, {k: v for k, v in labels.items() if k != "check"})
+    body += _line("ofl_dq_rows_failed", violations, labels)
+    _push(mart, body)
+
+
 def record_ingest_failure(series: Series, *, reason: str) -> None:
     """Flag an ingest run failure (from the Airflow on_failure_callback)."""
     labels = {**_labels(series), "reason": reason}
