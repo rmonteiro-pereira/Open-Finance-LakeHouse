@@ -1,0 +1,163 @@
+# ---------------------------------------------------------------------------
+# Streaming lane — M4 "live at R$0": one bounded pass of the whole lane on a
+# GitHub-hosted runner, with Delta tables and checkpoints kept in Cloudflare R2.
+#
+# WHY THIS IS `workflow_dispatch`-ONLY, AND HAS NO `schedule:` BLOCK
+#
+# The lane's state (bronze/silver Delta plus the two checkpoints) has to outlive
+# the runner, or every run replays from nothing and the exactly-once story is
+# meaningless. That means a real object-store bucket. Creating and configuring
+# the R2 bucket, its API token and the repository secrets is a **human-gated
+# step** — it is account configuration, not code, and it is not something this
+# repository provisions for you.
+#
+# So this workflow is authored, reviewed and committed **inert**:
+#
+#   * no `schedule:` trigger — it cannot fire on its own;
+#   * `workflow_dispatch` only — someone has to press Run;
+#   * a preflight job that fails in seconds, with a readable message, if the R2
+#     secrets are absent, instead of burning ten minutes of runner time to die
+#     inside Spark with an S3 stack trace.
+#
+# BE CLEAR ABOUT WHAT IS AND IS NOT DONE. The lane's Spark passes are real and
+# run here exactly as they run locally — the only thing the cron tier changes is
+# the trigger and where the root directory points. What is *not* done is the
+# object-store repoint itself: `OFL_STREAMING_ROOT` is consumed by
+# `ofl.platform.io.streaming_dir` as a local filesystem path today, so pointing it
+# at `s3://` needs that one function taught about object-store URIs. The env block
+# below is the intended contract, written down so the shape is reviewable; the
+# secrets gate is what stops the workflow being run half-finished in the meantime.
+#
+# The cron line that turns this into the "live" tier is a single addition, kept
+# here as a comment so the intent is reviewable now and the trigger is not:
+#
+#   on:
+#     schedule:
+#       - cron: "*/30 * * * *"   # every 30 min; free-tier minutes are the budget
+#
+# Cost note: the free tier is the design constraint. R2 has no egress fee, the
+# runner is free for public repositories, and `Trigger.AvailableNow` is what
+# makes a *scheduled* job possible at all — the query drains what the source has
+# and exits, instead of running forever. Two consecutive runs over an unchanged
+# source leave the tables identical; that is measured, not asserted, by
+# `tools/streaming_idempotence.py` (transcript in `docs/evidence/streaming/`).
+# ---------------------------------------------------------------------------
+name: streaming-lane
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "Comma-separated trade streams to capture"
+        required: false
+        default: "btcusdt,ethusdt,solusdt"
+      capture_seconds:
+        description: "How long the producer captures before the Spark passes run"
+        required: false
+        default: "120"
+      window:
+        description: "Tumbling window width for the silver bars"
+        required: false
+        default: "1 minute"
+      watermark:
+        description: "Allowed lateness on trade_time"
+        required: false
+        default: "2 minutes"
+
+permissions:
+  contents: read
+
+concurrency:
+  # Two runs sharing one checkpoint directory would corrupt it. The lane is
+  # single-writer by construction, so the workflow has to be too.
+  group: streaming-lane
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    name: R2 secrets present?
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail fast when the bucket has not been provisioned yet
+        env:
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+        run: |
+          missing=""
+          for name in R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error title=Streaming lane not provisioned::Missing repository secrets:$missing"
+            echo "The live tier needs a Cloudflare R2 bucket to hold the Delta tables and the"
+            echo "two streaming checkpoints. Creating it is a human-gated step; see the header"
+            echo "of .github/workflows/streaming.yml and docs/STREAMING.md."
+            exit 1
+          fi
+          echo "All four R2 secrets are present."
+
+  stream:
+    name: produce -> bronze -> silver (AvailableNow)
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Delta + checkpoints in R2. delta-rs and Hadoop's S3A both speak the S3 API,
+      # so R2 is addressed as an S3 endpoint rather than through a bespoke client.
+      OFL_STREAMING_ROOT: s3://${{ secrets.R2_BUCKET }}/streaming
+      AWS_ENDPOINT_URL: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      AWS_REGION: auto
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install the lane's extras
+        run: uv sync --extra spark --extra streaming
+
+      - name: M0 — capture the live trade feed
+        run: >
+          uv run ofl stream-produce
+          --symbols "${{ inputs.symbols }}"
+          --max-seconds "${{ inputs.capture_seconds }}"
+
+      # Both Spark passes use Trigger.AvailableNow: they claim what the source has
+      # right now, process it, and exit. A scheduled job must terminate.
+      - name: M1 — landing -> bronze Delta
+        run: uv run ofl stream-bronze --available-now
+
+      - name: M2 — bronze -> event-time silver OHLC
+        run: >
+          uv run ofl stream-silver --available-now
+          --window "${{ inputs.window }}"
+          --watermark "${{ inputs.watermark }}"
+          --snapshot "silver-${{ github.run_id }}-${{ github.run_attempt }}"
+
+      # Serving does not depend on the JVM being up: the mart is refreshed after
+      # both Spark passes have exited, reading the committed Delta log with delta-rs.
+      - name: M5 — refresh the near-real-time DuckDB mart
+        run: uv run ofl stream-mart
+
+      # The snapshot is the run's receipt: rows, distinct keys, max event time and
+      # throughput. Keeping it as an artifact is what makes a dashboard possible
+      # without giving the dashboard credentials to the lake.
+      - name: Publish the metrics snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: streaming-metrics-${{ github.run_id }}
+          path: |
+            data/streaming/_metrics/*.json
+            data/streaming/gold/ofl_streaming_nrt.duckdb
+          if-no-files-found: warn
