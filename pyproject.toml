@@ -7,6 +7,7 @@ name = "ofl"
 version = "0.1.0"
 description = "Open-Finance LakeHouse — Brazilian macro & financial data lakehouse (Polars extract / Spark refine / DuckDB serve)"
 readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.11"
 dependencies = [
     "polars>=1.0",
