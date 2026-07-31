@@ -717,7 +717,7 @@ flowchart LR
 
     subgraph SERVE["serving — DuckDB, query-on-the-lake"]
         direction LR
-        GBATCH["ofl gold<br/>8 SQL marts -> gold Delta"]
+        GBATCH["ofl gold<br/>10 SQL marts -> gold Delta"]
         GNRT["ofl stream-mart<br/>mart_trade_ohlc_1m_nrt · mart_trade_latest_nrt"]
         BI["dashboard / notebooks / agent SQL"]
         GBATCH --> BI

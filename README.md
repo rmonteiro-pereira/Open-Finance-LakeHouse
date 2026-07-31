@@ -44,7 +44,7 @@ flowchart LR
     end
 
     subgraph GOLD["gold/ — BI-ready marts"]
-        G["8 marts: macro_dashboard · real_interest<br/>inflation_panel · fx · yield_curve<br/>equity_daily · futures_curve · open_interest"]
+        G["10 marts: macro_dashboard · real_interest<br/>inflation_panel · fx · yield_curve<br/>equity_daily · futures_curve · open_interest<br/>di_curve_points · di_curve_slope<br/><i>post-build SQL checks at write</i>"]
     end
 
     subgraph SERVE["Serving"]
@@ -178,7 +178,13 @@ Heavy deps are **extras**, so the core install stays light:
 ### Gold marts
 
 `mart_macro_dashboard` · `mart_real_interest` · `mart_inflation_panel` · `mart_fx` ·
-`mart_yield_curve` · `mart_equity_daily` · `mart_futures_curve` · `mart_open_interest`
+`mart_yield_curve` · `mart_equity_daily` · `mart_futures_curve` · `mart_open_interest` ·
+`mart_di_curve_points` · `mart_di_curve_slope`
+
+The DI-curve pair resamples the DI1 futures strip onto a fixed tenor grid (6m–10y,
+bracketed linear interpolation, never extrapolated) and reads the curve's shape off it
+(2s10s/1s5s/6m2y slopes, normal/flat/inverted label) — so curves are comparable across
+trade dates even as listed expirations roll.
 
 Column-level detail and query recipes live in
 [`docs/DASHBOARD_HANDOFF.md`](docs/DASHBOARD_HANDOFF.md).
@@ -283,6 +289,14 @@ The parts that make this behave like a system rather than a set of scripts:
   the same state.
 - **Data contracts at the door.** Pandera validates every bronze write; a violation fails that
   series only, records a DQ metric, and withholds its asset so silver never sees bad data.
+- **Post-build checks at the other end.** Each gold mart's `checks/*.sql` run against the freshly
+  computed result *before* it overwrites the published table — plain SELECTs returning violating
+  rows, in the same DuckDB connection that built the mart. They assert what fixture tests can't:
+  the monthly panel is a dense month grid (a single missing month silently corrupts every
+  12-month `ROWS BETWEEN 11 PRECEDING` window), every DI curve point lies between its bracketing
+  legs, and the published 12-month IPCA compounding is reconciled to 1e-9 against an independent
+  recomputation (calendar-interval `product()` vs the mart's row-window `exp/sum/ln`). A
+  violation fails the gold task and pushes the same DQ metrics the bronze gate does.
 - **Per-series observability.** Ingest pods push `ofl_series_last_success_timestamp_seconds` (the
   latest landed *data* date, not wall-clock), plus DQ and failure gauges, keyed by
   `{series, source, domain, cadence}` — the same series key joins Prometheus, OpenMetadata and the
