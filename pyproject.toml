@@ -27,6 +27,9 @@ dependencies = [
 # Heavy / lane-specific deps are extras so the core (Polars + DuckDB) installs light.
 [project.optional-dependencies]
 spark = ["pyspark>=3.5,<3.6", "delta-spark>=3.2,<3.4"]
+# Streaming lane: the producer speaks WebSocket to the public exchange feed.
+# The Spark side of the lane needs the ``spark`` extra as well.
+streaming = ["websockets>=12.0"]
 airflow = ["apache-airflow>=3.0"]
 yahoo = ["yfinance>=0.2.40"]
 lineage = ["openlineage-python>=1.20"]
