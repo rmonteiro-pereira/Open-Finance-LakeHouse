@@ -6,9 +6,11 @@
 #   * only the base dependency set plus `dev` — the `spark`, `streaming`,
 #     `airflow`, `yahoo`, `lineage` and `dbt` extras are NOT installed.
 #
-# The 119 tests that run here are pure-Python unit tests over the parsers,
-# the registry, the data contracts and the window/watermark logic. They pass
-# offline on a clean runner in a few seconds.
+# The tests that run here are pure-Python unit tests over the parsers, the
+# registry, the data contracts and the window/watermark logic. They pass
+# offline on a clean runner in a few seconds. (No count in this comment on
+# purpose — a hardcoded number here has gone stale twice; `pytest -q` below
+# prints the real one on every run.)
 #
 # Lint is intentionally NOT gated here yet — see the pull request body.
 name: tests
