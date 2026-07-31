@@ -1,5 +1,8 @@
 # Open-Finance LakeHouse
 
+[![tests](https://github.com/rmonteiro-pereira/Open-Finance-LakeHouse/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/rmonteiro-pereira/Open-Finance-LakeHouse/actions/workflows/tests.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 **A production-shaped medallion lakehouse for Brazilian macro & financial data — 51 registered
 series across 10 source handlers (BACEN, IPEA, IBGE, Tesouro Nacional, ANBIMA, B3, Yahoo Finance),
 landed as Delta on MinIO, conformed by Spark into a star schema, and served as DuckDB marts.
@@ -231,8 +234,9 @@ docker build -f docker/Dockerfile       -t ghcr.io/rmonteiro-pereira/open-financ
 docker build -f docker/Dockerfile.spark -t ghcr.io/rmonteiro-pereira/open-finance-lakehouse:spark .
 ```
 
-**Tests** — 128 offline unit tests covering the registry loader, the extractor parsing paths, the
-Pandera contracts, the gold SQL models and the streaming window/watermark logic. They need no
+**Tests** — 134 offline unit tests covering the registry loader, the extractor parsing paths
+(including the BACEN SGS window walk), the Pandera contracts, the gold SQL models and the streaming
+window/watermark logic. They need no
 cluster, no MinIO, no Spark session and no API keys, which is what makes the CI badge mean
 something (see [`.github/workflows/tests.yml`](.github/workflows/tests.yml)):
 
