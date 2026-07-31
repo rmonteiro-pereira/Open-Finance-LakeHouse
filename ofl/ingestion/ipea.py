@@ -17,7 +17,7 @@ from ofl.registry import Series
 
 log = get_logger(__name__)
 
-ODATA = "http://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO='{code}')"
+ODATA = "https://www.ipeadata.gov.br/api/odata4/ValoresSerie(SERCODIGO='{code}')"
 
 
 def _parse(rows: list) -> pl.DataFrame:
