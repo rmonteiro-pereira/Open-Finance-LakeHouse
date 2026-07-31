@@ -100,7 +100,7 @@ port-forward, and take the credentials from the k8s secret (never hardcode them)
 
 ```bash
 # option A — via the MinIO API ingress
-export MINIO_ENDPOINT=https://minio-api.vanir.dev.br
+export MINIO_ENDPOINT=https://<minio-api-host>
 
 # option B — port-forward (read-only, no cluster mutation)
 kubectl port-forward svc/minio -n minio 9000:9000 &
@@ -120,7 +120,7 @@ variable above wins — `.env` is the fallback, not the override.
 | Symptom | Cause |
 |---|---|
 | Every mart reports `missing` with `SignatureDoesNotMatch` (403) | The credentials are stale, not the path. MinIO answers a wrong secret key with a signature error rather than `AccessDenied`. Re-export `MINIO_PASSWORD` from `minio-secrets` as above. |
-| Every mart reports `missing` with a connection error | `MINIO_ENDPOINT` is unreachable. The API ingress serves **https** and 308-redirects plain http, which S3 request signing does not survive — use `https://minio-api.vanir.dev.br`. |
+| Every mart reports `missing` with a connection error | `MINIO_ENDPOINT` is unreachable. The API ingress serves **https** and 308-redirects plain http, which S3 request signing does not survive — use `https://<minio-api-host>`. |
 | A single mart reports `missing` | That mart was never materialized under `gold/`. Run the gold transformation (`ofl gold`) first; the export never invents rows. |
 
 ---
@@ -135,7 +135,7 @@ con.execute("SHOW TABLES").fetchall()
 con.execute("SELECT mart, status, rows FROM _export_manifest ORDER BY mart").fetchall()
 ```
 
-A healthy export, measured on 2026-07-29 against `https://minio-api.vanir.dev.br`
+A healthy export, measured on 2026-07-29 against `https://<minio-api-host>`
 (8/8 marts `ok`):
 
 | mart | rows |
