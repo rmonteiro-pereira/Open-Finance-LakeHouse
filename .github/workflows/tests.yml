@@ -1,0 +1,47 @@
+# Unit tests — the core (Polars + DuckDB) lane only.
+#
+# Deliberately narrow, so that a green badge means something:
+#   * no cluster, no MinIO, no Airflow, no Spark session;
+#   * no API keys and no calls to the upstream data sources;
+#   * only the base dependency set plus `dev` — the `spark`, `streaming`,
+#     `airflow`, `yahoo`, `lineage` and `dbt` extras are NOT installed.
+#
+# The 119 tests that run here are pure-Python unit tests over the parsers,
+# the registry, the data contracts and the window/watermark logic. They pass
+# offline on a clean runner in a few seconds.
+#
+# Lint is intentionally NOT gated here yet — see the pull request body.
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install the core package and dev tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run unit tests
+        run: pytest -q
