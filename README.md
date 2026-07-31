@@ -58,9 +58,7 @@ flowchart LR
     GOLD --> SERVE
 
     STREAM["<b>Streaming lane</b> — live trade WS<br/>bronze/trades + dead letter →<br/>silver/fact_trade_ohlc_1m → NRT mart<br/><i>event-time · watermark · AvailableNow</i>"]
-    DBT["<b>dbt lane</b> — dbt-duckdb over a gold export<br/>5 models · 48 tests · cross-lane check"]
 
-    GOLD -.->|"gold export"| DBT
     STREAM -.->|"near-real-time"| SERVE
 
     OBS["Airflow 3 Assets · OpenLineage → OpenMetadata<br/>Prometheus Pushgateway → per-series alerts"]
@@ -122,7 +120,6 @@ Design decisions worth calling out:
 | Conform / refine | **Spark 3.5 + delta-spark** | Idempotent `MERGE`, window functions, `OPTIMIZE`/`ZORDER`, `VACUUM` |
 | Serving | **DuckDB** (`delta_scan`) | Query-on-the-lake: sub-second SQL over Delta straight from object storage; writes back via delta-rs |
 | Streaming | **Spark Structured Streaming** | Event-time windows + watermark, checkpointed exactly-once, `Trigger.AvailableNow` so the lane is cron-shaped — see [Streaming lane](#streaming-lane) |
-| Analytics engineering | **dbt-duckdb** | Parallel demo lane over a gold export: 5 models, 48 tests, one of them a cross-lane equivalence check — see [dbt lane](#dbt-lane-over-gold) |
 | Orchestration | **Airflow 3** (Assets, `KubernetesPodOperator`) | Data-aware scheduling, per-series assets, pool-based concurrency |
 | Data quality | **Pandera** (Polars-native) | Contracts at ingest: dtypes, non-null keys, `(series_id, date)` uniqueness, per-series sanity bounds |
 | Lineage / catalog | **OpenLineage → OpenMetadata** | Run-level + column-level lineage, env-gated so local runs need no backend |
@@ -132,7 +129,7 @@ Design decisions worth calling out:
 | Platform | **Talos Linux Kubernetes**, **Flux CD**, **Sealed Secrets**, **GHCR** | GitOps-managed self-hosted cluster; see [`GUIA_ACESSO_FERRAMENTAS.md`](GUIA_ACESSO_FERRAMENTAS.md) |
 
 Heavy deps are **extras**, so the core install stays light:
-`.[spark]`, `.[streaming]`, `.[airflow]`, `.[yahoo]`, `.[lineage]`, `.[dbt]`, `.[dev]`.
+`.[spark]`, `.[streaming]`, `.[airflow]`, `.[yahoo]`, `.[lineage]`, `.[dev]`.
 
 ---
 
@@ -262,7 +259,6 @@ ofl/                          # the package
   quality/                    # Pandera contracts
 sources/registry.yml          # single source of truth — drives ingestion, DAGs, dims, catalog
 orchestration/airflow/dags/   # Asset DAGs generated from the registry + failure-alert callback
-dbt/                          # parallel dbt-duckdb lane over a gold export (5 models, 48 tests)
 docker/                       # :slim and :spark offline images (see docker/README.md)
 docs/                         # architecture/redesign.md · STREAMING.md · DASHBOARD_HANDOFF.md · GOLD_EXPORT.md
 tools/                        # gold export + the streaming idempotence harness
@@ -351,40 +347,9 @@ The parts that are the actual engineering, not the demo:
 
 ---
 
-## dbt lane over gold
-
-> **A parallel demonstration lane — explicitly not the production path.** Gold is still built by
-> `ofl/transform/gold/runner.py`. Nothing under [`dbt/`](dbt/) is imported by `ofl`, and no
-> existing model was rewritten to pretend it had always been dbt.
-
-The lakehouse already proves the modelling capability dbt is usually a proxy for — layered models,
-dependency-ordered execution, tested outputs — with its own DuckDB SQL runner. This lane
-demonstrates the same thing *in the tool itself*: `source()`/`ref()` wiring, materialisation
-strategy, generic and singular tests, generated docs. Details in [`dbt/README.md`](dbt/README.md).
-
-**53 nodes build clean: 5 models and 48 data tests.** It earns its keep as a cross-check rather
-than as decoration:
-
-- `mart_real_interest_dbt` recomputes 12-month IPCA compounding through a **completely separate
-  code path**, and a singular test asserts it matches the production mart to 1e-9 on all 327 shared
-  months — *and* that the two month sets are identical, so a window-completeness bug shows up as a
-  missing month instead of passing quietly.
-- `assert_macro_panel_has_no_month_gaps` catches what `unique` and `not_null` structurally cannot:
-  the downstream rolling windows count **rows**, not months, so one missing month silently turns a
-  12-month inflation window into a 13-month one.
-- `assert_di_curve_points_are_bracketed` requires every DI grid point to be an interpolation, never
-  an extrapolation — the check that catches a flipped interpolation weight, which still returns a
-  plausible number.
-
-`dbt/README.md` also states the lane's two honest limitations (a month-end SELIC leg, and a thin DI
-short end from unresolvable expired contracts) rather than hiding them.
-
----
-
 ## Roadmap
 
-Both the **streaming lane** and the **dbt lane** have shipped — see
-[Streaming lane](#streaming-lane) and [dbt lane](#dbt-lane-over-gold) above. What is left:
+The **streaming lane** has shipped — see [Streaming lane](#streaming-lane) above. What is left:
 
 - **Streaming: promote the cron tier to *live*.** The lane runs `Trigger.AvailableNow` end to end
   today; making the scheduled tier durable needs an always-on object store for Delta +
@@ -393,10 +358,6 @@ Both the **streaming lane** and the **dbt lane** have shipped — see
 - **Streaming: converge on the batch star schema.** The lane keeps its own
   `silver/fact_trade_ohlc_1m` rather than merging into `fact_security_price`; unifying the two
   grains is the remaining Lambda/Kappa step.
-- **dbt: widen the lane.** Five models cover the DI curve and a real-interest cross-check. The
-  production gold path stays the plain-SQL runner on purpose (rationale in
-  [`docs/architecture/redesign.md`](docs/architecture/redesign.md) §3); the dbt lane grows only
-  where model-level tests and docs pay for themselves.
 - **RAG project over the gold marts** — a retrieval layer answering natural-language questions about
   Brazilian macro directly from `fact_observation` + `dim_series` + the marts, using the registry as
   the semantic dictionary.
