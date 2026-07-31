@@ -54,7 +54,11 @@ flowchart LR
     SILVER -->|"DuckDB SQL"| GOLD
     GOLD --> SERVE
 
-    STREAM["Streaming lane<br/><i>in progress</i>"] -.-> SILVER
+    STREAM["<b>Streaming lane</b> — live trade WS<br/>bronze/trades + dead letter →<br/>silver/fact_trade_ohlc_1m → NRT mart<br/><i>event-time · watermark · AvailableNow</i>"]
+    DBT["<b>dbt lane</b> — dbt-duckdb over a gold export<br/>5 models · 48 tests · cross-lane check"]
+
+    GOLD -.->|"gold export"| DBT
+    STREAM -.->|"near-real-time"| SERVE
 
     OBS["Airflow 3 Assets · OpenLineage → OpenMetadata<br/>Prometheus Pushgateway → per-series alerts"]
     OBS -.-> BRONZE
@@ -114,16 +118,18 @@ Design decisions worth calling out:
 | Storage | **Delta Lake** on **MinIO** (S3-compatible) | ACID upserts, time travel, schema enforcement; catalog of record |
 | Conform / refine | **Spark 3.5 + delta-spark** | Idempotent `MERGE`, window functions, `OPTIMIZE`/`ZORDER`, `VACUUM` |
 | Serving | **DuckDB** (`delta_scan`) | Query-on-the-lake: sub-second SQL over Delta straight from object storage; writes back via delta-rs |
+| Streaming | **Spark Structured Streaming** | Event-time windows + watermark, checkpointed exactly-once, `Trigger.AvailableNow` so the lane is cron-shaped — see [Streaming lane](#streaming-lane) |
+| Analytics engineering | **dbt-duckdb** | Parallel demo lane over a gold export: 5 models, 48 tests, one of them a cross-lane equivalence check — see [dbt lane](#dbt-lane-over-gold) |
 | Orchestration | **Airflow 3** (Assets, `KubernetesPodOperator`) | Data-aware scheduling, per-series assets, pool-based concurrency |
 | Data quality | **Pandera** (Polars-native) | Contracts at ingest: dtypes, non-null keys, `(series_id, date)` uniqueness, per-series sanity bounds |
 | Lineage / catalog | **OpenLineage → OpenMetadata** | Run-level + column-level lineage, env-gated so local runs need no backend |
 | Metrics / alerting | **Prometheus Pushgateway → Alertmanager** | Short-lived pods *push* freshness/DQ/failure gauges; per-series alerts |
-| Config | **Pydantic Settings** (12-factor) | No secrets in code — env vars / sealed secrets only |
+| Config | **Pydantic Settings** (12-factor) | No secrets in code — env vars / sealed secrets only, and [`ofl/config.py`](ofl/config.py) *refuses to start* if the vendor default credentials would be sent to a non-loopback endpoint |
 | Packaging | **uv**, **hatchling**, **ruff**, **mypy**, **pytest** | Reproducible installs, lint/type/test gates |
 | Platform | **Talos Linux Kubernetes**, **Flux CD**, **Sealed Secrets**, **GHCR** | GitOps-managed self-hosted cluster; see [`GUIA_ACESSO_FERRAMENTAS.md`](GUIA_ACESSO_FERRAMENTAS.md) |
 
 Heavy deps are **extras**, so the core install stays light:
-`.[spark]`, `.[airflow]`, `.[yahoo]`, `.[lineage]`, `.[dev]`.
+`.[spark]`, `.[streaming]`, `.[airflow]`, `.[yahoo]`, `.[lineage]`, `.[dbt]`, `.[dev]`.
 
 ---
 
@@ -211,7 +217,7 @@ Configuration is environment-driven — no secrets in code:
 
 | Variable | Purpose |
 |---|---|
-| `MINIO_ENDPOINT` / `MINIO_USER` / `MINIO_PASSWORD` | Object store connection |
+| `MINIO_ENDPOINT` / `MINIO_USER` / `MINIO_PASSWORD` | Object store connection. Defaults are MinIO's *published* factory credentials so a scratch localhost stack needs no setup — `Settings` raises if they would be sent anywhere but loopback |
 | `LAKEHOUSE_BUCKET` / `AWS_REGION` | Bucket and nominal region |
 | `OFL_REGISTRY` | Registry path override (defaults to `sources/registry.yml`) |
 | `OFL_SPARK_DRIVER_MEMORY` / `OFL_SPARK_JARS_PACKAGED` | Silver-lane Spark tuning |
@@ -225,8 +231,10 @@ docker build -f docker/Dockerfile       -t ghcr.io/rmonteiro-pereira/open-financ
 docker build -f docker/Dockerfile.spark -t ghcr.io/rmonteiro-pereira/open-finance-lakehouse:spark .
 ```
 
-**Tests** — 41 tests covering the registry loader, the extractor parsing paths, the Pandera
-contracts and the gold SQL models:
+**Tests** — 119 offline unit tests covering the registry loader, the extractor parsing paths, the
+Pandera contracts, the gold SQL models and the streaming window/watermark logic. They need no
+cluster, no MinIO, no Spark session and no API keys, which is what makes the CI badge mean
+something (see [`.github/workflows/tests.yml`](.github/workflows/tests.yml)):
 
 ```bash
 uv run pytest
@@ -246,18 +254,23 @@ ofl/                          # the package
   ingestion/                  # 10 Polars extractors + bronze landing
   transform/spark/            # silver: conform MERGEs, dimensions, window KPIs, OPTIMIZE/VACUUM
   transform/gold/             # 8 DuckDB SQL marts + runner
+  streaming/                  # Spark Structured Streaming lane: producer, bronze, event-time silver, NRT mart
   quality/                    # Pandera contracts
 sources/registry.yml          # single source of truth — drives ingestion, DAGs, dims, catalog
 orchestration/airflow/dags/   # Asset DAGs generated from the registry + failure-alert callback
+dbt/                          # parallel dbt-duckdb lane over a gold export (5 models, 48 tests)
 docker/                       # :slim and :spark offline images (see docker/README.md)
-docs/                         # architecture/redesign.md · DASHBOARD_HANDOFF.md · SCREENSHOTS_TODO.md
+docs/                         # architecture/redesign.md · STREAMING.md · DASHBOARD_HANDOFF.md · GOLD_EXPORT.md
+tools/                        # gold export + the streaming idempotence harness
 tests/                        # pytest suite
 notebooks/                    # exploratory analysis
 ```
 
-Also in the repo: [`GUIA_ACESSO_FERRAMENTAS.md`](GUIA_ACESSO_FERRAMENTAS.md) (pt-BR) documents how
-to reach every service on the cluster — Airflow, MinIO, OpenMetadata, Grafana/Prometheus/Loki,
-Kafka, PostgreSQL, Sealed Secrets, Flux CD.
+Also in the repo: [`GUIA_ACESSO_FERRAMENTAS.md`](GUIA_ACESSO_FERRAMENTAS.md) (pt-BR) — a **generic**
+runbook for reaching every service on the cluster: Airflow, MinIO, OpenMetadata,
+Grafana/Prometheus/Loki, the event bus, PostgreSQL, Sealed Secrets, Flux CD. It carries placeholders
+and the `kubectl` command that reads each credential from its `Secret` — never a hostname, a
+private-range IP, or a credential value.
 
 ---
 
@@ -286,13 +299,100 @@ The parts that make this behave like a system rather than a set of scripts:
 
 ---
 
+## Streaming lane
+
+The batch lanes run on a schedule over closed periods. This lane runs **continuously over a live
+market feed**, so the platform tells a **batch + streaming (Lambda/Kappa)** story rather than a
+batch-only one — same storage format (Delta), same medallion layers, same lineage columns, a
+different clock. Code lives in [`ofl/streaming/`](ofl/streaming/); the full write-up is
+[`docs/STREAMING.md`](docs/STREAMING.md).
+
+```
+ public trade WS      ofl stream-produce      ofl stream-bronze       ofl stream-silver
+ <symbol>@trade  ───► _landing/*.jsonl  ───►  bronze/trades/    ───►  silver/fact_trade_ohlc_1m/
+ (free, no auth)                              bronze/trades_dead_letter/        │
+                                        _checkpoints/bronze_trades/             ▼
+                                        _checkpoints/silver_ohlc_1m/     NRT DuckDB mart
+```
+
+```bash
+uv sync --extra spark --extra streaming
+uv run ofl stream-produce --symbols btcusdt,ethusdt --max-seconds 170
+uv run ofl stream-bronze  --available-now      # landing → bronze Delta
+uv run ofl stream-silver  --available-now      # bronze → 1-min event-time OHLC bars
+uv run ofl stream-mart                         # bars → served near-real-time mart
+```
+
+The parts that are the actual engineering, not the demo:
+
+- **Event-time, not processing-time.** 1-minute OHLC windows keyed on the exchange's trade
+  timestamp with an explicit watermark, so late and out-of-order arrivals land in the bar they
+  belong to instead of the bar that happened to be open.
+- **Idempotent by checkpoint *and* by Delta transaction.** Offsets and commits live in per-query
+  checkpoint directories, and each `foreachBatch` Delta write carries `txnAppId`/`txnVersion`, so a
+  batch replayed after a mid-write crash is recognised by the Delta log and skipped instead of
+  double-written. [`tools/streaming_idempotence.py`](tools/streaming_idempotence.py) runs two
+  `Trigger.AvailableNow` passes in separate processes and compares counts, so this is a *measured*
+  claim rather than an asserted one.
+- **`Trigger.AvailableNow`, so the lane costs ~nothing.** The expensive thing about streaming is a
+  cluster left on, not Spark. Each run drains what has arrived and exits, which makes the whole
+  lane cron-shaped and free to operate.
+- **Never schema-inferred.** The wire format is pinned as DDL in
+  [`ofl/streaming/schema.py`](ofl/streaming/schema.py). Reading with the *text* source and applying
+  `from_json` ourselves turns a malformed record into **a row we can route** — rejects go to
+  `bronze/trades_dead_letter` verbatim with a `reason`, replayable once the cause is understood,
+  instead of failing the task or vanishing.
+- **Bounded by design.** Producer and Spark jobs both terminate on explicit caps, and each stage is
+  decoupled from the next by durable storage, so nothing has to be alive for anything else to run.
+
+---
+
+## dbt lane over gold
+
+> **A parallel demonstration lane — explicitly not the production path.** Gold is still built by
+> `ofl/transform/gold/runner.py`. Nothing under [`dbt/`](dbt/) is imported by `ofl`, and no
+> existing model was rewritten to pretend it had always been dbt.
+
+The lakehouse already proves the modelling capability dbt is usually a proxy for — layered models,
+dependency-ordered execution, tested outputs — with its own DuckDB SQL runner. This lane
+demonstrates the same thing *in the tool itself*: `source()`/`ref()` wiring, materialisation
+strategy, generic and singular tests, generated docs. Details in [`dbt/README.md`](dbt/README.md).
+
+**53 nodes build clean: 5 models and 48 data tests.** It earns its keep as a cross-check rather
+than as decoration:
+
+- `mart_real_interest_dbt` recomputes 12-month IPCA compounding through a **completely separate
+  code path**, and a singular test asserts it matches the production mart to 1e-9 on all 327 shared
+  months — *and* that the two month sets are identical, so a window-completeness bug shows up as a
+  missing month instead of passing quietly.
+- `assert_macro_panel_has_no_month_gaps` catches what `unique` and `not_null` structurally cannot:
+  the downstream rolling windows count **rows**, not months, so one missing month silently turns a
+  12-month inflation window into a 13-month one.
+- `assert_di_curve_points_are_bracketed` requires every DI grid point to be an interpolation, never
+  an extrapolation — the check that catches a flipped interpolation weight, which still returns a
+  plausible number.
+
+`dbt/README.md` also states the lane's two honest limitations (a month-end SELIC leg, and a thin DI
+short end from unresolvable expired contracts) rather than hiding them.
+
+---
+
 ## Roadmap
 
-- **Streaming lane** *(in progress)* — a real-time path landing into the same silver star schema,
-  so batch and stream converge on one set of conformed facts.
-- **dbt lane on gold** — the gold marts are intentionally plain SQL run by a thin runner today
-  (dbt/SQLMesh were evaluated and deferred, see `docs/architecture/redesign.md` §3). Revisit as the
-  mart count grows and model-level tests/docs start paying for themselves.
+Both the **streaming lane** and the **dbt lane** have shipped — see
+[Streaming lane](#streaming-lane) and [dbt lane](#dbt-lane-over-gold) above. What is left:
+
+- **Streaming: promote the cron tier to *live*.** The lane runs `Trigger.AvailableNow` end to end
+  today; making the scheduled tier durable needs an always-on object store for Delta +
+  checkpoints between ephemeral runs. Provisioning that bucket is human-gated and deliberately
+  not automated — see [`docs/STREAMING.md`](docs/STREAMING.md) §Roadmap.
+- **Streaming: converge on the batch star schema.** The lane keeps its own
+  `silver/fact_trade_ohlc_1m` rather than merging into `fact_security_price`; unifying the two
+  grains is the remaining Lambda/Kappa step.
+- **dbt: widen the lane.** Five models cover the DI curve and a real-interest cross-check. The
+  production gold path stays the plain-SQL runner on purpose (rationale in
+  [`docs/architecture/redesign.md`](docs/architecture/redesign.md) §3); the dbt lane grows only
+  where model-level tests and docs pay for themselves.
 - **RAG project over the gold marts** — a retrieval layer answering natural-language questions about
   Brazilian macro directly from `fact_observation` + `dim_series` + the marts, using the registry as
   the semantic dictionary.
@@ -304,10 +404,12 @@ The parts that make this behave like a system rather than a set of scripts:
 
 ---
 
-## Author & data sources
+## Author, license & data sources
 
 Built by **Rodrigo Monteiro Pereira** as a portfolio-grade data platform.
 
+The code in this repository is released under the **MIT License** — see [`LICENSE`](LICENSE).
+
 All data comes from public APIs and files published by BACEN, IBGE, IPEA, Tesouro Nacional, ANBIMA,
-B3 and Yahoo Finance — each remains subject to its own terms of use. Nothing here is investment
-advice.
+B3 and Yahoo Finance — each remains subject to its own terms of use, which the MIT license on this
+code does not extend to. Nothing here is investment advice.

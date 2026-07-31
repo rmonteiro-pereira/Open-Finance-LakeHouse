@@ -7,9 +7,18 @@ credentials and endpoints come from env vars / sealed secrets only.
 from __future__ import annotations
 
 from functools import lru_cache
+from urllib.parse import urlparse
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# MinIO's own published out-of-the-box root credentials. They are a *placeholder*
+# so that `docker run minio` and a scratch localhost stack work with no setup — not
+# a credential for any deployment of this project. Anything that is not loopback
+# must supply MINIO_USER / MINIO_PASSWORD from a real secret; see the validator
+# below, which refuses to start otherwise.
+_VENDOR_DEFAULT_CREDENTIAL = "minioadmin"
+_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1", "0.0.0.0"})
 
 
 class Settings(BaseSettings):
@@ -18,8 +27,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     minio_endpoint: str = Field("http://localhost:9000", alias="MINIO_ENDPOINT")
-    minio_user: str = Field("minioadmin", alias="MINIO_USER")
-    minio_password: str = Field("minioadmin", alias="MINIO_PASSWORD")
+    minio_user: str = Field(_VENDOR_DEFAULT_CREDENTIAL, alias="MINIO_USER")
+    minio_password: str = Field(_VENDOR_DEFAULT_CREDENTIAL, alias="MINIO_PASSWORD")
     aws_region: str = Field("us-east-1", alias="AWS_REGION")
 
     bucket: str = Field("lakehouse", alias="LAKEHOUSE_BUCKET")
@@ -44,6 +53,27 @@ class Settings(BaseSettings):
     # claim. Bounds batch size (and driver memory) when the job restarts on a
     # backlog rather than tailing a live producer.
     streaming_max_files_per_trigger: int = Field(64, alias="OFL_STREAM_MAX_FILES_PER_TRIGGER")
+
+    @model_validator(mode="after")
+    def _reject_default_credentials_off_loopback(self) -> Settings:
+        """Fail fast if the vendor default credentials would leave the machine.
+
+        The defaults exist so a scratch localhost stack needs zero setup. Sending
+        them to a remote endpoint means either (a) the real credentials were never
+        wired up, or (b) the remote MinIO is still on its factory root user — and
+        the second case is a finding, not a configuration. Either way, refusing at
+        construction time is better than a 403 three lanes downstream.
+        """
+        host = (urlparse(self.minio_endpoint).hostname or "").lower()
+        uses_defaults = _VENDOR_DEFAULT_CREDENTIAL in {self.minio_user, self.minio_password}
+        if uses_defaults and host not in _LOOPBACK_HOSTS:
+            raise ValueError(
+                f"MINIO_ENDPOINT points at {host!r}, but MINIO_USER/MINIO_PASSWORD are "
+                "still MinIO's published factory defaults. Set both from a real secret "
+                "(sealed secret / OpenBao / env), or point MINIO_ENDPOINT at localhost "
+                "for a scratch stack."
+            )
+        return self
 
 
 @lru_cache
