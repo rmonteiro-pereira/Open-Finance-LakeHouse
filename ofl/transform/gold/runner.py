@@ -19,9 +19,15 @@ if TYPE_CHECKING:
 log = get_logger(__name__)
 
 MODELS_DIR = Path(__file__).parent / "models"
+CHECKS_DIR = Path(__file__).parent / "checks"
 
-# Marts are independent (no inter-mart refs). Most read `fact_observation`;
-# `mart_yield_curve` reads `fact_treasury`.
+# Marts are independent (no inter-mart refs), with one deliberate exception:
+# `mart_di_curve_slope` reads `mart_di_curve_points`, so the tenor grid and its
+# interpolation are defined in exactly one place. `execute_models` registers each
+# computed mart back into the connection under its own name, in list order — so
+# order matters only for that one edge. Most marts read `fact_observation`;
+# `mart_yield_curve` reads `fact_treasury`; the DI-curve marts read the
+# derivatives facts.
 MODELS = [
     "mart_real_interest",
     "mart_inflation_panel",
@@ -31,7 +37,25 @@ MODELS = [
     "mart_equity_daily",
     "mart_futures_curve",
     "mart_open_interest",
+    "mart_di_curve_points",
+    "mart_di_curve_slope",
 ]
+
+# Post-build data checks — the dbt-singular convention without dbt: each file in
+# `checks/` is a SELECT returning *violating rows*; an empty result is a pass.
+# Keyed by the mart whose build triggers them; they run in the same connection,
+# between compute and write, so a violating build never overwrites the last good
+# published mart — the same withhold-on-breach semantics as the bronze Pandera
+# gate in `ofl/ingestion/landing.py`.
+CHECKS: dict[str, list[str]] = {
+    "mart_macro_dashboard": ["assert_macro_panel_has_no_month_gaps"],
+    "mart_real_interest": ["assert_real_interest_ipca_recomputes"],
+    "mart_di_curve_points": ["assert_di_curve_points_are_bracketed"],
+}
+
+
+class GoldCheckError(RuntimeError):
+    """A post-build data check returned violating rows; the gold task must fail."""
 
 # Silver tables each mart depends on — used to skip marts whose inputs aren't ready.
 # `mart_equity_daily` reads `fact_security_price`; the derivatives marts read
@@ -49,6 +73,38 @@ _SILVER_TABLES = [
 
 def _model_sql(name: str) -> str:
     return (MODELS_DIR / f"{name}.sql").read_text(encoding="utf-8")
+
+
+def _check_sql(name: str) -> str:
+    return (CHECKS_DIR / f"{name}.sql").read_text(encoding="utf-8")
+
+
+def run_checks(con: "duckdb.DuckDBPyConnection", model: str) -> None:
+    """Run ``model``'s post-build checks; raise :class:`GoldCheckError` on violation.
+
+    Each check queries the just-computed mart (registered on ``con`` under the
+    model's name) and/or the silver views. Any returned row is a violation: it is
+    logged with a sample, pushed as a DQ metric (same Alertmanager path as the
+    bronze gate), and fails the gold task so the ``gold/marts`` asset is withheld.
+    """
+    for check in CHECKS.get(model, []):
+        violations = con.execute(_check_sql(check)).to_arrow_table()
+        if violations.num_rows:
+            from ofl.platform.metrics import record_gold_check_failure
+
+            record_gold_check_failure(model, check=check, violations=violations.num_rows)
+            log.error(
+                "gold_check_failed",
+                model=model,
+                check=check,
+                violations=violations.num_rows,
+                sample=violations.slice(0, 5).to_pylist(),
+            )
+            raise GoldCheckError(
+                f"gold check '{check}' failed for {model}: "
+                f"{violations.num_rows} violating row(s)"
+            )
+        log.info("gold_check_passed", model=model, check=check)
 
 
 def configure_minio(con: "duckdb.DuckDBPyConnection") -> None:
@@ -117,6 +173,11 @@ def execute_models(
 
     With ``skip_on_error`` (used by the orchestrated ``run_gold``), a mart whose
     upstream isn't materialized is logged and skipped instead of failing the run.
+
+    Each computed mart is registered back into ``con`` under its own name, then
+    its ``CHECKS`` run *before* the write: a check violation always raises
+    (``skip_on_error`` never swallows it — garbage output is a failure, not a
+    missing upstream) and the previously published mart is left untouched.
     """
     results: dict[str, int] = {}
     for name in models or MODELS:
@@ -127,6 +188,10 @@ def execute_models(
                 raise
             log.warning("gold_model_skipped", model=name, error=str(exc))
             continue
+        # Registered so checks — and the one mart-on-mart reader,
+        # `mart_di_curve_slope` — can query the result by name.
+        con.register(name, arrow)
+        run_checks(con, name)
         results[name] = arrow.num_rows
         if write:
             from deltalake import write_deltalake
