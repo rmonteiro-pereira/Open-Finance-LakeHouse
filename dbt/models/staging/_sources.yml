@@ -1,0 +1,65 @@
+version: 2
+
+sources:
+  - name: gold
+    description: >
+      The gold marts produced by the production pipeline
+      (`ofl/transform/gold/models/*.sql`, executed by `ofl/transform/gold/runner.py`
+      against silver Delta on MinIO), exported to a single DuckDB file. This dbt
+      lane treats that export as its upstream and never writes to it — the
+      database is ATTACHed READ_ONLY in `profiles.yml`.
+    database: gold_export
+    schema: main
+    tables:
+      - name: mart_macro_dashboard
+        description: >
+          Wide monthly macro panel — month-end value per series for the Copom SELIC
+          target, IPCA month-over-month, USD/BRL and gross-debt/GDP.
+        columns:
+          - name: month
+            description: First day of the reference month.
+            data_tests: [not_null, unique]
+          - name: selic_target
+            description: Copom SELIC target, % p.a., month-end observation.
+          - name: ipca_mom
+            description: IPCA month-over-month change, %.
+          - name: usd_brl
+            description: USD/BRL PTAX, month-end.
+          - name: debt_to_gdp_pct
+            description: Gross general-government debt as % of GDP.
+
+      - name: mart_real_interest
+        description: >
+          Production ex-post real interest mart. Used here only as a reconciliation
+          target for `mart_real_interest_dbt` — it is never an input to a model.
+        columns:
+          - name: month
+            data_tests: [not_null, unique]
+          - name: selic_target
+            description: Copom SELIC target, % p.a., averaged over the month.
+          - name: ipca_accum_12m
+            description: IPCA compounded over a trailing 12-month window, %.
+          - name: real_interest_rate
+            description: Fisher-deflated SELIC, % p.a.
+
+      - name: mart_futures_curve
+        description: >
+          B3 derivatives settlement panel — one row per (trade date, contract
+          symbol) across every listed asset and expiration.
+        columns:
+          - name: date
+            description: Trade/settlement date.
+            data_tests: [not_null]
+          - name: symbol
+            description: B3 contract symbol, e.g. `DI1F27`.
+            data_tests: [not_null]
+          - name: asset
+            description: Contract root, e.g. `DI1`, `DOL`. Null for unmapped instruments.
+          - name: maturity
+            description: Contract expiration date.
+          - name: days_to_maturity
+            description: Calendar days from trade date to expiration.
+          - name: settlement_rate
+            description: Settlement rate for rate-quoted contracts, % p.a. Null for price-quoted ones.
+          - name: open_interest
+            description: Open interest in contracts at the close.

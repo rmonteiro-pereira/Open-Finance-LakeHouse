@@ -1,0 +1,127 @@
+version: 2
+
+models:
+  - name: mart_real_interest_dbt
+    description: >
+      Ex-post real interest rate — the dbt lane's re-expression of
+      `ofl/transform/gold/models/mart_real_interest.sql`. See the model header for
+      the one input that differs (month-end vs month-average SELIC) and what is
+      reconciled against the production mart.
+    columns:
+      - name: month
+        description: First day of the reference month.
+        data_tests:
+          - not_null
+          - unique
+      - name: selic_target_pct
+        description: Copom SELIC target, % p.a., month-end observation.
+        data_tests:
+          - not_null
+      - name: ipca_accum_12m_pct
+        description: IPCA compounded over the trailing 12 months, %. Full windows only.
+        data_tests:
+          - not_null
+      - name: real_interest_rate_pct
+        description: SELIC deflated by trailing 12-month IPCA (Fisher), % p.a.
+        data_tests:
+          - not_null
+      - name: is_positive_real_rate
+        description: Whether the deflated rate is at or above zero.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [true, false]
+                quote: false
+
+  - name: mart_di_curve_points
+    description: >
+      DI1 curve resampled onto a fixed tenor grid by linear interpolation between
+      the two bracketing listed expirations. No extrapolation — a grid tenor the
+      strip does not straddle simply has no row.
+    columns:
+      - name: curve_point_key
+        description: Surrogate key, `trade_date|tenor_label`.
+        data_tests:
+          - not_null
+          - unique
+      - name: trade_date
+        description: Trade date the curve was observed on.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_gold__di_futures')
+                field: trade_date
+      - name: tenor_label
+        description: Grid tenor this point represents.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['6m', '1y', '2y', '3y', '5y', '10y']
+      - name: target_tenor_years
+        description: Grid tenor in years.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0.5, 1.0, 2.0, 3.0, 5.0, 10.0]
+                quote: false
+      - name: di_rate_pct
+        description: Interpolated DI rate at the grid tenor, % p.a.
+        data_tests:
+          - not_null
+      - name: lower_symbol
+        description: Bracketing contract at or below the grid tenor.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_gold__di_futures')
+                field: contract_symbol
+      - name: upper_symbol
+        description: Bracketing contract at or above the grid tenor.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_gold__di_futures')
+                field: contract_symbol
+      - name: max_leg_gap_years
+        description: >
+          Distance from the grid tenor to the further of its two bracketing
+          expirations — an interpolation-quality indicator.
+        data_tests:
+          - not_null
+      - name: both_legs_have_open_interest
+        description: Whether both bracketing contracts closed with open interest.
+        data_tests:
+          - not_null
+
+  - name: mart_di_curve_slope
+    description: >
+      One row per trade date describing the shape of the DI curve — grid rates
+      pivoted wide, the standard slopes, and a normal/flat/inverted label.
+    columns:
+      - name: trade_date
+        description: Trade date.
+        data_tests:
+          - not_null
+          - unique
+          - relationships:
+              arguments:
+                to: ref('mart_di_curve_points')
+                field: trade_date
+      - name: n_curve_points
+        description: How many grid tenors were available on the date (1–6).
+        data_tests:
+          - not_null
+      - name: curve_shape
+        description: >
+          `normal` / `inverted` / `flat` from the 2s10s slope, with a ±10 bp dead
+          band. Null when either leg is missing.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['normal', 'inverted', 'flat']
