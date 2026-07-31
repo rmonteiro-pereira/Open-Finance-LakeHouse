@@ -400,7 +400,8 @@ Both the **streaming lane** and the **dbt lane** have shipped — see
   written up in [`docs/DASHBOARD_HANDOFF.md`](docs/DASHBOARD_HANDOFF.md).
 - **ANBIMA production data** — swap the sandbox host for the production Feed API once credentials
   are approved.
-- **Screenshots** — see [`docs/SCREENSHOTS_TODO.md`](docs/SCREENSHOTS_TODO.md).
+- **Screenshots** — the Airflow asset graph, a gold mart preview and the per-series Grafana
+  panel, captured from the running cluster.
 
 ---
 
