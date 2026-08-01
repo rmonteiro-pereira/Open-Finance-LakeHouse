@@ -1,8 +1,10 @@
 # Guia de Acesso às Ferramentas do Cluster Kubernetes
 
 Este documento descreve as ferramentas da plataforma e **como descobrir** o endereço e as
-credenciais de cada uma. Ele é um runbook genérico: **nenhum hostname, IP ou credencial real
-aparece aqui**.
+credenciais de cada uma. Ele é um runbook genérico: **nenhum hostname externo, nenhum IP e
+nenhuma credencial real aparecem aqui**. Os únicos endereços citados são nomes DNS internos do
+cluster (`servico.namespace.svc.cluster.local`), que só resolvem de dentro dele e são os nomes
+padrão dos charts.
 
 > **Sem credenciais neste arquivo — por design.**
 > Todos os segredos da plataforma vivem em `Secret`/`SealedSecret` do Kubernetes. Este guia

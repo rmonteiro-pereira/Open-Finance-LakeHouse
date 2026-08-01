@@ -40,8 +40,11 @@ class Settings(BaseSettings):
 
     # Driver heap for the silver lane. The conform MERGEs re-read each fact's full
     # bronze every run (not just the daily delta), so the largest fact
-    # (fact_derivatives_quote, ~1.6M rows and growing) drives the requirement; the
-    # 1g pyspark default OOMs on it. Keep within the pod memory limit.
+    # (fact_derivatives_quote) drives the requirement; the 1g pyspark default OOMs
+    # on it, which is why this default is 4g. Keep within the pod memory limit.
+    # No row count is quoted here on purpose: it changes with every backfill and
+    # would go stale. To see the current one, run the query in
+    # docs/adr/0001-no-dbt-sdp-or-sqlmesh-in-the-mart-layer.md.
     spark_driver_memory: str = Field("4g", alias="OFL_SPARK_DRIVER_MEMORY")
 
     # Streaming lane. Landing files, bronze Delta and checkpoints live on the local

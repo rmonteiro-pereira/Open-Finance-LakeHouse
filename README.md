@@ -125,7 +125,7 @@ Design decisions worth calling out:
 | Lineage / catalog | **OpenLineage → OpenMetadata** | Run-level + column-level lineage, env-gated so local runs need no backend |
 | Metrics / alerting | **Prometheus Pushgateway → Alertmanager** | Short-lived pods *push* freshness/DQ/failure gauges; per-series alerts |
 | Config | **Pydantic Settings** (12-factor) | No secrets in code — env vars / sealed secrets only, and [`ofl/config.py`](ofl/config.py) *refuses to start* if the vendor default credentials would be sent to a non-loopback endpoint |
-| Packaging | **uv**, **hatchling**, **ruff**, **mypy**, **pytest** | Reproducible installs, lint/type/test gates |
+| Packaging | **uv**, **hatchling**, **pytest** (+ **ruff** and **mypy**, configured but not yet gated) | Reproducible installs; the unit-test job is the only CI gate today — see [Honest caveats](#honest-caveats) |
 | Platform | **Talos Linux Kubernetes**, **Flux CD**, **Sealed Secrets**, **GHCR** | GitOps-managed self-hosted cluster; see [`GUIA_ACESSO_FERRAMENTAS.md`](GUIA_ACESSO_FERRAMENTAS.md) |
 
 Heavy deps are **extras**, so the core install stays light:
@@ -201,6 +201,11 @@ Column-level detail and query recipes live in
 - Annualized rates (`over`, `cdi_anual`) legitimately reach ~173%/yr in the 1994–97 stabilization;
   the sanity bounds are set to preserve that history, not clip it.
 - `value` units differ by series — always read `dim_series.unit` before putting two series on one axis.
+- **CI gates the tests, not the lint.** `.github/workflows/tests.yml` runs `pytest -q` and nothing
+  else: `ruff` and `mypy` are configured in `pyproject.toml` but no workflow runs them, and
+  `ruff check .` currently exits non-zero. So the badge means "the offline suite passes", not
+  "the tree is lint-clean". Turning the lint into a real gate is tracked as its own change,
+  because it is a large mechanical diff that would drown any review it shared a PR with.
 
 ---
 
@@ -237,15 +242,15 @@ docker build -f docker/Dockerfile       -t ghcr.io/rmonteiro-pereira/open-financ
 docker build -f docker/Dockerfile.spark -t ghcr.io/rmonteiro-pereira/open-finance-lakehouse:spark .
 ```
 
-**Tests** — 134 offline unit tests covering the registry loader, the extractor parsing paths
+**Tests** — offline unit tests covering the registry loader, the extractor parsing paths
 (including the BACEN SGS window walk), the Pandera contracts, the gold SQL models and the streaming
 window/watermark logic. They need no
 cluster, no MinIO, no Spark session and no API keys, which is what makes the CI badge mean
 something (see [`.github/workflows/tests.yml`](.github/workflows/tests.yml)):
 
 ```bash
-uv run pytest
-uv run ruff check .
+uv run pytest                  # the gate: this is what CI runs
+uv run ruff check .            # configured, not gated — currently exits non-zero
 ```
 
 ---
@@ -260,7 +265,7 @@ ofl/                          # the package
   platform/                   # spark session, MinIO/Delta IO, logging, metrics, lineage
   ingestion/                  # 10 Polars extractors + bronze landing
   transform/spark/            # silver: conform MERGEs, dimensions, window KPIs, OPTIMIZE/VACUUM
-  transform/gold/             # 8 DuckDB SQL marts + runner
+  transform/gold/             # 10 DuckDB SQL marts + runner
   streaming/                  # Spark Structured Streaming lane: producer, bronze, event-time silver, NRT mart
   quality/                    # Pandera contracts
 sources/registry.yml          # single source of truth — drives ingestion, DAGs, dims, catalog
@@ -275,8 +280,10 @@ notebooks/                    # exploratory analysis
 Also in the repo: [`GUIA_ACESSO_FERRAMENTAS.md`](GUIA_ACESSO_FERRAMENTAS.md) (pt-BR) — a **generic**
 runbook for reaching every service on the cluster: Airflow, MinIO, OpenMetadata,
 Grafana/Prometheus/Loki, the event bus, PostgreSQL, Sealed Secrets, Flux CD. It carries placeholders
-and the `kubectl` command that reads each credential from its `Secret` — never a hostname, a
-private-range IP, or a credential value.
+and the `kubectl` command that reads each credential from its `Secret` — never an external
+hostname, a private-range IP, or a credential value. The only addresses it prints are in-cluster
+service DNS names (`service.namespace.svc.cluster.local`), which are chart defaults and resolve
+nowhere outside the cluster.
 
 ---
 
@@ -308,8 +315,11 @@ The parts that make this behave like a system rather than a set of scripts:
   `(series_id, date)` and `VACUUM`s old files — implemented and callable, not yet on a schedule,
   because at this scale it isn't earning its run time.
 - **Right-sized for one node.** Pods request 256Mi and burst to their limits; the silver Spark pod
-  gets a 4g driver heap because the largest fact (`fact_derivatives_quote`, ~1.6M rows) is re-merged
-  in full each run.
+  gets a 4g driver heap because the largest fact (`fact_derivatives_quote`) is re-merged in full
+  each run and OOMs on pyspark's 1g default. No row count is quoted for it anywhere in this repo:
+  it moves with every backfill, and an unmeasured number in a comment is worse than none — see
+  [ADR-0001](docs/adr/0001-no-dbt-sdp-or-sqlmesh-in-the-mart-layer.md) for the query that reports
+  the current value.
 
 ---
 
