@@ -84,7 +84,7 @@ _RESOURCES = k8s.V1ResourceRequirements(
     limits={"cpu": "1500m", "memory": "3Gi"},
 )
 # The silver lane runs a Spark JVM that MERGEs each fact's full bronze every run;
-# the largest (fact_derivatives_quote, ~1.6M rows) needs a ~4g driver heap (see
+# the largest (fact_derivatives_quote) needs a ~4g driver heap (see
 # OFL_SPARK_DRIVER_MEMORY), so its pod gets a bigger limit to host that heap +
 # overhead. Request stays tiny (node is oversubscribed on requests, not real RAM).
 _SPARK_RESOURCES = k8s.V1ResourceRequirements(

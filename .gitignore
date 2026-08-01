@@ -17,10 +17,8 @@ data/**
 # also keep all .gitkeep files
 !.gitkeep
 
-# also keep the example dataset
-!data/01_raw/companies.csv
-!data/01_raw/reviews.csv
-!data/01_raw/shuttles.xlsx
+# no dataset is committed: every byte under data/ is produced by a local run.
+# The real inputs are the public APIs listed in sources/registry.yml.
 
 # ignore kedro-viz metadata
 .viz

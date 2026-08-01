@@ -30,9 +30,20 @@ Three properties of this repository decide it:
   to manage here. The dependency handling in `runner.py` is trivial *by construction*, not by
   neglect.
 - **DuckDB rebuild economics.** Marts are full-rebuild overwrites (`write_deltalake(...,
-  mode="overwrite")`). The largest input fact, `fact_derivatives_quote`, is ~1.6M rows — small
-  enough that recomputing everything is simpler and safer than reasoning about what a new row
-  invalidated. The streaming lane reached the same conclusion independently and wrote down why
+  mode="overwrite")`). The largest input fact is `fact_derivatives_quote`, at single-node scale —
+  small enough that recomputing everything is simpler and safer than reasoning about what a new
+  row invalidated. That is a scale judgement, not a measured constant, and this repo deliberately
+  publishes no row count for it (the value moves with every backfill window). To check it against
+  a live lakehouse rather than take it on faith:
+
+  ```bash
+  # needs read access to the bucket; same delta_scan path the gold runner uses
+  duckdb -c "SELECT count(*) FROM delta_scan('s3://<bucket>/silver/fact_derivatives_quote')"
+  ```
+
+  The decision below only depends on the answer being *small* — if that count ever approaches the
+  point where a full rebuild stops fitting in one node's heap, this ADR is the thing to revisit.
+  The streaming lane reached the same conclusion independently and wrote down why
   (`ofl/streaming/mart.py`): its derived columns are all *relative* — rolling windows, returns
   against the previous bar — so the last rows change on every pass and incrementality would buy
   complexity, not time.
@@ -70,7 +81,7 @@ not tooling, and are being recovered as plain SQL models and as the post-build c
 **SQLMesh.** Rejected because it solves two problems this repo provably does not have.
 It exists for incremental-model correctness and for virtual environments with plan/apply
 promotion. Incrementality where it matters is already handled by the Spark Delta MERGE at
-silver; the marts are deliberate full rebuilds of a ~1.6M-row worst case; and there is one
+silver; the marts are deliberate full rebuilds of a single-node worst case; and there is one
 environment. Adopting it would add a state database, a promotion model, and a scheduler concept
 sitting beside Airflow assets — to rebuild a handful of independent SELECTs.
 

@@ -1,8 +1,14 @@
 # Open-Finance LakeHouse — Modern Redesign
 
-**Status:** active redesign (supersedes the Kedro-based implementation under `src/open_finance_lakehouse/`)
+**Status:** delivered. This is the design record, written *before* the rewrite, so it is phrased in
+the future tense throughout — read it as the reasoning, not as a description of the current tree.
+The architecture it proposes is the one the repo implements today, under `ofl/`. It replaced a
+Kedro-based implementation under `src/open_finance_lakehouse/`; that tree was removed when the
+redesign landed and survives only in git history. For what is actually shipped, see the
+[README](../../README.md) and [ADR-0001](../adr/0001-no-dbt-sdp-or-sqlmesh-in-the-mart-layer.md).
 **Owner:** Rodrigo Monteiro Pereira
-**Last updated:** 2026-06-19
+**Last updated:** 2026-06-19 (design frozen; the repo has moved on — series count and mart list
+have both grown since)
 
 ---
 

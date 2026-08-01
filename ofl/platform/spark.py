@@ -25,7 +25,7 @@ def build_spark_session(
     builder = (
         SparkSession.builder.appName(app_name)
         # pyspark reads driver.memory at JVM launch (local mode) — the 1g default
-        # OOMs on the largest conform MERGE (fact_derivatives_quote, ~1.6M rows).
+        # OOMs on the largest conform MERGE (fact_derivatives_quote).
         .config("spark.driver.memory", s.spark_driver_memory)
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
         .config(
