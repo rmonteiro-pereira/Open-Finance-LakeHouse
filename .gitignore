@@ -66,19 +66,23 @@ __pycache__/
 *$py.class
 
 # Distribution / packaging
+# Anchored to the repo root with a leading `/`. Unanchored, `lib/` and `build/`
+# match a directory of that name at ANY depth — which silently swallowed
+# `dashboard/src/lib/` (the dashboard's four data loaders, including data.ts).
+# These are all setuptools outputs and only ever appear at the root.
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
+/build/
+/develop-eggs/
+/dist/
+/downloads/
+/eggs/
+/.eggs/
+/lib/
+/lib64/
+/parts/
+/sdist/
+/var/
+/wheels/
 *.egg-info/
 .installed.cfg
 *.egg

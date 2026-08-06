@@ -1,0 +1,145 @@
+# Ledger dashboard — cluster deploy (namespace: default, where minio-creds live)
+#
+# Refresh model:
+#   - The image bakes a synthetic snapshot as a fallback.
+#   - A PVC (ofl-dash-data) holds the *live* snapshot.
+#   - An initContainer seeds the PVC from the baked data on first boot (no clobber).
+#   - The CronJob runs snapshot/export.py against MinIO hourly, writing the PVC.
+#   - Pages are ISR (revalidate 1h), so the app re-reads the PVC without a redeploy.
+#
+# Prereqs:
+#   kubectl create configmap ofl-dash-export \
+#     --from-file=export.py=snapshot/export.py -n default      # (re-run when export.py changes)
+#   secret/minio-creds must exist in `default` (keys MINIO_USER / MINIO_PASSWORD).
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ofl-dash-data
+  namespace: default
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ofl-dashboard
+  namespace: default
+  labels: { app: ofl-dashboard }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: ofl-dashboard }
+  strategy:
+    type: Recreate # single RWO volume
+  template:
+    metadata:
+      labels: { app: ofl-dashboard }
+    spec:
+      initContainers:
+        - name: seed-data
+          image: ghcr.io/rmonteiro-pereira/ofl-dashboard:latest
+          command: ["sh", "-c", "cp -rn /app/public/data/. /data/ 2>/dev/null || true; ls -la /data"]
+          volumeMounts:
+            - { name: data, mountPath: /data }
+      containers:
+        - name: dashboard
+          image: ghcr.io/rmonteiro-pereira/ofl-dashboard:latest
+          ports: [{ containerPort: 3000 }]
+          env:
+            - { name: NODE_ENV, value: production }
+          volumeMounts:
+            - { name: data, mountPath: /app/public/data }
+          readinessProbe:
+            httpGet: { path: /, port: 3000 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: 3000 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { cpu: "1", memory: 512Mi }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: ofl-dash-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ofl-dashboard
+  namespace: default
+spec:
+  selector: { app: ofl-dashboard }
+  ports:
+    - { port: 80, targetPort: 3000 }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ofl-dashboard
+  namespace: default
+  annotations:
+    # adjust to your controller; wildcard *.vanir.dev.br cert already exists
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [dashboard.vanir.dev.br]
+      secretName: vanir-dev-br-wildcard-tls
+  rules:
+    - host: dashboard.vanir.dev.br
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ofl-dashboard
+                port: { number: 80 }
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ofl-dash-refresh
+  namespace: default
+spec:
+  schedule: "17 * * * *" # hourly, offset to avoid top-of-hour contention
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: export
+              image: python:3.12-slim
+              command:
+                - sh
+                - -c
+                - >
+                  pip install --quiet --no-cache-dir 'duckdb>=0.10' &&
+                  DASH_DATA_DIR=/data python /scripts/export.py
+              env:
+                - { name: MINIO_ENDPOINT, value: "http://minio.minio.svc.cluster.local:9000" }
+                - { name: BUCKET, value: "lakehouse" }
+              envFrom:
+                - secretRef: { name: minio-creds }
+              volumeMounts:
+                - { name: data, mountPath: /data }
+                - { name: script, mountPath: /scripts }
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: ofl-dash-data
+            - name: script
+              configMap:
+                name: ofl-dash-export
