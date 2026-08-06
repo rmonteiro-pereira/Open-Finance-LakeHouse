@@ -89,21 +89,30 @@ def build_dim_instrument(spark: "SparkSession", registry: Registry | None = None
     return uri
 
 
-def build_dim_date(spark: "SparkSession", start: str = "1980-01-01", end: str = "2035-12-31") -> str:
-    """Materialize ``silver.dim_date`` calendar over the data span."""
-    from pyspark.sql import functions as F
+#: ``dim_date``'s published schema, pinned rather than inferred. ``createDataFrame``
+#: would widen ``date_key`` to bigint and the column would silently change type for
+#: every consumer already reading the dimension.
+_DIM_DATE_DDL = (
+    "date DATE, date_key INT, year INT, quarter INT, month INT, day INT, "
+    "day_of_week INT, is_month_end BOOLEAN, holiday_name STRING, is_business_day_br BOOLEAN"
+)
 
+
+def build_dim_date(spark: "SparkSession", start: str = "1980-01-01", end: str = "2035-12-31") -> str:
+    """Materialize ``silver.dim_date`` over the data span.
+
+    The calendar itself is computed by :func:`ofl.calendar.build_calendar`, in Polars.
+    This function only writes it. That split is deliberate: the CI installs the core
+    extras only, so anything that lives inside a Spark session cannot be tested — and
+    ``is_business_day_br`` is load-bearing for every base-252 figure the lakehouse
+    publishes (accumulated SELIC, the ex-post window completeness check, the "D+1
+    business day" freshness budget). The logic is testable; the write is not asked to be.
+    """
+    from ofl.calendar import build_calendar
+
+    cal = build_calendar(start, end)
     uri = to_spark_path(silver_uri("dim_date"))
-    df = (
-        spark.sql(f"SELECT explode(sequence(to_date('{start}'), to_date('{end}'), interval 1 day)) AS date")
-        .withColumn("date_key", F.date_format("date", "yyyyMMdd").cast("int"))
-        .withColumn("year", F.year("date"))
-        .withColumn("quarter", F.quarter("date"))
-        .withColumn("month", F.month("date"))
-        .withColumn("day", F.dayofmonth("date"))
-        .withColumn("day_of_week", F.dayofweek("date"))
-        .withColumn("is_month_end", F.expr("date = last_day(date)"))
-    )
+    df = spark.createDataFrame(cal.to_dicts(), schema=_DIM_DATE_DDL)
     df.write.format("delta").mode("overwrite").option("overwriteSchema", "true").save(uri)
-    log.info("dim_date_built", uri=uri)
+    log.info("dim_date_built", uri=uri, rows=cal.height)
     return uri

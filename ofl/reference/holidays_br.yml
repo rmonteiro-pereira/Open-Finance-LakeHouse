@@ -1,0 +1,37 @@
+# Brazilian national holiday calendar — the input to `is_business_day_br`.
+#
+# SCOPE, stated up front because base-252 arithmetic is only as honest as this file:
+# these are the *national* holidays, plus the four movable dates the financial market
+# observes (Carnival Monday/Tuesday, Good Friday, Corpus Christi). State and municipal
+# holidays are NOT here, and neither is the Ash Wednesday half-session.
+#
+# This is a COMPUTED calendar, not ANBIMA's published one. ANBIMA's file is the
+# authority for settlement; this reproduces it for the national dates and is what the
+# lakehouse uses to say whether a window of daily observations is complete. If the two
+# ever disagree on a date, ANBIMA wins and this file gets the correction plus a test.
+#
+# Movable dates are derived from Easter (Meeus/Jones/Butcher, Gregorian) in
+# `ofl/calendar.py` — never hardcoded per year, so the calendar extends to any year.
+
+version: 1
+
+fixed:
+  - {month: 1,  day: 1,  name: "Confraternização Universal"}
+  - {month: 4,  day: 21, name: "Tiradentes"}
+  - {month: 5,  day: 1,  name: "Dia do Trabalho"}
+  - {month: 9,  day: 7,  name: "Independência do Brasil"}
+  - {month: 10, day: 12, name: "Nossa Senhora Aparecida"}
+  - {month: 11, day: 2,  name: "Finados"}
+  - {month: 11, day: 15, name: "Proclamação da República"}
+  # National only from 2024 — Lei 14.759/2023, sanctioned 2023-12-21. Before that it
+  # was a state/municipal holiday in part of the country, so treating it as national
+  # for the whole history would delete business days that existed.
+  - {month: 11, day: 20, name: "Consciência Negra", from_year: 2024}
+  - {month: 12, day: 25, name: "Natal"}
+
+# Offsets in days from Easter Sunday.
+movable:
+  - {offset_days: -48, name: "Carnaval (segunda-feira)"}
+  - {offset_days: -47, name: "Carnaval (terça-feira)"}
+  - {offset_days: -2,  name: "Sexta-feira Santa"}
+  - {offset_days: 60,  name: "Corpus Christi"}
