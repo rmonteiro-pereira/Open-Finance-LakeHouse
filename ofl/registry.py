@@ -24,7 +24,31 @@ class Series(BaseModel):
     handler: str
     name: str
     category: str = "uncategorized"
+
+    # `unit` alone was never a unit. It carried `percent` for the SELIC daily rate
+    # (~0.05), monthly IPCA variation (~0.4), the unemployment level (~7) and
+    # debt/GDP (~75) — four quantities that share nothing but a symbol. A guard keyed
+    # on it lets a %/day series and a %/month series onto the same axis.
+    #
+    # The quantity is the tuple:
+    #   unit       what the number is measured in
+    #   basis      over what period, or that it is a level
+    #   scale      power of ten between the stored value and `unit` — this is what
+    #              stops "R$ million" from becoming a contract that claims reais
+    #   day_count  252 / 360 / 365 / calendar, for anything compounded
+    #   horizon    spot vs an expectation; a Focus median and a realised rate are
+    #              otherwise indistinguishable
+    #
+    # For a series that is a GROUP of symbols or a multi-column fact (treasury,
+    # security_price, ...) the registry row does not describe one quantity, so it
+    # declares `unit_scope: per_column` and the units live in the table's contract.
     unit: str = "unknown"
+    basis: str | None = None
+    scale: int = 1
+    day_count: str | None = None
+    horizon: str | None = None
+    unit_scope: str | None = None
+
     frequency: str = "unknown"
     fact: str = "observation"  # target silver fact: observation | security_price | treasury
 

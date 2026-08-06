@@ -46,6 +46,10 @@ series:
     name: "SELIC (Over/Selic effective daily rate)"
     category: interest_rate
     unit: percent
+    basis: per_day
+    scale: 1
+    day_count: "252"
+    horizon: spot
     frequency: daily
     fact: observation
     max_value: 100.0
@@ -56,6 +60,10 @@ series:
     name: "CDI (interbank deposit rate)"
     category: interest_rate
     unit: percent
+    basis: per_day
+    scale: 1
+    day_count: "252"
+    horizon: spot
     frequency: daily
     fact: observation
     max_value: 100.0
@@ -65,7 +73,11 @@ series:
     sgs_id: 1178
     name: "Over/Selic (annualized)"
     category: interest_rate
-    unit: percent_per_year
+    unit: percent
+    basis: per_year
+    scale: 1
+    day_count: "252"
+    horizon: spot
     frequency: daily
     fact: observation
     # Early-Real (1994-97) annualized rates legitimately peaked ~173%/yr during the
@@ -77,7 +89,11 @@ series:
     sgs_id: 432
     name: "SELIC target (Copom)"
     category: interest_rate
-    unit: percent_per_year
+    unit: percent
+    basis: per_year
+    scale: 1
+    day_count: "252"
+    horizon: spot
     frequency: daily
     fact: observation
     max_value: 100.0
@@ -87,7 +103,11 @@ series:
     sgs_id: 27572            # TLP rate (% a.a.); 26192 was a mislabeled index series
     name: "TLP (long-term rate)"
     category: interest_rate
-    unit: percent_per_year
+    unit: percent
+    basis: per_year
+    scale: 1
+    day_count: "252"
+    horizon: spot
     frequency: daily
     fact: observation
     max_value: 100.0
@@ -97,7 +117,11 @@ series:
     sgs_id: 4389
     name: "CDI (annualized, base 252)"
     category: interest_rate
-    unit: percent_per_year
+    unit: percent
+    basis: per_year
+    scale: 1
+    day_count: "252"
+    horizon: spot
     frequency: daily
     fact: observation
     # See `over`: annualized CDI also peaked ~173%/yr in the early Real (1994-97).
@@ -109,6 +133,10 @@ series:
     name: "TR (reference rate, monthly %)"
     category: interest_rate
     unit: percent
+    basis: per_month
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 100.0
@@ -119,6 +147,10 @@ series:
     name: "Poupança remuneration (monthly %)"
     category: interest_rate
     unit: percent
+    basis: per_month
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 100.0
@@ -131,6 +163,10 @@ series:
     name: "IPCA (headline CPI, monthly %)"
     category: price_index
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -141,6 +177,10 @@ series:
     name: "IPCA-15 (CPI preview, monthly %)"
     category: price_index
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -151,6 +191,10 @@ series:
     name: "INPC (CPI low-income, monthly %)"
     category: price_index
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -161,6 +205,10 @@ series:
     name: "IGP-M (general prices, monthly %)"
     category: price_index
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -171,6 +219,10 @@ series:
     name: "IGP-DI (general prices, monthly %)"
     category: price_index
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -181,6 +233,10 @@ series:
     name: "IGP-10 (general prices, monthly %)"
     category: price_index
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -191,6 +247,10 @@ series:
     name: "IPC-FIPE (São Paulo CPI, monthly %)"
     category: price_index
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -201,6 +261,10 @@ series:
     name: "IPCA core — trimmed means, smoothed (IPCA-MS, monthly %)"
     category: core_inflation
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -211,6 +275,10 @@ series:
     name: "IPCA core — trimmed means, non-smoothed (IPCA-MA, monthly %)"
     category: core_inflation
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -221,6 +289,10 @@ series:
     name: "IPCA core — double weighting (IPCA-DP, monthly %)"
     category: core_inflation
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -231,6 +303,10 @@ series:
     name: "IPCA core — exclusion EX3 (monthly %)"
     category: core_inflation
     unit: percent
+    basis: mom
+    scale: 1
+    day_count: calendar
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 50.0
@@ -243,6 +319,10 @@ series:
     name: "USD/BRL (commercial buy, avg)"
     category: exchange_rate
     unit: brl
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: daily
     fact: observation
     max_value: 20.0
@@ -253,6 +333,10 @@ series:
     name: "EUR/BRL (commercial buy, avg)"
     category: exchange_rate
     unit: brl
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: daily
     fact: observation
     max_value: 25.0
@@ -263,6 +347,10 @@ series:
     name: "USD/BRL (PTAX buy)"
     category: exchange_rate
     unit: brl
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: daily
     fact: observation
     max_value: 20.0
@@ -275,6 +363,10 @@ series:
     name: "Gross general government debt (% GDP)"
     category: fiscal
     unit: percent
+    basis: pct_of_gdp
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 200.0
@@ -285,6 +377,10 @@ series:
     name: "Net public-sector debt (% GDP)"
     category: fiscal
     unit: percent
+    basis: pct_of_gdp
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 200.0
@@ -295,6 +391,10 @@ series:
     name: "IBC-Br economic activity index (seasonally adjusted)"
     category: activity
     unit: index
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: monthly
     fact: observation
   resultado_primario:
@@ -303,7 +403,11 @@ series:
     sgs_id: 4649            # public-sector primary balance, monthly flow (R$ million; can be negative)
     name: "Primary balance — public sector (monthly flow, R$ million)"
     category: fiscal
-    unit: brl_million
+    unit: brl
+    basis: level
+    scale: 1000000
+    day_count: n/a
+    horizon: spot
     frequency: monthly
     fact: observation
   reservas_internacionais:
@@ -312,7 +416,11 @@ series:
     sgs_id: 3545
     name: "International reserves (USD million)"
     category: fiscal
-    unit: usd_million
+    unit: usd
+    basis: level
+    scale: 1000000
+    day_count: n/a
+    horizon: spot
     frequency: daily
     fact: observation
     max_value: 1000000.0
@@ -322,7 +430,11 @@ series:
     sercodigo: BM12_NFSPPNS12   # NFSP - setor público - resultado primário (fluxo mensal)
     name: "Primary balance — public sector (monthly, R$ million)"
     category: fiscal
-    unit: brl_million
+    unit: brl
+    basis: level
+    scale: 1000000
+    day_count: n/a
+    horizon: spot
     frequency: monthly
     fact: observation
   ipea_divida_liquida:
@@ -332,6 +444,10 @@ series:
     name: "Net general government debt (% GDP)"
     category: fiscal
     unit: percent
+    basis: pct_of_gdp
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: annual
     fact: observation
     max_value: 300.0
@@ -341,7 +457,11 @@ series:
     sercodigo: BM12_PIB12   # GDP, current prices (monthly, R$ million)
     name: "GDP — current prices (monthly, R$ million)"
     category: macro
-    unit: brl_million
+    unit: brl
+    basis: level
+    scale: 1000000
+    day_count: n/a
+    horizon: spot
     frequency: monthly
     fact: observation
 
@@ -352,7 +472,11 @@ series:
     sgs_id: 20539           # outstanding credit, whole financial system (R$ million)
     name: "Total outstanding credit — SFN (R$ million)"
     category: credit
-    unit: brl_million
+    unit: brl
+    basis: level
+    scale: 1000000
+    day_count: n/a
+    horizon: spot
     frequency: monthly
     fact: observation
   inadimplencia_pf:
@@ -362,6 +486,10 @@ series:
     name: "Credit default rate — households (PF, %)"
     category: credit
     unit: percent
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 100.0
@@ -372,6 +500,10 @@ series:
     name: "Credit default rate — firms (PJ, %)"
     category: credit
     unit: percent
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 100.0
@@ -386,6 +518,10 @@ series:
     name: "Focus — IPCA expectation, rolling 12 months (median)"
     category: expectation
     unit: percent
+    basis: yoy
+    scale: 1
+    day_count: calendar
+    horizon: rolling_12m
     frequency: weekly
     fact: observation
     max_value: 50.0
@@ -400,14 +536,17 @@ series:
     handler: bacen_focus
     name: "Focus — Selic expectation, end of current year (median)"
     category: expectation
-    unit: percent_per_year
+    unit: percent
+    basis: per_year
+    scale: 1
+    day_count: "252"
+    horizon: calendar_year_end
     frequency: weekly
     fact: observation
     max_value: 100.0
     freshness_sla: "10d"
     resource: ExpectativasMercadoAnuais
     indicador: Selic
-    horizon: current_year
     base_calculo: 0
     value_field: Mediana
   focus_cambio_fim_ano:
@@ -416,13 +555,16 @@ series:
     name: "Focus — USD/BRL expectation, end of current year (median)"
     category: expectation
     unit: brl
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: calendar_year_end
     frequency: weekly
     fact: observation
     max_value: 20.0
     freshness_sla: "10d"
     resource: ExpectativasMercadoAnuais
     indicador: Câmbio
-    horizon: current_year
     base_calculo: 0
     value_field: Mediana
 
@@ -433,6 +575,7 @@ series:
     name: "Tesouro Direto (prices & yields by bond)"
     category: government_bond
     unit: mixed
+    unit_scope: per_column
     frequency: daily
     fact: treasury
     dataset_id: "df56aa42-484a-4a59-8184-7676580c81e3"
@@ -451,6 +594,7 @@ series:
     name: "B3 indices (Ibovespa)"
     category: equity_index
     unit: index
+    unit_scope: per_column
     frequency: daily
     fact: security_price
     symbols:
@@ -462,6 +606,10 @@ series:
     name: "IBGE unemployment rate (PNAD Contínua)"
     category: labor
     unit: percent
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: monthly
     fact: observation
     max_value: 100.0
@@ -471,6 +619,7 @@ series:
     name: "ANBIMA secondary-market federal bond prices (TPF)"
     category: fixed_income
     unit: mixed
+    unit_scope: per_column
     frequency: daily
     fact: treasury
     # ACTIVE against the ANBIMA *sandbox* (fictitious TPF data, no prod approval needed):
@@ -490,6 +639,10 @@ series:
     name: "ANBIMA IMA-B (NTN-B / inflation-linked index level)"
     category: fixed_income_index
     unit: index
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: daily
     fact: observation
     status: active
@@ -501,6 +654,10 @@ series:
     name: "ANBIMA IMA-B 5 (short inflation-linked index level)"
     category: fixed_income_index
     unit: index
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: daily
     fact: observation
     status: active
@@ -512,6 +669,10 @@ series:
     name: "ANBIMA IRF-M (fixed-rate LTN/NTN-F index level)"
     category: fixed_income_index
     unit: index
+    basis: level
+    scale: 1
+    day_count: n/a
+    horizon: spot
     frequency: daily
     fact: observation
     status: active
@@ -525,6 +686,7 @@ series:
     name: "Yahoo Finance ETFs"
     category: etf
     unit: price
+    unit_scope: per_column
     frequency: daily
     fact: security_price
     symbols:
@@ -540,6 +702,7 @@ series:
     name: "Yahoo Finance commodities"
     category: commodity
     unit: price
+    unit_scope: per_column
     frequency: daily
     fact: security_price
     symbols:
@@ -553,6 +716,7 @@ series:
     name: "Yahoo Finance currencies"
     category: currency
     unit: price
+    unit_scope: per_column
     frequency: daily
     fact: security_price
     symbols:
@@ -563,6 +727,7 @@ series:
     name: "Global benchmarks (rates, USD, equities, EM FX)"
     category: benchmark
     unit: price
+    unit_scope: per_column
     frequency: daily
     fact: security_price
     symbols:
@@ -580,6 +745,7 @@ series:
     name: "B3 COTAHIST — official cash-market daily OHLCV"
     category: equity
     unit: price
+    unit_scope: per_column
     frequency: daily
     fact: security_price
     freshness_sla: "5d"
@@ -607,6 +773,7 @@ series:
     name: "B3 derivatives open interest (DerivativesOpenPosition)"
     category: derivative
     unit: contracts
+    unit_scope: per_column
     frequency: daily
     fact: open_interest
     freshness_sla: "5d"
@@ -618,6 +785,7 @@ series:
     name: "B3 derivatives prices & settlement (TradeInformationConsolidated)"
     category: derivative
     unit: price
+    unit_scope: per_column
     frequency: daily
     fact: derivatives_quote
     freshness_sla: "5d"
@@ -632,6 +800,7 @@ series:
     name: "B3 instrument registry (InstrumentsConsolidated)"
     category: reference
     unit: none
+    unit_scope: per_column
     frequency: daily
     fact: instrument
     freshness_sla: "5d"

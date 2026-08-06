@@ -4,8 +4,11 @@ from ofl.ingestion import bacen_focus
 from ofl.registry import Series
 
 
-def _series(extra):
-    return Series(key="focus_x", domain="rates", handler="bacen_focus", name="x", extra=extra)
+def _series(extra, horizon=None):
+    return Series(
+        key="focus_x", domain="rates", handler="bacen_focus", name="x",
+        horizon=horizon, extra=extra,
+    )
 
 
 def _capture(monkeypatch, rows):
@@ -23,7 +26,7 @@ def _capture(monkeypatch, rows):
     return captured
 
 
-def test_current_year_horizon_keeps_one_row_per_date(monkeypatch):
+def test_calendar_year_end_horizon_keeps_one_row_per_date(monkeypatch):
     rows = [
         {"Data": "2026-06-19", "DataReferencia": "2026", "Mediana": 14.0},
         {"Data": "2026-06-19", "DataReferencia": "2027", "Mediana": 12.0},
@@ -31,7 +34,10 @@ def test_current_year_horizon_keeps_one_row_per_date(monkeypatch):
         {"Data": "2026-06-12", "DataReferencia": "2028", "Mediana": 11.0},
     ]
     captured = _capture(monkeypatch, rows)
-    s = _series({"resource": "ExpectativasMercadoAnuais", "indicador": "Selic", "horizon": "current_year"})
+    s = _series(
+        {"resource": "ExpectativasMercadoAnuais", "indicador": "Selic"},
+        horizon="calendar_year_end",
+    )
     bacen_focus.ingest_bacen_focus(s)
     df = captured["df"].sort("date")
     # only the forecast whose reference year == survey-date year survives

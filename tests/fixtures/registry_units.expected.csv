@@ -1,0 +1,69 @@
+# Expected unit tuple per series — the golden the registry is diffed against.
+#
+# What this file protects: DRIFT. Change a basis in the registry and the diff fails,
+# so the change has to be argued in a review instead of landing quietly. It does not
+# and cannot prove the original mapping is right — that came from reading each series'
+# name, frequency and category by hand, and the specific traps are pinned by named
+# assertions in tests/test_units.py rather than left to this table.
+#
+# The trap worth naming here: "selic" (SGS 11) is the SELIC over EFFECTIVE DAILY rate
+# (basis per_day, values ~0.05) and "over" (SGS 1178) is its ANNUALISED twin (per_year,
+# values ~15). Both were "unit: percent". An earlier draft of the RFC labelled the daily
+# one per_year in its own worked example — a presence-only test ("every series has a
+# basis") would have passed on it. That is how defect E survives a migration: it stops
+# being an ambiguity and becomes a contractual claim.
+#
+# Blank basis/scale/day_count/horizon = the series declares unit_scope: per_column.
+# Blank basis/scale/day_count/horizon = the series declares unit_scope: per_column.
+series_id,unit,basis,scale,day_count,horizon
+anbima,mixed,,,,
+anbima_ima_b,index,level,1,n/a,spot
+anbima_ima_b5,index,level,1,n/a,spot
+anbima_irf_m,index,level,1,n/a,spot
+b3,index,,,,
+b3_cotahist,price,,,,
+b3_deriv_quotes,price,,,,
+b3_instruments,none,,,,
+b3_oi,contracts,,,,
+cdi,percent,per_day,1,252,spot
+cdi_anual,percent,per_year,1,252,spot
+credito_total,brl,level,1000000,n/a,spot
+divida_pib,percent,pct_of_gdp,1,n/a,spot
+dlsp_pib,percent,pct_of_gdp,1,n/a,spot
+eur_brl,brl,level,1,n/a,spot
+focus_cambio_fim_ano,brl,level,1,n/a,calendar_year_end
+focus_ipca_12m,percent,yoy,1,calendar,rolling_12m
+focus_selic_fim_ano,percent,per_year,1,252,calendar_year_end
+ibc_br,index,level,1,n/a,spot
+ibge,percent,level,1,n/a,spot
+igp_10,percent,mom,1,calendar,spot
+igp_di,percent,mom,1,calendar,spot
+igp_m,percent,mom,1,calendar,spot
+inadimplencia_pf,percent,level,1,n/a,spot
+inadimplencia_pj,percent,level,1,n/a,spot
+inpc,percent,mom,1,calendar,spot
+ipc_fipe,percent,mom,1,calendar,spot
+ipca,percent,mom,1,calendar,spot
+ipca_15,percent,mom,1,calendar,spot
+ipca_nucleo_dp,percent,mom,1,calendar,spot
+ipca_nucleo_ex3,percent,mom,1,calendar,spot
+ipca_nucleo_ma,percent,mom,1,calendar,spot
+ipca_nucleo_ms,percent,mom,1,calendar,spot
+ipea_divida_liquida,percent,pct_of_gdp,1,n/a,spot
+ipea_nfsp_primario,brl,level,1000000,n/a,spot
+ipea_pib,brl,level,1000000,n/a,spot
+over,percent,per_year,1,252,spot
+poupanca,percent,per_month,1,calendar,spot
+reservas_internacionais,usd,level,1000000,n/a,spot
+resultado_primario,brl,level,1000000,n/a,spot
+selic,percent,per_day,1,252,spot
+selic_meta,percent,per_year,1,252,spot
+tesouro_direto,mixed,,,,
+tlp,percent,per_year,1,252,spot
+tr,percent,per_month,1,calendar,spot
+usd_brl,brl,level,1,n/a,spot
+usd_brl_compra,brl,level,1,n/a,spot
+yahoo_commodity,price,,,,
+yahoo_currency,price,,,,
+yahoo_etf,price,,,,
+yahoo_global,price,,,,

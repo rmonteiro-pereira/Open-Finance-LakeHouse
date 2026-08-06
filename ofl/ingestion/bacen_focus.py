@@ -9,7 +9,7 @@ series. This unlocks *ex-ante* reads — e.g. real interest = Selic − expected
 Two horizon shapes are supported via ``extra``:
 - rolling (default): a resource that is already a single forward-looking series
   (``ExpectativasMercadoInflacao12Meses`` / ``...24Meses``) — taken as-is.
-- ``horizon: current_year``: an annual resource (``ExpectativasMercadoAnuais``)
+- ``horizon: calendar_year_end``: an annual resource (``ExpectativasMercadoAnuais``)
   carrying every reference year per survey date; we keep only the row whose
   ``DataReferencia`` equals the survey-date year, collapsing it to one series
   (the "end of current year" expectation).
@@ -85,22 +85,25 @@ def ingest_bacen_focus(series: Series) -> dict:
         )
 
     value_field = e.get("value_field", "Mediana")
-    horizon = e.get("horizon")
+    # `horizon` is now a declared registry field, not a handler-specific extra: the
+    # two meanings were the same idea (which horizon the expectation refers to) under
+    # two names, and a duplicate YAML key silently kept the older one.
+    horizon = series.horizon
     # Build only the columns we need (the raw OData rows carry nulls/mixed types
     # like IndicadorDetalhe that trip Polars' dict schema inference).
     data: dict[str, list] = {
         "date": [r.get("Data") for r in rows],
         "value": [r.get(value_field) for r in rows],
     }
-    if horizon == "current_year":
+    if horizon == "calendar_year_end":
         data["_ref"] = [str(r.get("DataReferencia")) for r in rows]
 
     df = pl.DataFrame(data).select(
         pl.col("date").str.to_date("%Y-%m-%d"),
         pl.col("value").cast(pl.Float64, strict=False),
-        *([pl.col("_ref")] if horizon == "current_year" else []),
+        *([pl.col("_ref")] if horizon == "calendar_year_end" else []),
     )
-    if horizon == "current_year":
+    if horizon == "calendar_year_end":
         df = df.filter(pl.col("_ref") == pl.col("date").dt.year().cast(pl.Utf8)).drop("_ref")
 
     df = df.drop_nulls(["date", "value"]).unique(subset="date", keep="last").sort("date")

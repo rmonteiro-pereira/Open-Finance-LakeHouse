@@ -52,7 +52,9 @@ def test_focus_handler_series():
     s = reg.series["focus_ipca_12m"]
     assert s.handler == "bacen_focus"
     assert s.extra["resource"] == "ExpectativasMercadoInflacao12Meses"
-    assert reg.series["focus_selic_fim_ano"].extra["horizon"] == "current_year"
+    # `horizon` is a declared field now, not an extra: it used to exist twice under two
+    # names with the same meaning, and the duplicate YAML key quietly kept the older one.
+    assert reg.series["focus_selic_fim_ano"].horizon == "calendar_year_end"
 
 
 def test_yahoo_global_and_anbima_ima():
