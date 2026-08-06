@@ -1,0 +1,7 @@
+instrument_id,bond,maturity,date,buy_rate,sell_rate,provider,data_class
+75419c9a15c14ed55600919275c1fdfa26c08c85,Tesouro IPCA+,2035-05-15,2026-08-03,7.10,7.12,tesouro_direto,synthetic
+f62f556b773fc9e883ccff429319d26a322e0920,Tesouro IPCA+ com Juros Semestrais,2035-05-15,2026-08-03,7.04,7.06,tesouro_direto,synthetic
+605b231b1ff8a313f8b6a81233999247fe36e876,Tesouro Prefixado,2027-01-01,2026-08-03,13.88,13.90,tesouro_direto,synthetic
+75419c9a15c14ed55600919275c1fdfa26c08c85,Tesouro IPCA+,2035-05-15,2026-08-04,7.13,7.15,tesouro_direto,synthetic
+f62f556b773fc9e883ccff429319d26a322e0920,Tesouro IPCA+ com Juros Semestrais,2035-05-15,2026-08-04,7.07,7.09,tesouro_direto,synthetic
+605b231b1ff8a313f8b6a81233999247fe36e876,Tesouro Prefixado,2027-01-01,2026-08-04,13.90,13.92,tesouro_direto,synthetic

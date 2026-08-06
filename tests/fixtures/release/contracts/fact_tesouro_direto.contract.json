@@ -1,0 +1,91 @@
+{
+  "table": "fact_tesouro_direto",
+  "contract_version": "1.0.0",
+  "primary_key": [
+    "instrument_id",
+    "date"
+  ],
+  "columns": [
+    {
+      "name": "instrument_id",
+      "arrow_type": "String",
+      "arrow_nullable": true,
+      "required": true,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "bond",
+      "arrow_type": "String",
+      "arrow_nullable": true,
+      "required": false,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "maturity",
+      "arrow_type": "Date",
+      "arrow_nullable": true,
+      "required": false,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "date",
+      "arrow_type": "Date",
+      "arrow_nullable": true,
+      "required": true,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "buy_rate",
+      "arrow_type": "Float64",
+      "arrow_nullable": true,
+      "required": false,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "sell_rate",
+      "arrow_type": "Float64",
+      "arrow_nullable": true,
+      "required": false,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "provider",
+      "arrow_type": "String",
+      "arrow_nullable": true,
+      "required": true,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "data_class",
+      "arrow_type": "String",
+      "arrow_nullable": true,
+      "required": true,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    }
+  ],
+  "deprecations": []
+}

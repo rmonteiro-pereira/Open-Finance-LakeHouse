@@ -55,6 +55,50 @@ def _gold(args: argparse.Namespace) -> int:
     return 0
 
 
+#: Tables the public release may carry. This is an ALLOWLIST and the reader aborts on
+#: anything outside it — see `ofl.release.build.read_source`. Everything B3, ANBIMA or
+#: Yahoo is absent by verdict, not by oversight (`sources/providers.yml`).
+PUBLISHABLE_TABLES = ["fact_observation", "fact_tesouro_direto"]
+
+
+def _release_build(args: argparse.Namespace) -> int:
+    from ofl.release.build import ReleaseError, build_release, read_source
+    from ofl.release.contracts import load_contracts
+
+    try:
+        tables = read_source(args.source, PUBLISHABLE_TABLES)
+        manifest = build_release(
+            tables,
+            load_contracts(args.contracts or f"{args.source}/contracts"),
+            release_id=args.release_id,
+            release_class=args.release_class,
+            out_dir=args.out,
+            base_url=args.base_url,
+            supersedes=None if args.supersedes in (None, "none") else args.supersedes,
+        )
+    except ReleaseError as exc:
+        log.error("release_blocked", gate=exc.gate, table=exc.table, error=str(exc))
+        return 3
+    log.info("release_built", release_id=manifest["release_id"], out=args.out)
+    return 0
+
+
+def _release_verify(args: argparse.Namespace) -> int:
+    from ofl.release.verify import EXIT_USAGE, UsageError, verify_release, write_report
+
+    try:
+        report = verify_release(args.directory, expect_class=args.expect_class)
+    except UsageError as exc:
+        log.error("release_verify_usage", error=str(exc))
+        return EXIT_USAGE
+    write_report(report, args.directory)
+    if not report.ok:
+        log.error("release_rejected", gate=report.failed_gate, table=report.table, detail=report.detail)
+    else:
+        log.info("release_ok", release_id=report.release_id, files=len(report.checked_files))
+    return report.exit_code
+
+
 def _stream_produce(args: argparse.Namespace) -> int:
     from ofl.streaming.producer import run_producer
 
@@ -208,6 +252,29 @@ def main(argv: list[str] | None = None) -> int:
     snap = sub.add_parser("stream-snapshot", help="metrics snapshot of the silver table (no run)")
     snap.add_argument("--name", default="silver-observed", help="snapshot file stem")
     snap.set_defaults(func=_stream_snapshot)
+
+    rel = sub.add_parser("release", help="build or verify the public release artefact")
+    rel_sub = rel.add_subparsers(dest="release_cmd", required=True)
+
+    # Identity is INPUT, not deduction: `--release-id` and `--supersedes` are both
+    # functions of remote state (what is already published), so an offline build cannot
+    # derive them. The gh:// sink fills them from latest.json; file:// requires them here.
+    rb = rel_sub.add_parser("build", help="build a release directory from a source")
+    rb.add_argument("--from", dest="source", required=True, help="directory of parquet/csv tables")
+    rb.add_argument("--contracts", help="contracts directory (default: <source>/contracts)")
+    rb.add_argument("--to", dest="out", required=True, help="output directory")
+    rb.add_argument("--release-id", required=True, help="YYYY-MM-DD.N")
+    rb.add_argument("--release-class", choices=["production", "fixture"], default="production")
+    rb.add_argument("--supersedes", help="previous release_id, or 'none' for the first")
+    rb.add_argument("--base-url", default="", help="URL the manifest's relative paths resolve against")
+    rb.set_defaults(func=_release_build)
+
+    rv = rel_sub.add_parser("verify", help="independently check a built release")
+    rv.add_argument("directory")
+    # A verify with no qualification asks "is this publishable in production?" — the
+    # default is not read from the manifest, or the gate would only confirm the label.
+    rv.add_argument("--expect-class", choices=["production", "fixture"], default="production")
+    rv.set_defaults(func=_release_verify)
 
     reg = sub.add_parser("registry", help="list the source registry")
     reg.set_defaults(func=_registry)

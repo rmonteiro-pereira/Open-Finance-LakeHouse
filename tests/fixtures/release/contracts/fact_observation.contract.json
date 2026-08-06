@@ -1,0 +1,61 @@
+{
+  "table": "fact_observation",
+  "contract_version": "1.0.0",
+  "primary_key": [
+    "series_id",
+    "date"
+  ],
+  "columns": [
+    {
+      "name": "series_id",
+      "arrow_type": "String",
+      "arrow_nullable": true,
+      "required": true,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "date",
+      "arrow_type": "Date",
+      "arrow_nullable": true,
+      "required": true,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "value",
+      "arrow_type": "Float64",
+      "arrow_nullable": true,
+      "required": false,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "provider",
+      "arrow_type": "String",
+      "arrow_nullable": true,
+      "required": true,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    },
+    {
+      "name": "data_class",
+      "arrow_type": "String",
+      "arrow_nullable": true,
+      "required": true,
+      "unit": null,
+      "basis": null,
+      "scale": null,
+      "description": ""
+    }
+  ],
+  "deprecations": []
+}
