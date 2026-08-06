@@ -284,4 +284,4 @@ def ingest_b3_arquivos(series: Series) -> dict:
         rows=df.height,
         mode=mode,
     )
-    return land_bronze(series, df, mode=mode)
+    return land_bronze(series, df, data_class="live", mode=mode)

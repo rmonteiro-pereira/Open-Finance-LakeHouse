@@ -82,4 +82,4 @@ def ingest_tesouro(series: Series) -> dict:
         raise ValueError(f"series '{series.key}' has handler tesouro_direto but no dataset_id")
     df = fetch_tesouro(dataset_id)
     log.info("tesouro_fetched", series=series.key, rows=df.height, bonds=df["bond"].n_unique())
-    return land_bronze(series, df)
+    return land_bronze(series, df, data_class="live")

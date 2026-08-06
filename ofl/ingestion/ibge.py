@@ -57,4 +57,4 @@ def ingest_ibge(series: Series) -> dict:
         raise ValueError(f"series '{series.key}' has handler ibge but no indicador")
     df = fetch_ibge(int(indicador))
     log.info("ibge_fetched", series=series.key, indicador=indicador, rows=df.height)
-    return land_bronze(series, df)
+    return land_bronze(series, df, data_class="live")

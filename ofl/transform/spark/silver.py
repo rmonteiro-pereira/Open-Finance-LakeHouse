@@ -23,8 +23,15 @@ if TYPE_CHECKING:
 log = get_logger(__name__)
 
 # Canonical silver schema for the conformed observation fact.
+# `provider` and `data_class` are declared nullable here and REQUIRED by contract.
+#
+# Delta cannot add a NOT NULL column to an already-materialised table — ADD COLUMN is
+# always nullable — so declaring them NOT NULL would make the migration impossible rather
+# than making the data better. The obligation lives where it can be enforced without a
+# rewrite: `ofl release verify` fails a release whose required column has any null.
 _FACT_OBSERVATION_DDL = (
     "series_id STRING, date DATE, value DOUBLE, "
+    "provider STRING, data_class STRING, "
     "source STRING, ingested_at TIMESTAMP, load_id STRING"
 )
 
@@ -108,6 +115,7 @@ def conform_observations(spark: "SparkSession", registry: Registry | None = None
 _FACT_TREASURY_DDL = (
     "instrument_id STRING, bond STRING, maturity DATE, date DATE, "
     "buy_rate DOUBLE, sell_rate DOUBLE, buy_price DOUBLE, sell_price DOUBLE, "
+    "provider STRING, data_class STRING, "
     "source STRING, ingested_at TIMESTAMP, load_id STRING"
 )
 
@@ -187,7 +195,8 @@ def conform_treasury(spark: "SparkSession", registry: Registry | None = None) ->
 
 _FACT_SECURITY_PRICE_DDL = (
     "symbol STRING, date DATE, open DOUBLE, high DOUBLE, low DOUBLE, close DOUBLE, "
-    "volume DOUBLE, source STRING, ingested_at TIMESTAMP, load_id STRING"
+    "volume DOUBLE, provider STRING, data_class STRING, "
+    "source STRING, ingested_at TIMESTAMP, load_id STRING"
 )
 _OHLCV = ["open", "high", "low", "close", "volume"]
 
@@ -373,7 +382,11 @@ def build_series_metrics(spark: "SparkSession") -> dict:
     w12 = w.rowsBetween(-11, 0)
 
     metrics = (
-        fact.select("series_id", "date", "value")
+        # `provider` and `data_class` travel with the row. Selecting only the three
+        # analytical columns is how a derived table is born without provenance — and a
+        # table with no provenance column is not filterable by the licence gate and not
+        # checkable by the class gate, so it passes both for the wrong reason.
+        fact.select("series_id", "date", "value", "provider", "data_class")
         .withColumn("pct_change", (F.col("value") / F.lag("value").over(w) - 1) * 100)
         .withColumn("rolling_3_avg", F.avg("value").over(w3))
         .withColumn("rolling_12_avg", F.avg("value").over(w12))

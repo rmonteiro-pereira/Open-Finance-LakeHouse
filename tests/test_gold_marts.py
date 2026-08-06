@@ -7,6 +7,7 @@ import polars as pl
 import pytest
 
 from ofl.transform.gold.runner import GoldCheckError, _check_sql, _model_sql, execute_models
+from ofl.transform.keys import instrument_id
 
 MONTHS = [(2024, m) for m in range(1, 13)] + [(2025, 1)]  # 13 monthly points
 IPCA_12M = (1.01**12 - 1) * 100  # 12 months at 1% MoM
@@ -26,13 +27,22 @@ def con():
 
     treasury = pl.DataFrame(
         {
-            "bond": ["Tesouro IPCA+ 2029", "Tesouro Prefixado 2027"],
+            # Labels without the year, as the source publishes them — the year lives in
+            # `maturity`. The old fixture baked it into the label, which is why nothing
+            # here ever noticed that `(bond, date)` could not tell two maturities apart.
+            "bond": ["Tesouro IPCA+", "Tesouro Prefixado"],
             "maturity": [date(2029, 8, 15), date(2027, 1, 1)],
             "date": [date(2024, 1, 2), date(2024, 1, 2)],
             "buy_rate": [5.5, 10.5],
             "sell_rate": [5.6, 10.6],
             "buy_price": [1234.56, 900.0],
             "sell_price": [1233.0, 899.0],
+            "instrument_id": [
+                instrument_id("tesouro", "Tesouro IPCA+", date(2029, 8, 15)),
+                instrument_id("tesouro", "Tesouro Prefixado", date(2027, 1, 1)),
+            ],
+            "provider": ["tesouro_direto", "tesouro_direto"],
+            "data_class": ["live", "live"],
         }
     )
 
@@ -400,3 +410,39 @@ def test_ipca_check_catches_value_drift(con):
     viol = con.execute(_check_sql("assert_real_interest_ipca_recomputes")).pl()
     assert viol.height == mart.height > 0
     assert set(viol["failure_reason"]) == {"value_mismatch"}
+
+
+def test_yield_curve_separates_real_prices_from_sandbox_prices():
+    """Defect B, as an assertion.
+
+    `fact_treasury` receives Tesouro (real, ODbL) and ANBIMA through the same MERGE, and
+    the ANBIMA series currently ingested run against a sandbox whose values are
+    fictitious by the provider's own description. The mart used to project no
+    discriminator at all: the two were separable only as a side effect of a
+    `bond ILIKE '%IPCA%'` bucket, which is a presentation rule and would classify an
+    ANBIMA SELIC code as 'other' rather than as 'not real'.
+    """
+    c = duckdb.connect()
+    mixed = pl.DataFrame(
+        {
+            "instrument_id": ["i-real", "i-fake"],
+            "bond": ["Tesouro IPCA+", "760199"],
+            "maturity": [date(2035, 5, 15), date(2035, 5, 15)],
+            "date": [date(2026, 8, 4)] * 2,
+            "buy_rate": [7.10, 7.99],
+            "sell_rate": [7.12, 8.01],
+            "buy_price": [3000.0, 3000.0],
+            "sell_price": [2999.0, 2999.0],
+            "provider": ["tesouro_direto", "anbima"],
+            "data_class": ["live", "sandbox"],
+        }
+    )
+    c.register("fact_treasury", mixed.to_arrow())
+    out = c.execute(_model_sql("mart_yield_curve")).pl()
+
+    assert {"provider", "data_class", "instrument_id"} <= set(out.columns)
+    live = out.filter(pl.col("data_class") == "live")
+    assert live.height == 1 and live.row(0, named=True)["provider"] == "tesouro_direto"
+    # Both rows survive — the mart must not hide the sandbox row, it must LABEL it, so
+    # the release gate can drop it for a stated reason instead of it vanishing untraced.
+    assert out.height == 2

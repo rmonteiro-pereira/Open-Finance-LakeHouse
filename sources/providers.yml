@@ -1,0 +1,146 @@
+# =============================================================================
+# Provider registry — who owns each source, and what may be done with it.
+#
+# KEYED BY HANDLER, not by rights holder. The provenance column that travels
+# through every fact and every mart is stamped from `series.handler`, and the
+# registry has ten handlers against seven rights holders (B3 alone owns four
+# handlers). Keying this file by rights holder would leave the mapping from the
+# stamped value to the verdict undefined — which is exactly where a licence gate
+# stops being enforceable.
+#
+# `rights_holder` is therefore a FIELD, for presentation and for grouping the
+# verdicts a human has to read. The KEY is what the data carries.
+#
+# DEFAULT IS DENY. A handler with no entry here, or with
+# `redistributable: unverified`, cannot be published. Silence counts as red —
+# an unaudited term of use is not permission, and the cost of being wrong is
+# redistributing someone else's data.
+#
+# `exhibit` vs `redistribute` are different questions and are recorded
+# separately: a mart derived internally from a source we may not republish can
+# still be the right thing to *show*, provided the derivative is ours and the
+# page says so.
+#
+# Every entry needs `verdict_date` and `verdict_by`. A verdict with no date is a
+# verdict nobody can age out.
+# =============================================================================
+
+version: 1
+
+handlers:
+  bacen_sgs:
+    rights_holder: bacen
+    display_name: Banco Central do Brasil — SGS
+    exhibit: true
+    redistribute: true
+    license_id: ODbL-1.0
+    url: https://dadosabertos.bcb.gov.br/
+    verdict_date: "2026-08-05"
+    verdict_by: portfolio-review
+    notes: >-
+      Open data declared by BACEN. Both dimensions green.
+
+  bacen_focus:
+    rights_holder: bacen
+    display_name: Banco Central do Brasil — Expectativas (Focus)
+    exhibit: true
+    redistribute: true
+    license_id: ODbL-1.0
+    url: https://dadosabertos.bcb.gov.br/
+    verdict_date: "2026-08-05"
+    verdict_by: portfolio-review
+
+  tesouro_direto:
+    rights_holder: tesouro_nacional
+    display_name: Tesouro Transparente
+    exhibit: true
+    redistribute: true
+    license_id: ODbL-1.0
+    url: https://www.tesourotransparente.gov.br/
+    verdict_date: "2026-08-05"
+    verdict_by: portfolio-review
+
+  ipea:
+    rights_holder: ipea
+    display_name: IPEAdata
+    exhibit: true
+    redistribute: true
+    license_id: open-government
+    url: http://www.ipeadata.gov.br/
+    verdict_date: "2026-08-05"
+    verdict_by: portfolio-review
+    notes: >-
+      Public statistical data. Recorded green pending the same written
+      citation the other four carry; treat as provisional.
+
+  ibge:
+    rights_holder: ibge
+    display_name: IBGE — PNAD Contínua
+    exhibit: true
+    redistribute: true
+    license_id: open-government
+    url: https://www.ibge.gov.br/
+    verdict_date: "2026-08-05"
+    verdict_by: portfolio-review
+
+  anbima:
+    rights_holder: anbima
+    display_name: ANBIMA Feed
+    exhibit: true
+    redistribute: false
+    license_id: proprietary-anbima
+    url: https://www.anbima.com.br/
+    verdict_date: "2026-08-05"
+    verdict_by: portfolio-review
+    notes: >-
+      ANBIMA denied the Feed. Compounding it, the series currently ingested run
+      against the SANDBOX and carry FICTITIOUS values — so these rows are also
+      `data_class: sandbox` and are barred by the class gate independently of
+      the licence one. Two locks on the same door, on purpose.
+
+  b3:
+    rights_holder: b3
+    display_name: B3 — Ibovespa index levels
+    exhibit: true
+    redistribute: false
+    license_id: proprietary-b3
+    url: https://www.b3.com.br/
+    verdict_date: "2026-08-05"
+    verdict_by: portfolio-review
+    notes: >-
+      B3 barred redistribution of derived values and indices absent written
+      authorisation. Internal derivation is allowed; republication is not.
+
+  b3_cotahist:
+    rights_holder: b3
+    display_name: B3 — COTAHIST cash market
+    exhibit: true
+    redistribute: false
+    license_id: proprietary-b3
+    url: https://www.b3.com.br/
+    verdict_date: "2026-08-05"
+    verdict_by: portfolio-review
+
+  b3_arquivos:
+    rights_holder: b3
+    display_name: B3 — public market-data portal
+    exhibit: true
+    redistribute: false
+    license_id: proprietary-b3
+    url: https://arquivos.b3.com.br/
+    verdict_date: "2026-08-05"
+    verdict_by: portfolio-review
+
+  yahoo:
+    rights_holder: yahoo
+    display_name: Yahoo Finance
+    exhibit: true
+    redistribute: false
+    license_id: unverified
+    url: https://policies.yahoo.com/us/en/yahoo/terms/
+    verdict_date: "2026-08-05"
+    verdict_by: portfolio-review
+    notes: >-
+      No written verdict yet. Under the default-deny rule an unaudited term is
+      red, so this stays out of the public release until someone reads it and
+      writes down what it says.

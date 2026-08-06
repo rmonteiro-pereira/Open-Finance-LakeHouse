@@ -14,6 +14,7 @@ import polars as pl
 
 from ofl.platform.io import bronze_uri, delta_storage_options
 from ofl.platform.logging import get_logger
+from ofl.providers import DATA_CLASSES, load_providers
 from ofl.registry import Series
 
 log = get_logger(__name__)
@@ -33,14 +34,34 @@ def _last_obs_epoch(df: pl.DataFrame) -> float | None:
     return datetime(d.year, d.month, d.day, tzinfo=timezone.utc).timestamp()
 
 
-def land_bronze(series: Series, df: pl.DataFrame, *, mode: str = "overwrite") -> dict:
+def land_bronze(
+    series: Series, df: pl.DataFrame, *, data_class: str, mode: str = "overwrite"
+) -> dict:
     """Land ``df`` to the bronze Delta table for ``series`` with lineage columns.
 
     ``mode='overwrite'`` is safe here because the SGS extractor returns the full
     series each run (small data); switch to ``append`` + watermark for sources
     that support incremental pulls.
+
+    ``data_class`` is **keyword-only and has no default**, on purpose. Whether a row is
+    live, sandbox or synthetic is known only at fetch time — the ANBIMA lane is live or
+    fictitious depending on which base URL the environment pointed it at — and a default
+    would let the most permissive value ride along on every handler that forgot to think
+    about it. The one class that must never reach a public release is the one a default
+    would silently supply.
+
+    ``provider`` carries the **handler key**, whose domain is closed by
+    ``sources/providers.yml``. It is what every licence check downstream reads.
     """
     from deltalake import write_deltalake  # heavy; only needed when actually writing
+
+    if data_class not in DATA_CLASSES:
+        raise ValueError(f"data_class must be one of {DATA_CLASSES}, got {data_class!r}")
+    if load_providers().get(series.handler) is None:
+        raise ValueError(
+            f"handler {series.handler!r} has no entry in sources/providers.yml; "
+            "an unregistered source cannot be landed (default is deny)"
+        )
 
     load_id = uuid.uuid4().hex
     ingested_at = datetime.now(timezone.utc)
@@ -49,6 +70,8 @@ def land_bronze(series: Series, df: pl.DataFrame, *, mode: str = "overwrite") ->
         pl.lit(series.key).alias("series_id"),
         pl.lit(series.domain).alias("domain"),
         pl.lit(series.handler).alias("source"),
+        pl.lit(series.handler).alias("provider"),
+        pl.lit(data_class).alias("data_class"),
         pl.lit(ingested_at).alias("ingested_at"),
         pl.lit(load_id).alias("load_id"),
     )

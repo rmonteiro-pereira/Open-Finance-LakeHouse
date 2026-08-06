@@ -55,4 +55,4 @@ def ingest_ipea(series: Series) -> dict:
         raise ValueError(f"series '{series.key}' has handler ipea but no sercodigo")
     df = fetch_ipea(sercodigo)
     log.info("ipea_fetched", series=series.key, sercodigo=sercodigo, rows=df.height)
-    return land_bronze(series, df)
+    return land_bronze(series, df, data_class="live")

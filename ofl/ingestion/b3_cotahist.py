@@ -106,4 +106,4 @@ def ingest_b3_cotahist(series: Series) -> dict:
     # Annual backfill replaces the table; a daily pull appends the new day.
     mode = "overwrite" if extra.get("years") else "append"
     log.info("b3_cotahist_fetched", series=series.key, files=len(names), rows=df.height, mode=mode)
-    return land_bronze(series, df, mode=mode)
+    return land_bronze(series, df, data_class="live", mode=mode)

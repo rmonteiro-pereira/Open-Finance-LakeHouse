@@ -53,4 +53,4 @@ def ingest_yahoo(series: Series) -> dict:
     symbols = [s["symbol"] for s in series.symbols]
     df = fetch_yahoo(symbols)
     log.info("yahoo_fetched", series=series.key, symbols=len(symbols), rows=df.height)
-    return land_bronze(series, df)
+    return land_bronze(series, df, data_class="live")

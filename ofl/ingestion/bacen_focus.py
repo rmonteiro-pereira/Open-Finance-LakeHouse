@@ -80,7 +80,9 @@ def ingest_bacen_focus(series: Series) -> dict:
     rows = fetch_focus(e)
     if not rows:
         log.warning("focus_empty", series=series.key, resource=e["resource"])
-        return land_bronze(series, pl.DataFrame(schema={"date": pl.Date, "value": pl.Float64}))
+        return land_bronze(
+            series, pl.DataFrame(schema={"date": pl.Date, "value": pl.Float64}), data_class="live"
+        )
 
     value_field = e.get("value_field", "Mediana")
     horizon = e.get("horizon")
@@ -103,4 +105,4 @@ def ingest_bacen_focus(series: Series) -> dict:
 
     df = df.drop_nulls(["date", "value"]).unique(subset="date", keep="last").sort("date")
     log.info("focus_fetched", series=series.key, resource=e["resource"], rows=df.height)
-    return land_bronze(series, df)
+    return land_bronze(series, df, data_class="live")

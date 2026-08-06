@@ -11,8 +11,14 @@ def _series(extra):
 def _capture(monkeypatch, rows):
     monkeypatch.setattr(bacen_focus, "fetch_focus", lambda extra: rows)
     captured = {}
+    # The stub mirrors the real signature, `data_class` included: a fake that accepts
+    # anything would keep passing after the landing gained a mandatory argument, which is
+    # exactly the moment a test should speak up.
     monkeypatch.setattr(
-        bacen_focus, "land_bronze", lambda s, df: captured.update(df=df) or {"rows": df.height}
+        bacen_focus,
+        "land_bronze",
+        lambda s, df, *, data_class, **kw: captured.update(df=df, data_class=data_class)
+        or {"rows": df.height},
     )
     return captured
 

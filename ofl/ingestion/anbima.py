@@ -38,6 +38,19 @@ TPF_URL = f"{_DATA_BASE}/feed/precos-indices/v1/titulos-publicos/mercado-secunda
 # fact: observation — a series filters its own `indice` out of the shared payload.
 IMA_URL = f"{_DATA_BASE}/feed/precos-indices/v1/indices/resultados-ima"
 
+
+def anbima_data_class() -> str:
+    """``sandbox`` when reading the sandbox host, ``live`` otherwise.
+
+    This is the one lane whose authenticity is decided by configuration rather than by
+    the source. Until now that decision lived only in an environment variable and was
+    never written into the data, so a row could not say whether its value was real —
+    and the sandbox returns FICTITIOUS values in a format-real shape. Deriving the class
+    here, at the moment of the call, is what lets the class gate keep invented numbers
+    out of a release without anyone having to remember how the pod was configured.
+    """
+    return "sandbox" if "sandbox" in _DATA_BASE else "live"
+
 # bronze treasury schema (matches silver.fact_treasury inputs)
 _STR_SCHEMA = {
     "bond": pl.String, "maturity": pl.String, "date": pl.String,
@@ -164,8 +177,9 @@ def ingest_anbima(series: Series) -> dict:
     if ima_code:
         df = fetch_anbima_ima(client_id, token).filter(pl.col("indice") == ima_code).select("date", "value")
         log.info("anbima_ima_fetched", series=series.key, ima=ima_code, rows=df.height)
-        return land_bronze(series, df, mode="append")
+        return land_bronze(series, df, data_class=anbima_data_class(), mode="append")
 
     df = fetch_anbima_tpf(client_id, token)
     log.info("anbima_fetched", series=series.key, rows=df.height)
-    return land_bronze(series, df, mode="append")  # daily snapshot; silver MERGE dedups
+    # daily snapshot; silver MERGE dedups
+    return land_bronze(series, df, data_class=anbima_data_class(), mode="append")

@@ -140,4 +140,4 @@ def ingest_bacen_sgs(series: Series) -> dict:
     since = date.fromisoformat(series.start_date) if series.start_date else None
     df = fetch_sgs(series.sgs_id, since=since)
     log.info("sgs_fetched", series=series.key, sgs_id=series.sgs_id, rows=df.height, since=str(since))
-    return land_bronze(series, df)
+    return land_bronze(series, df, data_class="live")
