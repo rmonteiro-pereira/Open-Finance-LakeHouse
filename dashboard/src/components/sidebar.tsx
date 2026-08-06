@@ -101,9 +101,9 @@ export function Sidebar() {
         <div className="mt-auto px-5 pb-6 pt-4">
           <div className="rounded-lg border border-border/70 bg-card/50 p-3">
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Medallion lakehouse · Delta on MinIO
+              Dados de um release publicado
               <br />
-              <span className="text-foreground/70">Polars → Spark → DuckDB</span>
+              <span className="text-foreground/70">sem servidor · sem credencial</span>
             </p>
           </div>
         </div>

@@ -260,7 +260,7 @@ def build_release(
         ],
         "data_assets": data_assets,
         "meta_assets": [],
-        "series": _series_block(),
+        "series": _series_block(tables),
     }
 
     (out / "manifest.json").write_text(
@@ -293,7 +293,7 @@ def build_release(
     return manifest
 
 
-def _series_block() -> list[dict[str, Any]]:
+def _series_block(tables: dict[str, "pl.DataFrame"] | None = None) -> list[dict[str, Any]]:
     """Freshness inputs at the grain of the SERIES, never the table.
 
     ``fact_observation`` is the union of series from daily to quarterly. One
@@ -305,9 +305,22 @@ def _series_block() -> list[dict[str, Any]]:
     without being republished; one that declares itself "ok" lies on exactly the day the
     producer dies.
     """
+    import polars as pl
+
     from ofl.registry import load_registry
 
     default_hours = {"daily": 36, "weekly": 240, "monthly": 800, "quarterly": 2400, "annual": 9000}
+
+    # MEASURED from the data that is actually being published, per series. This was a
+    # `None` placeholder until the site was built and every freshness chip read "sem
+    # dado" — a chip that can never be green is the mirror of a manifest that declares
+    # itself "ok": both are decorations that cannot report the state they exist to report.
+    last_seen: dict[str, str] = {}
+    obs = (tables or {}).get("fact_observation")
+    if obs is not None and {"series_id", "date"} <= set(obs.columns):
+        grouped = obs.group_by("series_id").agg(pl.col("date").max().alias("last"))
+        last_seen = {r["series_id"]: str(r["last"]) for r in grouped.iter_rows(named=True)}
+
     out = []
     for s in load_registry().active():
         out.append(
@@ -321,7 +334,7 @@ def _series_block() -> list[dict[str, Any]]:
                 "frequency": s.frequency,
                 "provider": s.handler,
                 "freshness_budget_hours": default_hours.get(s.frequency, 800),
-                "last_observation_date": None,
+                "last_observation_date": last_seen.get(s.key),
             }
         )
     return out

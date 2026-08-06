@@ -17,6 +17,21 @@ GOLDEN = Path(__file__).parent / "fixtures" / "golden" / "percentile_asof.expect
 FIXTURE = Path(__file__).parent / "fixtures" / "release" / "fact_observation.csv"
 
 
+def _registry_dim() -> pl.DataFrame:
+    """`dim_series` from the registry — the same source the golden and the eval runner use.
+
+    A hand-listed dim in the test was a second source of truth for `n_expected`, and it
+    diverged from the golden the moment the corpus gained a series. Two fixtures for one
+    fact is the bug this project keeps meeting under different names.
+    """
+    from ofl.registry import load_registry
+
+    active = load_registry().active()
+    return pl.DataFrame(
+        {"series_id": [s.key for s in active], "frequency": [s.frequency for s in active]}
+    )
+
+
 def _run(obs: pl.DataFrame, dim: pl.DataFrame) -> pl.DataFrame:
     c = duckdb.connect()
     c.register("fact_observation", obs.to_arrow())
@@ -124,10 +139,7 @@ def test_a_short_series_is_refused_instead_of_ranked():
     """`ibc_br` in the corpus has four points. A percentile over four observations is a
     number, and publishing it would be worse than publishing nothing."""
     obs = pl.read_csv(FIXTURE, try_parse_dates=True)
-    dim = pl.DataFrame(
-        {"series_id": ["ipca", "selic", "ibc_br"], "frequency": ["monthly", "daily", "monthly"]}
-    )
-    out = _run(obs, dim)
+    out = _run(obs, _registry_dim())
     short = out.filter(pl.col("series_id") == "ibc_br")
     assert short.height > 0
     assert not short["percentile_allowed"].any()
@@ -153,9 +165,7 @@ def test_the_golden_matches_and_a_mutated_recipe_would_not():
     require that the golden distinguishes them. A golden that both versions satisfy is
     the self-referential gate this project has been bitten by twice."""
     obs = pl.read_csv(FIXTURE, try_parse_dates=True)
-    dim = pl.DataFrame(
-        {"series_id": ["ipca", "selic", "ibc_br"], "frequency": ["monthly", "daily", "monthly"]}
-    )
+    dim = _registry_dim()
     actual = _run(obs, dim).select(
         "series_id", "date", "window_label", "n_obs", "n_below", "n_ties", "pct_rank", "percentile_allowed"
     )
