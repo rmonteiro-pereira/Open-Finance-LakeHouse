@@ -1,84 +1,60 @@
-# Ledger — OFL Lakehouse dashboard
+# Ledger — the OFL reader surface
 
-A financial-editorial BI dashboard over the **Open-Finance-LakeHouse** gold marts:
-Brazilian macro, real interest, inflation, FX, the treasury yield curve and equities.
+Six routes, each named after a question somebody asks out loud:
 
-Built with **Next.js 16** (App Router) · **Tailwind v4** · **shadcn/ui** · **Recharts**.
-Dark, terminal-meets-editorial aesthetic (Fraunces / Hanken Grotesk / JetBrains Mono).
+`/` Como está o Brasil hoje · `/juro-real` · `/inflacao` · `/curva-do-tesouro` ·
+`/serie/[series_id]` · `/confianca`
 
-## Quick start
+The eight routes before these were named after marts — `/fx`, `/yield-curve`,
+`/derivatives` — which is the factory floor plan projected onto the shop window. Nobody
+arrives wanting `mart_real_interest`; they arrive asking whether the real rate is high.
 
-```bash
-python snapshot/gen_synthetic.py   # required: generates public/data/*.json
-pnpm install
-pnpm dev                           # http://localhost:3000
-```
-
-`public/data/*.json` is a **derived artifact and is not versioned** — a clean clone has no
-data until you generate it. That is deliberate: the snapshot the repo used to ship was
-**synthetic**, and committed synthetic data is indistinguishable from real data to anyone
-reading the repo. See the RFC (`_specs/rfc-ofl-produto-de-dados.md`): from F4 on, this
-dashboard reads the **public release**, not MinIO and not a mock.
+`/derivatives` and `/equities` are gone for a second, independent reason: B3 barred
+redistribution of derived values absent written authorisation, so those numbers cannot
+appear on a public page at all.
 
 ## Data
 
-The dashboard reads JSON snapshots of the gold marts from `public/data/*.json`.
-There are two interchangeable producers writing the **identical shape**:
-
-| Script | Source | Use |
-|---|---|---|
-| `snapshot/gen_synthetic.py` | realistic mock | local dev, Vercel demo, screenshots |
-| `snapshot/export.py` | live Delta via DuckDB `delta_scan` on MinIO | cluster / real data |
+**One source: a published release.** Not MinIO, not a mock.
 
 ```bash
-# regenerate the mock snapshot
-python snapshot/gen_synthetic.py
-
-# pull the live snapshot (needs MinIO creds — see .env.example)
-MINIO_USER=… MINIO_PASSWORD=… MINIO_ENDPOINT=http://localhost:9000 \
-  python snapshot/export.py
+ofl release build --from tests/fixtures/release --to ../out   --release-id 1970-01-01.1 --release-class fixture      # from the repo root
+python snapshot/from_release.py --release ../out          # writes public/data/*.json
+pnpm install && pnpm dev
 ```
 
-Loaders live in `src/lib/data.ts` (typed, server-only, read at build/ISR).
-Marts and their columns are documented in `../docs/DASHBOARD_HANDOFF.md`.
+Both previous producers are gone, and the removals are the point:
 
-## Pages
+- `gen_synthetic.py` generated a realistic mock, and shipping it as the default meant the
+  site's out-of-the-box state was invented numbers wearing the same chrome as real ones.
+- `export.py` read Delta from MinIO, which made the reader surface a dependent of the
+  homelab. A surface that needs the cluster dies with the cluster.
 
-`/` macro overview · `/real-interest` · `/inflation` · `/fx` · `/yield-curve` ·
-`/equities` · `/catalog`.
+Consuming the same artefact an external consumer does is also what lets this dashboard be
+the release's **first real consumer** — proving the interface by use instead of assertion.
 
-- **`/catalog`** lists **all 48 registry series** (`dim_series`), grouped by domain and
-  searchable. The 40 single-value series draw a sparkline + latest reading straight from
-  `fact_observation`; the 8 multi-symbol facts (treasury / security_price) link to the page
-  that plots them.
-- **`/equities`** carries a curated interactive watchlist **and** the **whole B3 cash market**
-  — every listed round-lot name (`mart_equity_universe`), searchable and filterable by sector.
+`public/data/*.json` is derived and is not versioned. A missing file is a **build error**:
+there is no fallback, because a silent default renders an empty chart and an empty chart
+is indistinguishable from a quiet market.
 
-All pages are **ISR** (`revalidate = 3600`), so a fresh snapshot is picked up within the hour
-without a redeploy.
+## Invariants
+
+Asserted in `tests/test_dashboard_invariants.py` — in the Python suite, because that is
+where CI runs and a criterion nothing executes cannot fail:
+
+- the route set is EXACTLY the six (equality, not containment)
+- `next.config.ts` declares `output: "export"`
+- no source file mentions `svc.cluster.local` (checked after asserting there is something
+  to scan, so it cannot pass vacuously)
+- the loader has no `readJsonOr`-style fallback
+- the freshness verdict is COMPUTED from published inputs, never read from the manifest
+- the unit guard compares the whole `(unit, basis, scale)` tuple — keyed on `unit` alone it
+  would pass the SELIC daily rate against monthly IPCA, since both are `percent`
+
+The `dashboard` job in `.github/workflows/tests.yml` covers the one thing source cannot
+answer: that the app still compiles and exports.
 
 ## Deploy
 
-### Vercel
-Import the repo, set the project root to `dashboard/`. Zero backend — but the build needs
-`public/data/*.json` to exist, and it is no longer committed: the deploy step must run a
-producer first (`gen_synthetic.py` for a demo, `export.py` for cluster data, the release
-fetch from F4 on). `vercel.json` pins the framework and install command.
-
-### Cluster (Kubernetes)
-```bash
-docker build -t ghcr.io/rmonteiro-pereira/ofl-dashboard:latest .
-docker push ghcr.io/rmonteiro-pereira/ofl-dashboard:latest
-
-kubectl create configmap ofl-dash-export \
-  --from-file=export.py=snapshot/export.py -n default
-kubectl apply -f deploy/k8s/dashboard.yaml
-```
-`deploy/k8s/dashboard.yaml` provisions the Deployment, Service, Ingress
-(`dashboard.vanir.dev.br`) and an hourly `ofl-dash-refresh` CronJob that runs
-`export.py` against MinIO into a shared volume. The image bakes the synthetic
-snapshot as a first-boot fallback. Requires the `minio-creds` secret in `default`.
-
-## Notes
-- Synthetic data is real-*shaped*, not real. ANBIMA series are sandbox even when live.
-- `dim_series.unit` differs by series; never mix units on one axis.
+Static export, so any host serves it. See `docs/DEPLOY.md`; the hostname is a deploy-time
+step and has not been executed.

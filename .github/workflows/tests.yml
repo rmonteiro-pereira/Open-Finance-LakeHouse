@@ -47,3 +47,77 @@ jobs:
 
       - name: Run unit tests
         run: pytest -q
+
+  # The reader surface. Its invariants live in `tests/test_dashboard_invariants.py`
+  # (routes, static export, no cluster host, no silent fallback) because those run in the
+  # pytest job above and therefore actually gate. This job exists for the one thing that
+  # cannot be asserted over source: that the app still compiles and exports.
+  dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: dashboard/pnpm-lock.yaml
+
+      - name: Build a fixture release
+        run: |
+          pip install -e ".[dev]"
+          ofl release build --from tests/fixtures/release --to out             --release-id 1970-01-01.1 --release-class fixture
+
+      # A percentile mart is not in the corpus; derive it from the published recipe so the
+      # site build reads the same SQL a consumer would.
+      - name: Derive the percentile mart
+        run: |
+          python - <<'PY'
+          import duckdb, polars as pl
+          from pathlib import Path
+          from ofl.registry import load_registry
+          con = duckdb.connect()
+          con.register("fact_observation", pl.read_parquet("out/parquet/fact_observation.parquet").to_arrow())
+          active = load_registry().active()
+          con.register("dim_series", pl.DataFrame(
+              {"series_id": [s.key for s in active], "frequency": [s.frequency for s in active]}).to_arrow())
+          sql = Path("ofl/release/recipes/percentile_asof.sql").read_text()
+          con.execute(sql).pl().write_parquet("out/parquet/mart_series_percentile.parquet")
+          import json
+          m = json.loads(Path("out/manifest.json").read_text())
+          m["data_assets"].append({"name": "mart_series_percentile", "status": "published",
+              "rows": None, "primary_key": ["series_id", "date", "window_label"],
+              "sha256": "", "path": "parquet/mart_series_percentile.parquet"})
+          Path("out/manifest.json").write_text(json.dumps(m))
+          PY
+
+      - name: Feed the site from the release
+        working-directory: dashboard
+        run: python snapshot/from_release.py --release ../out
+
+      - name: Install and export
+        working-directory: dashboard
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      # Non-vacuity first, then absence: scanning an empty bundle for a forbidden host
+      # passes trivially, which is how this check would have passed on the day the export
+      # silently produced nothing.
+      - name: The export exists and reaches no cluster
+        working-directory: dashboard
+        run: |
+          test -d out
+          n=$(find out -name '*.html' | wc -l)
+          echo "exported $n html files"
+          test "$n" -ge 5
+          ! grep -rl 'svc.cluster.local' out
+

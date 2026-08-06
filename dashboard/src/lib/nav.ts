@@ -2,11 +2,8 @@ import {
   Gauge,
   Percent,
   Flame,
-  ArrowLeftRight,
   Spline,
-  CandlestickChart,
-  Activity,
-  Library,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -18,13 +15,21 @@ export type NavItem = {
   icon: LucideIcon;
 };
 
+/**
+ * Six routes, each named after a question somebody asks out loud.
+ *
+ * The previous eight were named after marts — /fx, /yield-curve, /derivatives — which is
+ * the factory's floor plan projected onto the shop window. A reader does not arrive
+ * wanting `mart_real_interest`; they arrive asking whether the real rate is high.
+ *
+ * /derivatives, /equities and the DI curve are also gone for a second, independent
+ * reason: B3 barred redistribution of derived values absent written authorisation, so
+ * those numbers cannot appear on a public page at all.
+ */
 export const NAV: NavItem[] = [
-  { href: "/", label: "Macro Overview", short: "Macro", desc: "Policy rate, inflation, FX & debt", icon: Gauge },
-  { href: "/real-interest", label: "Real Interest", short: "Real rate", desc: "Selic deflated by 12m IPCA", icon: Percent },
-  { href: "/inflation", label: "Inflation", short: "Inflation", desc: "Headline, cores & the IGP family", icon: Flame },
-  { href: "/fx", label: "Foreign Exchange", short: "FX", desc: "USD/BRL & EUR/BRL, returns & vol", icon: ArrowLeftRight },
-  { href: "/yield-curve", label: "Yield Curve", short: "Curve", desc: "Treasury curve over time", icon: Spline },
-  { href: "/equities", label: "Equities", short: "Equities", desc: "Blue-chip & global watchlist", icon: CandlestickChart },
-  { href: "/derivatives", label: "Derivatives", short: "Derivs", desc: "DI futures curve & open interest", icon: Activity },
-  { href: "/catalog", label: "Series Catalog", short: "Catalog", desc: "Every series in the lakehouse registry", icon: Library },
+  { href: "/", label: "Hoje", short: "Hoje", desc: "Como está o Brasil hoje", icon: Gauge },
+  { href: "/juro-real", label: "Juro real", short: "Juro real", desc: "O juro real está alto?", icon: Percent },
+  { href: "/inflacao", label: "Inflação", short: "Inflação", desc: "A inflação está cedendo?", icon: Flame },
+  { href: "/curva-do-tesouro", label: "Curva do Tesouro", short: "Curva", desc: "Vale a pena travar IPCA+ hoje?", icon: Spline },
+  { href: "/confianca", label: "Confiança", short: "Confiança", desc: "Dá pra confiar hoje, e como eu pego isso", icon: ShieldCheck },
 ];
