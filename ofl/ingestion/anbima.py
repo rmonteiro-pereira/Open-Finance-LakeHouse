@@ -21,6 +21,7 @@ import requests
 from ofl.ingestion.landing import land_bronze
 from ofl.platform.logging import get_logger
 from ofl.registry import Series
+from ofl.transform.keys import with_instrument_id
 
 log = get_logger(__name__)
 
@@ -82,8 +83,11 @@ def _parse(records: list) -> pl.DataFrame:
             pl.col("date").str.strptime(pl.Date, "%Y-%m-%d", strict=False),
             pl.col("maturity").str.strptime(pl.Date, "%Y-%m-%d", strict=False),
         )
-        .drop_nulls("date")
-        .sort("bond", "date")
+        # See the note in `tesouro._to_long`: `maturity` is a key component, so a row
+        # without it cannot be identified and must not reach bronze.
+        .drop_nulls(["date", "maturity"])
+        .pipe(with_instrument_id, provider="anbima")
+        .sort("instrument_id", "date")
     )
 
 

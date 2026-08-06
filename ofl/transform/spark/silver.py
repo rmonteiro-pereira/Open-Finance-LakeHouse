@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 from ofl.platform.io import bronze_uri, silver_uri, to_spark_path
 from ofl.platform.logging import get_logger
 from ofl.registry import Registry, load_registry
+from ofl.transform.keys import TREASURY_KEY, merge_condition
 
 if TYPE_CHECKING:
     from pyspark.sql import DataFrame, SparkSession
@@ -105,7 +106,7 @@ def conform_observations(spark: "SparkSession", registry: Registry | None = None
 
 
 _FACT_TREASURY_DDL = (
-    "bond STRING, maturity DATE, date DATE, "
+    "instrument_id STRING, bond STRING, maturity DATE, date DATE, "
     "buy_rate DOUBLE, sell_rate DOUBLE, buy_price DOUBLE, sell_price DOUBLE, "
     "source STRING, ingested_at TIMESTAMP, load_id STRING"
 )
@@ -137,7 +138,27 @@ def conform_treasury(spark: "SparkSession", registry: Registry | None = None) ->
     for f in frames[1:]:
         unioned = unioned.unionByName(f)
 
-    dedup = Window.partitionBy("bond", "date").orderBy(F.col("ingested_at").desc())
+    # Grain gate, part (i): run BEFORE the dedup, on the union of bronze.
+    #
+    # A key that is too coarse satisfies `count == count distinct` after deduplication *by
+    # construction* — precisely because the dedup deleted the colliding rows. Checking
+    # here is what makes the gate able to fail on the defect it exists to catch: two
+    # source rows sharing the declared key is a grain violation, not something to
+    # silently collapse. (The pure-Polars twin is `keys.assert_grain_is_not_coarser`.)
+    collisions = unioned.groupBy(*TREASURY_KEY).count().filter(F.col("count") > 1)
+    n_collisions = collisions.count()
+    if n_collisions:
+        sample = [r.asDict() for r in collisions.limit(3).collect()]
+        raise ValueError(
+            f"fact_treasury grain violated: {n_collisions} colliding {TREASURY_KEY} in bronze. "
+            f"Sample: {sample}"
+        )
+
+    # `load_id` breaks an exact `ingested_at` tie; without it the surviving row would
+    # depend on partition order, which is non-determinism published as data.
+    dedup = Window.partitionBy(*TREASURY_KEY).orderBy(
+        F.col("ingested_at").desc(), F.col("load_id").desc()
+    )
     source = (
         unioned.withColumn("_rn", F.row_number().over(dedup))
         .filter(F.col("_rn") == 1)
@@ -154,7 +175,7 @@ def conform_treasury(spark: "SparkSession", registry: Registry | None = None) ->
     target = DeltaTable.forPath(spark, uri)
     (
         target.alias("t")
-        .merge(source.alias("s"), "t.bond = s.bond AND t.date = s.date")
+        .merge(source.alias("s"), merge_condition(TREASURY_KEY))
         .whenMatchedUpdateAll()
         .whenNotMatchedInsertAll()
         .execute()

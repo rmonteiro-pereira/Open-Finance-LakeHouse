@@ -14,6 +14,7 @@ import requests
 from ofl.ingestion.landing import land_bronze
 from ofl.platform.logging import get_logger
 from ofl.registry import Series
+from ofl.transform.keys import with_instrument_id
 
 log = get_logger(__name__)
 
@@ -48,8 +49,14 @@ def _to_long(df: pl.DataFrame) -> pl.DataFrame:
                 if c in present.values()
             ],
         )
-        .drop_nulls("date")
-        .sort("bond", "date")
+        # `maturity` is dropped alongside `date`: it is a key component, and it is parsed
+        # with strict=False, so a malformed "Data Vencimento" would otherwise reach bronze
+        # as null and take `instrument_id` with it. Dropping here is the only option that
+        # is neither a withheld release (null id) nor a fictitious instrument that swallows
+        # every malformed row (coalesced id).
+        .drop_nulls(["date", "maturity"])
+        .pipe(with_instrument_id, provider="tesouro")
+        .sort("instrument_id", "date")
     )
 
 

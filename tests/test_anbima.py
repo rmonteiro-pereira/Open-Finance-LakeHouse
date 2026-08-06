@@ -4,6 +4,7 @@ import pytest
 
 from ofl.ingestion import anbima
 from ofl.ingestion.anbima import _parse, fetch_anbima_ima
+from ofl.transform.keys import instrument_id
 
 
 def test_parse_maps_tpf_records():
@@ -19,8 +20,20 @@ def test_parse_maps_tpf_records():
         }
     ]
     out = _parse(records)
-    assert out.columns == ["bond", "maturity", "date", "buy_rate", "sell_rate", "buy_price", "sell_price"]
+    assert out.columns == [
+        "bond",
+        "maturity",
+        "date",
+        "buy_rate",
+        "sell_rate",
+        "buy_price",
+        "sell_price",
+        "instrument_id",
+    ]
     r = out.row(0, named=True)
+    # Stamped at landing, from the ANBIMA namespace — so an ANBIMA row can never share an
+    # identifier with a Tesouro row even if the labels were to coincide.
+    assert r["instrument_id"] == instrument_id("anbima", "100000", date(2029, 1, 1))
     assert r["date"] == date(2026, 6, 19)
     assert r["maturity"] == date(2029, 1, 1)
     assert r["sell_rate"] == 13.05  # taxa_indicativa -> the curve yield
