@@ -138,6 +138,20 @@ Heavy deps are **extras**, so the core install stays light:
 **51 registered series across 10 source handlers** — all driven from
 [`sources/registry.yml`](sources/registry.yml).
 
+Ingested is not the same as publishable, so the coverage number that matters is split by
+**licence state** ([`sources/providers.yml`](sources/providers.yml), default deny;
+`tests/test_readme_counts.py` fails if this table drifts from the registry):
+
+| State | Series | Meaning |
+|---|---:|---|
+| `open` | **38** | Written verdict permits redistribution — BACEN SGS (30), Focus (3), IPEA (3), IBGE (1), Tesouro Direto (1) |
+| `restricted` | **9** | Written verdict says no — ANBIMA (4), B3 portal (3), B3 index (1), COTAHIST (1) |
+| `unverified` | **4** | No audited term of use, and silence counts as red — Yahoo Finance (4) |
+
+Restricted series stay listed in the catalogue with the reason attached; only the `open`
+set reaches the public release. See
+[ADR-0002](docs/adr/0002-the-published-release-is-the-product.md).
+
 | Domain | Series | What's in it |
 |---|---:|---|
 | `inflation` | 12 | IPCA, IPCA-15, INPC, IGP-M/DI/10, IPC-FIPE, 4 IPCA core measures, Focus 12m IPCA expectation |
