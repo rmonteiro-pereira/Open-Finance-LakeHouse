@@ -1,0 +1,71 @@
+# Watchdog for the OFL public data releases.
+#
+# THIS FILE IS NOT EXECUTED FROM THIS REPOSITORY, and the path is chosen so that it
+# cannot be. GitHub only runs workflows under `.github/workflows/` at the repository
+# root; this lives under `publish/ofl-public-data/`, which is inert here and is the
+# content to copy into the DATA repository when it is created (docs/DEPLOY.md).
+#
+# Why it lives in the other repository at all — the reason is the whole point of the
+# watchdog: a dead pipeline publishes nothing, INCLUDING no notice that it died. The
+# producer therefore cannot be the author of its own liveness report. This workflow runs
+# on GitHub-hosted infrastructure, reads only what has actually been published, and needs
+# no secret: the data repository is public and reading its own releases is unauthenticated.
+#
+# The verdict itself is computed by `ofl.release.publish.health`, a pure function of
+# (latest.json, now), so every threshold in it is covered by a table of written cases in
+# tests/test_publish.py rather than by waiting a day and a half to observe one.
+
+name: watchdog
+
+on:
+  schedule:
+    - cron: "17 * * * *"   # hourly, off the hour so it does not queue behind everything else
+  workflow_dispatch:
+
+permissions:
+  contents: write   # to commit health.json to the Pages branch
+
+concurrency:
+  group: watchdog
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the checker
+        run: pip install "ofl @ git+https://github.com/rmonteiro-pereira/Open-Finance-LakeHouse@main"
+
+      - name: Fetch latest.json (absence is a verdict, not an error)
+        id: fetch
+        run: |
+          curl -fsSL -o latest.json \
+            "https://github.com/${{ github.repository }}/releases/latest/download/latest.json" \
+            || echo "no latest.json published" >&2
+
+      - name: Compute health
+        run: |
+          python - <<'PY'
+          import datetime as dt, json, pathlib
+          from ofl.release.publish import health
+          p = pathlib.Path("latest.json")
+          latest = json.loads(p.read_text()) if p.exists() else None
+          report = health(latest, dt.datetime.now(dt.timezone.utc))
+          pathlib.Path("health.json").write_text(json.dumps(report, indent=2) + "\n")
+          print(json.dumps(report, indent=2))
+          PY
+
+      - name: Publish health.json
+        run: |
+          git config user.name  "ofl-watchdog"
+          git config user.email "noreply@github.com"
+          git add health.json
+          git commit -m "watchdog: $(python -c 'import json;print(json.load(open("health.json"))["state"])')" || exit 0
+          git push
