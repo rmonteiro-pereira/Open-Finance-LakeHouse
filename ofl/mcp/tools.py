@@ -20,6 +20,7 @@ reason is indistinguishable from a bug.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -325,7 +326,8 @@ def run_sql(ctx: ToolContext, sql: str, *, limit: int = DEFAULT_ROWS) -> dict[st
     }
 
 
-TOOLS = {
+#: Typed so a dispatcher can call these without mypy losing the signature.
+TOOLS: dict[str, Callable[..., dict[str, Any]]] = {
     "list_series": list_series,
     "describe_series": describe_series,
     "get_observations": get_observations,
