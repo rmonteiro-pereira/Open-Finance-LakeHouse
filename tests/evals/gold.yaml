@@ -1,0 +1,98 @@
+# Gold queries for the agent surface.
+#
+# Written as SPECIFICATIONS, not as descriptions of what the code happens to do. Roughly
+# half assert a refusal, because refusing correctly is the behaviour that keeps a
+# text-to-SQL agent over macro data from confidently returning the wrong number.
+#
+# `~text` in an `expect` value means "contains, case-insensitive".
+
+# ---------------------------------------------------------------- semantics: the unit
+- id: selic-is-a-daily-rate
+  tool: describe_series
+  args: {series_id: selic}
+  expect:
+    unit: percent
+    basis: per_day
+
+- id: selic-reading-warns-against-mixing-bases
+  tool: describe_series
+  args: {series_id: selic}
+  expect:
+    reading: ~DAILY
+
+- id: debt-to-gdp-is-not-a-rate
+  tool: describe_series
+  args: {series_id: divida_pib}
+  expect:
+    unit: percent
+    basis: pct_of_gdp
+
+- id: credit-declares-its-scale
+  tool: describe_series
+  args: {series_id: credito_total}
+  expect:
+    scale: 1000000
+
+- id: focus-declares-it-is-an-expectation
+  tool: describe_series
+  args: {series_id: focus_selic_fim_ano}
+  expect:
+    horizon: calendar_year_end
+
+# ------------------------------------------------------------------------- refusals
+- id: refuse-anbima-by-licence
+  tool: describe_series
+  args: {series_id: anbima_ima_b}
+  expect_refusal: not_redistributable
+
+- id: refuse-unknown-series
+  tool: describe_series
+  args: {series_id: taxa_inventada}
+  expect_refusal: unknown_series
+
+- id: refuse-percentile-without-history
+  tool: get_percentile
+  args: {series_id: ibc_br, window_label: 5y}
+  expect_refusal: insufficient_history
+
+- id: refuse-unknown-window
+  tool: get_percentile
+  args: {series_id: ipca, window_label: 3y}
+  expect_refusal: unknown_window
+
+- id: refuse-ddl
+  tool: run_sql
+  args: {_positional: "DROP TABLE fact_observation"}
+  expect_refusal: not_a_select
+
+- id: refuse-two-statements
+  tool: run_sql
+  args: {_positional: "SELECT 1; SELECT 2"}
+  expect_refusal: multi_statement
+
+- id: refuse-query-outside-the-allowlist
+  tool: run_sql
+  args: {_positional: "SELECT * FROM read_csv('/etc/passwd')"}
+  expect_refusal: no_allowlisted_table
+
+# ---------------------------------------------------------------------- answers
+- id: percentile-uses-mid-rank
+  tool: get_percentile
+  args: {series_id: ipca, window_label: 5y}
+  expect:
+    method: mid_rank
+    window_label: 5y
+
+- id: observations-carry-the-unit
+  tool: get_observations
+  args: {series_id: selic, limit: 2}
+  expect:
+    unit: percent
+    basis: per_day
+
+- id: withheld-series-are-listed-not-hidden
+  tool: explain_refusal
+  args: {series_id: anbima_ima_b}
+  expect:
+    servable: false
+    rights_holder: anbima

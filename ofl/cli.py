@@ -10,6 +10,7 @@ Examples:
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 from ofl.platform.logging import configure_logging, get_logger
 from ofl.registry import load_registry
@@ -97,6 +98,21 @@ def _release_verify(args: argparse.Namespace) -> int:
     else:
         log.info("release_ok", release_id=report.release_id, files=len(report.checked_files))
     return report.exit_code
+
+
+def _evals(args: argparse.Namespace) -> int:
+    """Score the agent tools against the frozen gold cases.
+
+    Exits non-zero below the committed floor. "Prints a scoreboard" is an effect on
+    stdout; a gate has to be able to stop something.
+    """
+    import json
+
+    from ofl.mcp.evals import context_from_corpus, run_evals
+
+    report = run_evals(context_from_corpus(args.corpus))
+    print(json.dumps(report, indent=2, ensure_ascii=False))
+    return 0 if report["ok"] else 1
 
 
 def _stream_produce(args: argparse.Namespace) -> int:
@@ -275,6 +291,10 @@ def main(argv: list[str] | None = None) -> int:
     # default is not read from the manifest, or the gate would only confirm the label.
     rv.add_argument("--expect-class", choices=["production", "fixture"], default="production")
     rv.set_defaults(func=_release_verify)
+
+    ev = sub.add_parser("evals", help="score the agent tools against the gold cases")
+    ev.add_argument("--corpus", default="tests/fixtures/release", help="frozen table corpus")
+    ev.set_defaults(func=_evals)
 
     reg = sub.add_parser("registry", help="list the source registry")
     reg.set_defaults(func=_registry)

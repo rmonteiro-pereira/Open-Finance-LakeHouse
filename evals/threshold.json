@@ -1,0 +1,4 @@
+{
+  "min_pass_rate": 1.0,
+  "note": "Every gold case is a specification, so the floor is 100%. Lowering it is a decision that shows up in a diff; a suite with no floor at all is a scoreboard, not a gate."
+}
