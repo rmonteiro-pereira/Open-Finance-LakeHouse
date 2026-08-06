@@ -7,6 +7,7 @@ import polars as pl
 import pytest
 
 from ofl.transform.gold.runner import GoldCheckError, _check_sql, _model_sql, execute_models
+from ofl.calendar import build_calendar
 from ofl.transform.keys import instrument_id
 
 MONTHS = [(2024, m) for m in range(1, 13)] + [(2025, 1)]  # 13 monthly points
@@ -23,6 +24,16 @@ def con():
         rows.append(("divida_pib", date(y, m, 1), 75.0))
     for d, v in [(2, 5.00), (3, 5.05), (4, 4.95), (5, 5.00)]:
         rows.append(("usd_brl", date(2024, 1, d), v))
+
+    # Inputs for the two honest real-interest marts: a weekly-ish expectation series and
+    # the daily effective SELIC, plus the calendar the ex-post window is measured against.
+    for y, m in MONTHS:
+        rows.append(("focus_ipca_12m", date(y, m, 20), 4.0))
+    cal = build_calendar("2023-12-01", "2025-02-28")
+    for d in cal.filter(pl.col("is_business_day_br"))["date"].to_list():
+        if date(2024, 1, 1) <= d <= date(2025, 1, 31):
+            rows.append(("selic", d, 0.05))
+
     fact = pl.DataFrame(rows, schema=["series_id", "date", "value"], orient="row")
 
     treasury = pl.DataFrame(
@@ -100,6 +111,7 @@ def con():
     c.register("fact_open_interest", oi.to_arrow())
     c.register("fact_derivatives_quote", dq.to_arrow())
     c.register("dim_instrument", inst.to_arrow())
+    c.register("dim_date", cal.to_arrow())
     return c
 
 
@@ -108,6 +120,8 @@ def test_all_marts_execute(con):
     counts = execute_models(con, write=False)
     assert set(counts) == {
         "mart_real_interest",
+        "mart_real_interest_exante",
+        "mart_real_interest_expost",
         "mart_inflation_panel",
         "mart_fx",
         "mart_macro_dashboard",

@@ -1,4 +1,16 @@
--- Ex-post real interest rate: Copom SELIC target deflated by 12-month accumulated IPCA.
+-- DEPRECATED — superseded by `mart_real_interest_exante` and `mart_real_interest_expost`.
+--
+-- This mart is NOT ex-post, despite what its header said for its whole life. It divides
+-- the Copom SELIC TARGET for the month — a forward-looking policy rate — by the IPCA
+-- accumulated over the twelve months that already happened. The numerator looks forward
+-- and the denominator looks back, so the result is neither of the two things a reader
+-- would assume it is. It is the loose "juro real" of newspaper copy.
+--
+-- It keeps its name and keeps being published through the deprecation window: renaming
+-- it is a MAJOR break for a consumer who has no replacement staged yet, and the window
+-- exists so that consumer can migrate on its own schedule. Removal is a separate,
+-- announced release.
+--
 -- real = ((1 + selic/100) / (1 + ipca_12m/100) - 1) * 100
 WITH ipca_m AS (
     SELECT date_trunc('month', date)::DATE AS month, value AS ipca_mom

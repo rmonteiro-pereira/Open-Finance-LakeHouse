@@ -29,7 +29,15 @@ CHECKS_DIR = Path(__file__).parent / "checks"
 # `mart_yield_curve` reads `fact_treasury`; the DI-curve marts read the
 # derivatives facts.
 MODELS = [
+    # `mart_real_interest` is DEPRECATED and still published: it divides the SELIC
+    # target (forward) by trailing realised IPCA (backward), so it is neither ex-ante
+    # nor ex-post. It keeps its name through the deprecation window — renaming it would
+    # break the `CHECKS` key below and three tests while buying a consumer nothing, and
+    # the window exists precisely so a consumer can migrate on its own schedule. The
+    # two honest marts are new names beside it.
     "mart_real_interest",
+    "mart_real_interest_exante",
+    "mart_real_interest_expost",
     "mart_inflation_panel",
     "mart_fx",
     "mart_macro_dashboard",
@@ -50,6 +58,7 @@ MODELS = [
 CHECKS: dict[str, list[str]] = {
     "mart_macro_dashboard": ["assert_macro_panel_has_no_month_gaps"],
     "mart_real_interest": ["assert_real_interest_ipca_recomputes"],
+    "mart_real_interest_expost": ["assert_expost_window_is_complete"],
     "mart_di_curve_points": ["assert_di_curve_points_are_bracketed"],
 }
 
@@ -63,6 +72,9 @@ class GoldCheckError(RuntimeError):
 _SILVER_TABLES = [
     "fact_observation",
     "dim_series",
+    # `dim_date` carries `is_business_day_br`; the ex-post window check needs it to say
+    # how many sessions a window SHOULD have had.
+    "dim_date",
     "fact_treasury",
     "fact_security_price",
     "fact_open_interest",
