@@ -19,6 +19,9 @@ idempotent `MERGE` upserts, per-series blast-radius isolation, data contracts at
 alerting, and lineage. Full design rationale in
 [`docs/architecture/redesign.md`](docs/architecture/redesign.md).
 
+**Development.** Picking this up to work on it? [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) — measured
+current state, how to run the release path offline, the gates table, and the known traps.
+
 ---
 
 ## Architecture
