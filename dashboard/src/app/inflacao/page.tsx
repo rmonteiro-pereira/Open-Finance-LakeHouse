@@ -18,15 +18,15 @@ export default async function Page() {
     last12.length === 12 ? (last12.reduce((acc, o) => acc * (1 + o.value / 100), 1) - 1) * 100 : null;
 
   return (
-    <main className="space-y-8 p-8">
-      <header className="space-y-1">
-        <h1 className="font-serif text-3xl">A inflação está cedendo?</h1>
-        <p className="text-sm text-muted-foreground">
+    <div className="space-y-12">
+      <header className="space-y-3">
+        <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-tight">A inflação está cedendo?</h1>
+        <p className="max-w-[68ch] text-[var(--ink-muted)]">
           IPCA mensal e o acumulado de 12 meses. Release <code>{meta.release_id}</code>.
         </p>
       </header>
 
-      <section className="grid gap-8 sm:grid-cols-2">
+      <section className="grid gap-x-10 gap-y-8 sm:grid-cols-2">
         <Stat label="IPCA no mês" value={obs[0]?.value} meta={ipca} />
         <Stat
           label="IPCA acumulado 12m"
@@ -40,6 +40,6 @@ export default async function Page() {
           }
         />
       </section>
-    </main>
+    </div>
   );
 }

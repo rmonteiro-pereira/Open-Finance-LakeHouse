@@ -209,3 +209,64 @@ def test_from_release_writes_generated_from_release(tmp_path):
     assert meta["generated_from"] == "release"
     assert meta["release_id"] == "1970-01-01.1"
     assert meta["series"], "the site needs the series block to render a freshness chip"
+
+
+# ------------------------------------------------------------------- colour discipline
+
+
+def test_absence_is_split_by_reason_not_collapsed_into_one_state():
+    """Withheld, unverified, not-ingested and late are four different facts.
+
+    Collapsing them made the trust page paint 44 of 51 rows as alarms. After that the
+    alarm colour means nothing, which costs precisely the signal the page exists for.
+    """
+    import polars as pl
+
+    from ofl.release.build import _series_block
+
+    obs = pl.read_csv(
+        Path(__file__).parent / "fixtures" / "release" / "fact_observation.csv",
+        try_parse_dates=True,
+    )
+    presence = {r["series_id"]: r["presence"] for r in _series_block({"fact_observation": obs})}
+    kinds = set(presence.values())
+
+    assert kinds == {"published", "not_ingested", "withheld_licence", "withheld_unverified"}
+    # A series barred by a written verdict is not "missing data"; it is withheld, and the
+    # manifest has to say which.
+    assert presence["anbima_ima_b"] == "withheld_licence"
+    assert presence["yahoo_etf"] == "withheld_unverified"
+    assert presence["ipca"] == "published"
+
+
+def test_only_two_states_are_allowed_to_carry_colour():
+    """`late` is the alarm and the only alarm. If a future edit gives `withheld` or
+    `absent` a colour, the page goes back to crying wolf on every row."""
+    slot = _code(DASH / "src" / "components" / "slot.tsx")
+    dot_block = slot.split("const DOT")[1].split("}")[0]
+    for coloured in ("ok:", "late:"):
+        assert coloured in dot_block
+    for uncoloured in ("withheld", "unverified", "absent"):
+        assert uncoloured not in dot_block
+
+
+def test_a_withheld_series_can_never_read_as_late():
+    """The rule stated in the data layer, not only in the stylesheet."""
+    lib = _code(DASH / "src" / "lib" / "release.ts")
+    # Scope to the FUNCTION BODY: `freshness_budget_hours` also appears in the type
+    # declaration far above, and comparing against that would test nothing.
+    body = lib.split("export function freshness(")[1].split("\n}")[0]
+    assert body.index('presence === "withheld_licence"') < body.index("freshness_budget_hours"), (
+        "the licence check must short-circuit before the budget maths"
+    )
+
+
+def test_the_trust_page_leads_with_a_verdict():
+    """A reader who stops after the first screen must already have the answer. The first
+    version opened with a 51-row list and no summary at all."""
+    page = (APP / "confianca" / "page.tsx").read_text(encoding="utf-8")
+    assert "Veredito" in page
+    # The count is passed as a prop to <Figure>, which renders `data-slot={slot}` — assert
+    # the source of the mark, not a literal the JSX never contains.
+    assert 'slot="late-count"' in page
+    assert page.index("Veredito") < page.index('id="series"')

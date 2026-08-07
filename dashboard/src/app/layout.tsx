@@ -1,44 +1,41 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Fraunces, Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
+
+import { Nav } from "@/components/nav";
 import "./globals.css";
-import { Sidebar } from "@/components/sidebar";
 
-// One clean sans for both body and headings — the shadcn default register.
-const sans = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
-
-const display = Inter({
-  variable: "--font-display",
-  subsets: ["latin"],
-});
-
-const mono = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-});
+/*
+  One family for the interface, one for figures. Fraunces appears exactly once per page,
+  on the title: the almanac signature. It never reaches a label, a button or a datum.
+*/
+const sans = Hanken_Grotesk({ variable: "--font-sans", subsets: ["latin"] });
+const display = Fraunces({ variable: "--font-display", subsets: ["latin"], axes: ["SOFT", "WONK"] });
+const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ledger · OFL Lakehouse",
+  title: "Ledger · Open-Finance LakeHouse",
   description:
-    "Brazilian macro, rates, inflation, FX, the treasury yield curve and equities — read from the Open-Finance-LakeHouse gold marts.",
+    "Macro e renda fixa brasileiros, publicados de um release versionado. Cada número com sua unidade, sua data e sua procedência.",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
-      lang="en"
-      className={`dark ${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}
+      lang="pt-BR"
+      className={`${display.variable} ${sans.variable} ${mono.variable} h-full`}
       suppressHydrationWarning
     >
       <body className="min-h-full">
-        <div className="app-bg flex min-h-screen flex-col md:flex-row">
-          <Sidebar />
-          <main className="relative z-10 min-w-0 flex-1">{children}</main>
-        </div>
+        <Nav />
+        <main className="shell pb-24 pt-10">{children}</main>
+        <footer className="mt-16 border-t py-8">
+          <div className="shell flex flex-wrap items-baseline justify-between gap-x-8 gap-y-2 text-xs text-[var(--ink-muted)]">
+            <span>
+              Dados de um release publicado. Sem servidor, sem credencial, sem leitura do cluster.
+            </span>
+            <span>Nada aqui é recomendação de investimento.</span>
+          </div>
+        </footer>
       </body>
     </html>
   );

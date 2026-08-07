@@ -22,35 +22,35 @@ export default async function Page() {
     .sort((a, b) => (a.maturity < b.maturity ? -1 : 1));
 
   return (
-    <main className="space-y-8 p-8">
-      <header className="space-y-1">
-        <h1 className="font-serif text-3xl">Vale a pena travar IPCA+ hoje?</h1>
-        <p className="text-sm text-muted-foreground">
+    <div className="space-y-12">
+      <header className="space-y-3">
+        <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-tight">Vale a pena travar IPCA+ hoje?</h1>
+        <p className="max-w-[68ch] text-[var(--ink-muted)]">
           Curva do Tesouro Direto em <span data-slot="ref-date">{refDate}</span>. Release{" "}
           <code>{meta.release_id}</code>.
         </p>
       </header>
 
-      <table className="w-full text-sm">
-        <thead className="text-left text-xs uppercase text-muted-foreground">
+      <table className="ledger">
+        <thead>
           <tr>
-            <th className="py-2">Título</th>
+            <th>Título</th>
             <th>Vencimento</th>
-            <th className="text-right">Taxa de venda</th>
+            <th className="num">Taxa de venda</th>
           </tr>
         </thead>
-        <tbody className="font-mono tabular-nums">
+        <tbody>
           {today.map((r) => (
             <tr key={r.instrument_id} data-slot="curve-point" data-instrument-id={r.instrument_id}>
-              <td className="py-1 font-sans">{r.bond}</td>
-              <td>{r.maturity}</td>
-              <td className="text-right">{r.sell_rate.toFixed(2)}%</td>
+              <td>{r.bond}</td>
+              <td className="tnum text-[var(--ink-muted)]">{r.maturity}</td>
+              <td className="num tnum">{r.sell_rate.toFixed(2)}%</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      <p className="text-xs text-muted-foreground">Nada aqui é recomendação de investimento.</p>
-    </main>
+      <p className="text-xs text-[var(--ink-muted)]">Nada aqui é recomendação de investimento.</p>
+    </div>
   );
 }

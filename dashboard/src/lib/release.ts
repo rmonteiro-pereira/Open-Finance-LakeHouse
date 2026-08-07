@@ -28,6 +28,8 @@ const readJson = cache(async <T>(name: string): Promise<T> => {
   }
 });
 
+export type Presence = "published" | "withheld_licence" | "withheld_unverified" | "not_ingested";
+
 export type SeriesMeta = {
   series_id: string;
   name: string;
@@ -39,6 +41,10 @@ export type SeriesMeta = {
   horizon: string | null;
   frequency: string;
   provider: string;
+  rights_holder: string | null;
+  licence_state: "open" | "restricted" | "unverified";
+  licence_reason: string | null;
+  presence: Presence;
   freshness_budget_hours: number;
   last_observation_date: string | null;
 };
@@ -85,7 +91,16 @@ export async function latest(seriesId: string): Promise<Observation | undefined>
   return rows.sort((a, b) => (a.date < b.date ? 1 : -1))[0];
 }
 
-export type Freshness = { state: "green" | "amber" | "red"; ageHours: number | null; asOf: string | null };
+/**
+ * Four states, and only two of them are failures.
+ *
+ * `late` is the alarm and the ONLY alarm. A series barred by a written licence verdict is
+ * not broken; a series that was never ingested into this release is not late. Painting
+ * them the same colour turned 44 of 51 rows red and taught the reader to ignore the one
+ * colour the page exists to carry.
+ */
+export type FreshnessState = "ok" | "late" | "withheld" | "unverified" | "absent";
+export type Freshness = { state: FreshnessState; ageHours: number | null; asOf: string | null };
 
 /**
  * The verdict is computed HERE, from inputs the manifest published — never read from it.
@@ -93,13 +108,28 @@ export type Freshness = { state: "green" | "amber" | "red"; ageHours: number | n
  * A manifest that declares its own `sla_state: "ok"` is correct until the moment it stops
  * being republished, which is precisely the moment the reader needs it to say otherwise.
  * Carrying `last_observation_date` + `freshness_budget_hours` instead means a manifest
- * three days old still answers red without anyone touching it.
+ * three days old still answers late without anyone touching it.
  */
 export function freshness(meta: SeriesMeta | undefined, now = new Date()): Freshness {
-  if (!meta?.last_observation_date) return { state: "red", ageHours: null, asOf: null };
+  if (!meta) return { state: "absent", ageHours: null, asOf: null };
+  if (meta.presence === "withheld_licence") return { state: "withheld", ageHours: null, asOf: null };
+  if (meta.presence === "withheld_unverified")
+    return { state: "unverified", ageHours: null, asOf: null };
+  if (!meta.last_observation_date) return { state: "absent", ageHours: null, asOf: null };
+
   const asOf = new Date(`${meta.last_observation_date}T00:00:00Z`);
   const ageHours = (now.getTime() - asOf.getTime()) / 3_600_000;
-  const budget = meta.freshness_budget_hours;
-  const state = ageHours <= budget ? "green" : ageHours <= budget * 2 ? "amber" : "red";
-  return { state, ageHours, asOf: meta.last_observation_date };
+  return {
+    state: ageHours <= meta.freshness_budget_hours ? "ok" : "late",
+    ageHours,
+    asOf: meta.last_observation_date,
+  };
 }
+
+export const STATE_LABEL: Record<FreshnessState, string> = {
+  ok: "no orçamento",
+  late: "atrasada",
+  withheld: "vedada por licença",
+  unverified: "sem veredito de licença",
+  absent: "não ingerida neste release",
+};

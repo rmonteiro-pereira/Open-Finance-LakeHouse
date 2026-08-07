@@ -27,16 +27,16 @@ export default async function Page() {
     selicNow && focusNow ? ((1 + selicNow.value / 100) / (1 + focusNow.value / 100) - 1) * 100 : null;
 
   return (
-    <main className="space-y-8 p-8">
-      <header className="space-y-1">
-        <h1 className="font-serif text-3xl">O juro real está alto?</h1>
-        <p className="text-sm text-muted-foreground">
+    <div className="space-y-12">
+      <header className="space-y-3">
+        <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-tight">O juro real está alto?</h1>
+        <p className="max-w-[68ch] text-[var(--ink-muted)]">
           Selic vigente deflacionada pela expectativa de IPCA 12m da Focus — ex-ante, Fisher exato.
           Release <code>{meta.release_id}</code>.
         </p>
       </header>
 
-      <section className="grid gap-8 sm:grid-cols-3">
+      <section className="grid gap-x-10 gap-y-8 sm:grid-cols-3">
         <Stat label="Juro real ex-ante" value={real} meta={selic} suffix="% a.a." />
         <Stat label="Selic (meta)" value={selicNow?.value} meta={selic} />
         <Stat label="IPCA esperado 12m" value={focusNow?.value} meta={focus} />
@@ -49,12 +49,12 @@ export default async function Page() {
             de 10 anos, sobre {rank.n_obs} observações, por mid-rank.
           </p>
         ) : (
-          <p className="text-muted-foreground">
+          <p className="text-[var(--ink-muted)]">
             História insuficiente para um percentil de 10 anos — o número não é publicado, em vez de
             ser estimado.
           </p>
         )}
       </section>
-    </main>
+    </div>
   );
 }

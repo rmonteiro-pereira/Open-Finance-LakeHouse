@@ -21,12 +21,12 @@ export default async function Page({ params }: { params: Promise<{ series_id: st
   const series = meta.series.find((s) => s.series_id === series_id);
   if (!series) {
     return (
-      <main className="p-8">
-        <h1 className="font-serif text-3xl">Série desconhecida</h1>
-        <p className="text-sm text-muted-foreground">
+      <div className="space-y-4">
+        <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-tight">Série desconhecida</h1>
+        <p className="text-sm text-[var(--ink-muted)]">
           <code>{series_id}</code> não está no catálogo deste release.
         </p>
-      </main>
+      </div>
     );
   }
 
@@ -39,10 +39,10 @@ export default async function Page({ params }: { params: Promise<{ series_id: st
     .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
 
   return (
-    <main className="space-y-8 p-8">
+    <div className="space-y-12">
       <header className="space-y-1">
-        <h1 className="font-serif text-3xl">{series.name}</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-tight">{series.name}</h1>
+        <p className="text-sm text-[var(--ink-muted)]">
           <code>{series.series_id}</code> · {series.domain} · {series.frequency}
         </p>
       </header>
@@ -50,34 +50,34 @@ export default async function Page({ params }: { params: Promise<{ series_id: st
       <Stat label="Última observação" value={now?.value} meta={series} />
 
       <section className="space-y-2">
-        <h2 className="text-sm uppercase tracking-wide text-muted-foreground">O que este número é</h2>
+        <h2 className="rule-label">O que este número é</h2>
         <dl className="grid gap-x-8 gap-y-1 text-sm sm:grid-cols-2">
           <div>
-            <dt className="inline text-muted-foreground">Unidade: </dt>
-            <dd className="inline font-mono">{unitLabel(series) || series.unit}</dd>
+            <dt className="inline text-[var(--ink-muted)]">Unidade: </dt>
+            <dd className="inline tnum">{unitLabel(series) || series.unit}</dd>
           </div>
           <div>
-            <dt className="inline text-muted-foreground">Base: </dt>
-            <dd className="inline font-mono">{series.basis ?? "—"}</dd>
+            <dt className="inline text-[var(--ink-muted)]">Base: </dt>
+            <dd className="inline tnum">{series.basis ?? "—"}</dd>
           </div>
           <div>
-            <dt className="inline text-muted-foreground">Escala: </dt>
-            <dd className="inline font-mono">{series.scale}</dd>
+            <dt className="inline text-[var(--ink-muted)]">Escala: </dt>
+            <dd className="inline tnum">{series.scale}</dd>
           </div>
           <div>
-            <dt className="inline text-muted-foreground">Contagem de dias: </dt>
-            <dd className="inline font-mono">{series.day_count ?? "—"}</dd>
+            <dt className="inline text-[var(--ink-muted)]">Contagem de dias: </dt>
+            <dd className="inline tnum">{series.day_count ?? "—"}</dd>
           </div>
           <div>
-            <dt className="inline text-muted-foreground">Horizonte: </dt>
-            <dd className="inline font-mono">{series.horizon ?? "—"}</dd>
+            <dt className="inline text-[var(--ink-muted)]">Horizonte: </dt>
+            <dd className="inline tnum">{series.horizon ?? "—"}</dd>
           </div>
           <div>
-            <dt className="inline text-muted-foreground">Fonte: </dt>
-            <dd className="inline font-mono">{series.provider}</dd>
+            <dt className="inline text-[var(--ink-muted)]">Fonte: </dt>
+            <dd className="inline tnum">{series.provider}</dd>
           </div>
         </dl>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-[var(--ink-muted)]">
           A unidade é o par completo, não só o símbolo: <code>percent</code> sozinho cobria a Selic
           diária, a variação mensal do IPCA, o desemprego e a dívida/PIB.
         </p>
@@ -91,20 +91,20 @@ export default async function Page({ params }: { params: Promise<{ series_id: st
       ) : null}
 
       <section className="space-y-2">
-        <h2 className="text-sm uppercase tracking-wide text-muted-foreground">
+        <h2 className="rule-label">
           Observações ({history.length})
         </h2>
-        <table className="w-full max-w-md text-sm">
-          <tbody className="font-mono tabular-nums">
+        <table className="ledger max-w-md">
+          <tbody>
             {history.slice(0, 24).map((o) => (
               <tr key={o.date}>
-                <td className="py-0.5">{o.date}</td>
-                <td className="text-right">{o.value}</td>
+                <td className="tnum text-[var(--ink-muted)]">{o.date}</td>
+                <td className="num tnum">{o.value}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </section>
-    </main>
+    </div>
   );
 }

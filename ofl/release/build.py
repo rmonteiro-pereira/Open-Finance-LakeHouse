@@ -307,6 +307,7 @@ def _series_block(tables: dict[str, "pl.DataFrame"] | None = None) -> list[dict[
     """
     import polars as pl
 
+    from ofl.providers import load_providers
     from ofl.registry import load_registry
 
     default_hours = {"daily": 36, "weekly": 240, "monthly": 800, "quarterly": 2400, "annual": 9000}
@@ -321,11 +322,33 @@ def _series_block(tables: dict[str, "pl.DataFrame"] | None = None) -> list[dict[
         grouped = obs.group_by("series_id").agg(pl.col("date").max().alias("last"))
         last_seen = {r["series_id"]: str(r["last"]) for r in grouped.iter_rows(named=True)}
 
+    providers = load_providers()
+
     out = []
     for s in load_registry().active():
+        licence = providers.get(s.handler)
+        licence_state = licence.state if licence else "unverified"
+        last = last_seen.get(s.key)
+
+        # WHY a series is not here, as data. "Withheld by a written verdict", "no verdict
+        # yet", "registered but not ingested in this release" and "published but late" are
+        # four different facts, and only the last is a failure. Collapsing them into one
+        # absence made a reader surface paint 44 of 51 rows as alarms — after which the
+        # alarm colour means nothing, which costs precisely the signal it exists to carry.
+        if licence_state == "restricted":
+            presence = "withheld_licence"
+        elif licence_state == "unverified":
+            presence = "withheld_unverified"
+        elif last is None:
+            presence = "not_ingested"
+        else:
+            presence = "published"
+
         out.append(
             {
                 "series_id": s.key,
+                "name": s.name,
+                "domain": s.domain,
                 "unit": s.unit,
                 "basis": s.basis,
                 "scale": s.scale,
@@ -333,8 +356,15 @@ def _series_block(tables: dict[str, "pl.DataFrame"] | None = None) -> list[dict[
                 "horizon": s.horizon,
                 "frequency": s.frequency,
                 "provider": s.handler,
+                "rights_holder": licence.rights_holder if licence else None,
+                "licence_state": licence_state,
+                "licence_reason": (licence.notes.strip() or None) if licence else None,
+                "presence": presence,
                 "freshness_budget_hours": default_hours.get(s.frequency, 800),
-                "last_observation_date": last_seen.get(s.key),
+                # Still an INPUT, never a verdict: the consumer compares it against the
+                # budget at read time, so a manifest three days old keeps answering
+                # correctly without being republished.
+                "last_observation_date": last,
             }
         )
     return out

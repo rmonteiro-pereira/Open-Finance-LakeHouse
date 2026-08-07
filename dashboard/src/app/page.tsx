@@ -19,29 +19,29 @@ export default async function Page() {
   );
 
   return (
-    <main className="space-y-8 p-8">
-      <header className="space-y-1">
-        <h1 className="font-serif text-4xl">Como está o Brasil hoje?</h1>
-        <p className="text-sm text-muted-foreground">
+    <div className="space-y-12">
+      <header className="space-y-3">
+        <h1 className="font-[family-name:var(--font-display)] text-5xl tracking-tight">Como está o Brasil hoje?</h1>
+        <p className="max-w-[68ch] text-[var(--ink-muted)]">
           Do release <code>{meta.release_id}</code>. Cada número leva à série que o produz — e cada
           um traz a data do dado, não a data da página.
         </p>
       </header>
 
-      <section className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="grid gap-x-10 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
         {cards
           .filter((c) => c.meta)
           .map((c) => (
-            <Link key={c.id} href={`/serie/${c.id}`} className="block hover:opacity-80">
+            <Link key={c.id} href={`/serie/${c.id}`} className="block no-underline">
               <Stat label={c.meta!.name} value={c.obs?.value} meta={c.meta} />
             </Link>
           ))}
       </section>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-[var(--ink-muted)]">
         Séries de fontes que não permitem redistribuição aparecem no catálogo com o motivo, e não
         aqui — ver <Link href="/confianca" className="underline">Confiança</Link>.
       </p>
-    </main>
+    </div>
   );
 }

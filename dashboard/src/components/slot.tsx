@@ -1,35 +1,43 @@
-import { freshness, type SeriesMeta } from "@/lib/release";
+import { freshness, STATE_LABEL, type SeriesMeta } from "@/lib/release";
 
 /**
- * A number, its unit, its as-of date and its freshness — as one indivisible thing.
+ * A figure, its unit and its as-of date, as one indivisible thing.
  *
- * Every figure on this site renders through here, which is what makes "no number without
- * a freshness chip" a property a test can check rather than a habit. The `data-slot` and
- * `data-series-id` attributes exist for the same reason: a marked slot is assertable, a
- * free-form sentence is not.
+ * Every number on this site renders through here, which is what makes "no figure without
+ * an as-of date" a property a test can check rather than a habit a page can forget. The
+ * `data-slot` / `data-series-id` marks exist for the same reason: a marked slot is
+ * assertable, a free-form sentence is a fluent way to be wrong.
  */
 
-const DOT: Record<string, string> = {
-  green: "bg-emerald-500",
-  amber: "bg-amber-500",
-  red: "bg-rose-500",
+/** Only `ok` and `late` carry colour. The rest are facts, and facts do not blink. */
+const DOT: Partial<Record<string, string>> = {
+  ok: "var(--ok)",
+  late: "var(--late)",
 };
 
 export function FreshnessChip({ meta }: { meta: SeriesMeta | undefined }) {
   const f = freshness(meta);
+  const colour = DOT[f.state];
+
   return (
     <span
       data-slot="freshness"
       data-state={f.state}
-      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
+      className="inline-flex items-baseline gap-1.5 text-xs text-[var(--ink-muted)]"
       title={
         f.asOf
           ? `dado de ${f.asOf}; orçamento de ${meta?.freshness_budget_hours}h`
-          : "sem observação publicada para esta série"
+          : STATE_LABEL[f.state]
       }
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${DOT[f.state]}`} aria-hidden />
-      {f.asOf ?? "sem dado"}
+      {colour ? (
+        <span
+          aria-hidden
+          className="inline-block h-1 w-1 translate-y-[-1px] rounded-full"
+          style={{ background: colour }}
+        />
+      ) : null}
+      <span className={colour ? "tnum" : undefined}>{f.asOf ?? STATE_LABEL[f.state]}</span>
     </span>
   );
 }
@@ -40,12 +48,14 @@ export function Stat({
   meta,
   suffix,
   note,
+  size = "lg",
 }: {
   label: string;
   value: number | string | null | undefined;
   meta: SeriesMeta | undefined;
   suffix?: string;
   note?: string;
+  size?: "lg" | "sm";
 }) {
   const shown =
     value === null || value === undefined
@@ -55,28 +65,33 @@ export function Stat({
         : value;
 
   return (
-    <div data-slot="stat" data-series-id={meta?.series_id ?? "unknown"} className="space-y-1">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+    <div data-slot="stat" data-series-id={meta?.series_id ?? "unknown"} className="space-y-1.5">
+      <div className="text-xs text-[var(--ink-muted)]">{label}</div>
       <div className="flex items-baseline gap-1.5">
-        <span data-slot="value" className="font-mono text-3xl tabular-nums">
+        <span
+          data-slot="value"
+          className={`tnum tracking-tight ${size === "lg" ? "text-4xl" : "text-2xl"}`}
+        >
           {shown}
         </span>
-        {/* The unit is rendered from the series' declared tuple, never typed inline: a
-            hardcoded "% a.a." beside a per-day rate is the defect this whole layer
-            exists to make impossible. */}
-        <span data-slot="unit" className="text-sm text-muted-foreground">
+        {/*
+          The unit comes from the series' declared tuple, never typed inline. A hardcoded
+          "% a.a." beside a per-day rate is the defect this whole layer exists to prevent.
+        */}
+        <span data-slot="unit" className="text-sm text-[var(--ink-muted)]">
           {suffix ?? unitLabel(meta)}
         </span>
       </div>
       <FreshnessChip meta={meta} />
-      {note ? <div className="text-xs text-muted-foreground">{note}</div> : null}
+      {note ? <div className="text-xs text-[var(--ink-muted)]">{note}</div> : null}
     </div>
   );
 }
 
 export function unitLabel(meta: SeriesMeta | undefined): string {
   if (!meta) return "";
-  const base = meta.unit === "percent" ? "%" : meta.unit === "brl" ? "R$" : meta.unit === "usd" ? "US$" : "";
+  const base =
+    meta.unit === "percent" ? "%" : meta.unit === "brl" ? "R$" : meta.unit === "usd" ? "US$" : "";
   const per =
     meta.basis === "per_year"
       ? " a.a."
@@ -98,13 +113,11 @@ export function unitLabel(meta: SeriesMeta | undefined): string {
 /**
  * Guard: two series may share an axis only if their whole quantity tuple matches.
  *
- * Keyed on `unit` alone this would pass for the SELIC daily rate against monthly IPCA —
- * both are `percent` — which is the exact confusion the tuple was introduced to end.
+ * Keyed on `unit` alone this would pass the SELIC daily rate against monthly IPCA, since
+ * both are `percent` — the exact confusion the tuple was introduced to end.
  */
 export function assertComparable(series: (SeriesMeta | undefined)[]): void {
-  const tuples = new Set(
-    series.filter(Boolean).map((s) => `${s!.unit}|${s!.basis}|${s!.scale}`),
-  );
+  const tuples = new Set(series.filter(Boolean).map((s) => `${s!.unit}|${s!.basis}|${s!.scale}`));
   if (tuples.size > 1) {
     throw new Error(
       `refusing to plot incomparable quantities on one axis: ${[...tuples].join(" vs ")}`,
