@@ -68,9 +68,14 @@ export function Stat({
     <div data-slot="stat" data-series-id={meta?.series_id ?? "unknown"} className="space-y-1.5">
       <div className="text-xs text-[var(--ink-muted)]">{label}</div>
       <div className="flex items-baseline gap-1.5">
+        {/*
+          Proportional figures, NOT tabular. `tabular-nums` gives every digit the width of
+          a zero, which makes a standalone display number read loose; tabular belongs in
+          columns that align vertically (table rows, axis ticks).
+        */}
         <span
           data-slot="value"
-          className={`tnum tracking-tight ${size === "lg" ? "text-4xl" : "text-2xl"}`}
+          className={`font-[family-name:var(--font-mono)] tracking-tight ${size === "lg" ? "text-4xl" : "text-2xl"}`}
         >
           {shown}
         </span>

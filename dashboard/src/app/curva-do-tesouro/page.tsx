@@ -1,3 +1,4 @@
+import { CurveChart, type CurvePoint } from "@/components/chart";
 import { getMeta, getTreasury } from "@/lib/release";
 
 export const dynamic = "force-static";
@@ -21,6 +22,27 @@ export default async function Page() {
     .filter((r) => r.date === refDate)
     .sort((a, b) => (a.maturity < b.maturity ? -1 : 1));
 
+  // The family, from the RAW label. Never a `bond_type` bucket: the bucket merges the
+  // zero-coupon and the semiannual-coupon bond of one index at the same maturity, which is
+  // the defect the grain correction exists to remove.
+  const family = (bond: string) =>
+    /juros semestrais/i.test(bond)
+      ? bond.replace(/\s*\d{4}$/, "")
+      : /ipca/i.test(bond)
+        ? "Tesouro IPCA+"
+        : /prefixado/i.test(bond)
+          ? "Tesouro Prefixado"
+          : "Tesouro Selic";
+
+  const curve: CurvePoint[] = today.map((r) => ({
+    instrumentId: r.instrument_id,
+    label: r.bond,
+    years:
+      (new Date(r.maturity).getTime() - new Date(r.date).getTime()) / (365.25 * 24 * 3600 * 1000),
+    rate: r.sell_rate,
+    family: family(r.bond),
+  }));
+
   return (
     <div className="space-y-12">
       <header className="space-y-3">
@@ -31,6 +53,10 @@ export default async function Page() {
         </p>
       </header>
 
+      <CurveChart points={curve} />
+
+      {/* The table is the chart's twin, not its replacement: every value stays reachable
+          without hovering anything. */}
       <table className="ledger">
         <thead>
           <tr>

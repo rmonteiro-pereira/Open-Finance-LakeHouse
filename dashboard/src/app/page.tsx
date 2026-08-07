@@ -1,7 +1,8 @@
 import Link from "next/link";
 
+import { Sparkline } from "@/components/chart";
 import { Stat } from "@/components/slot";
-import { getMeta, latest, seriesMeta } from "@/lib/release";
+import { getMeta, getObservations, latest, seriesMeta } from "@/lib/release";
 
 export const dynamic = "force-static";
 
@@ -10,11 +11,18 @@ const HEADLINE = ["selic_meta", "ipca", "usd_brl", "divida_pib", "focus_ipca_12m
 
 export default async function Page() {
   const meta = await getMeta();
+  const all = await getObservations();
   const cards = await Promise.all(
     HEADLINE.map(async (id) => ({
       id,
       meta: await seriesMeta(id),
       obs: await latest(id),
+      // A level with no history is an assertion. Tufte's form, and Tufte's reason.
+      history: all
+        .filter((o) => o.series_id === id)
+        .sort((a, b) => (a.date < b.date ? -1 : 1))
+        .slice(-24)
+        .map((o) => o.value),
     })),
   );
 
@@ -33,7 +41,10 @@ export default async function Page() {
           .filter((c) => c.meta)
           .map((c) => (
             <Link key={c.id} href={`/serie/${c.id}`} className="block no-underline">
-              <Stat label={c.meta!.name} value={c.obs?.value} meta={c.meta} />
+              <div className="space-y-2">
+                <Stat label={c.meta!.name} value={c.obs?.value} meta={c.meta} />
+                <Sparkline values={c.history} label={`histórico de ${c.meta!.name}`} />
+              </div>
             </Link>
           ))}
       </section>

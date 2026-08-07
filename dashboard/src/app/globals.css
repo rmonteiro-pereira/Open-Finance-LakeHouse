@@ -20,6 +20,9 @@
   --color-accent: var(--accent);
   --color-ok: var(--ok);
   --color-late: var(--late);
+  --color-series-1: var(--series-1);
+  --color-series-2: var(--series-2);
+  --color-series-3: var(--series-3);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -45,6 +48,22 @@
   */
   --ok: oklch(0.55 0.11 155);
   --late: oklch(0.55 0.16 28);
+
+  /*
+    Categorical series hues, in FIXED order — colour follows the entity, never its rank
+    in the current filter. Distinct from the status pair above, which is reserved: a
+    status colour must never stand in for "series 2".
+
+    Validated, not eyeballed:
+      node scripts/validate_palette.js "#00629d,#9a5b00,#7b4b9e" --mode light
+        --surface "#fcfaf7"
+    -> all five checks pass; worst adjacent CVD dE 20.1 (protan) against a target of 8.
+    A teal third slot was tried first and FAILED the chroma floor at 0.088 (it reads
+    gray), which is exactly the call that eyeballing gets wrong.
+  */
+  --series-1: oklch(0.48 0.13 245);
+  --series-2: oklch(0.48 0.11 65);
+  --series-3: oklch(0.48 0.14 310);
 
   --shell: 68rem;
 }

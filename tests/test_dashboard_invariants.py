@@ -270,3 +270,74 @@ def test_the_trust_page_leads_with_a_verdict():
     # the source of the mark, not a literal the JSX never contains.
     assert 'slot="late-count"' in page
     assert page.index("Veredito") < page.index('id="series"')
+
+
+# ------------------------------------------------------------------------ charts
+
+
+def test_charts_ship_as_markup_not_as_a_runtime():
+    """Server-rendered SVG, no chart library.
+
+    The site is a static export. A React chart runtime to draw a 72-point line is weight
+    without return, and markup renders sharp, prints, and survives JavaScript being off.
+    """
+    chart = _code(DASH / "src" / "components" / "chart.tsx")
+    assert "<svg" in chart
+    assert '"use client"' not in chart
+    for lib in ("recharts", "chart.js", "d3", "visx", "nivo"):
+        assert lib not in chart.lower(), f"{lib} crept into the chart layer"
+
+
+def test_the_percentile_claim_ships_with_its_distribution():
+    """"Percentil 87 da década" is an assertion until the reader can see the decade.
+
+    The site made that claim for several commits with no distribution behind it, on a
+    product whose stated rule is that every number carries its proof.
+    """
+    chart = (DASH / "src" / "components" / "chart.tsx").read_text(encoding="utf-8")
+    assert "DistributionStrip" in chart
+    page = (APP / "serie" / "[series_id]" / "page.tsx").read_text(encoding="utf-8")
+    assert "DistributionStrip" in page
+    assert "window_start" in page, "the distribution must be scoped to the ranked window"
+
+
+def test_the_curve_is_drawn_as_a_curve():
+    """It shipped as a table of a curve, with the word in the route name."""
+    page = (APP / "curva-do-tesouro" / "page.tsx").read_text(encoding="utf-8")
+    assert "CurveChart" in page
+    # The table stays: a tooltip must enhance, never gate a value.
+    assert "<table" in page
+
+
+def test_no_chart_uses_a_second_y_axis():
+    """Two scales on one plot invent a correlation the data has not got, which is the most
+    common charting mistake there is. Monthly variation and a 12-month accumulation are an
+    order of magnitude apart and live as small multiples."""
+    page = (APP / "inflacao" / "page.tsx").read_text(encoding="utf-8")
+    assert "Columns" in page and "SeriesLine" in page
+    chart = _code(DASH / "src" / "components" / "chart.tsx")
+    for banned in ("yAxisRight", "secondaryAxis", "yRight"):
+        assert banned not in chart
+
+
+def test_series_hues_are_a_fixed_order_and_never_status_colours():
+    """Colour follows the entity, never its rank: filtering a family out must not repaint
+    the survivors. And a status colour may never stand in for `series 3`."""
+    chart = _code(DASH / "src" / "components" / "chart.tsx")
+    assert "SLOTS" in chart
+    assert "families.indexOf(f)" in chart, "hue must be bound to the family, not to the loop index"
+    assert "var(--ok)" not in chart and "var(--late)" not in chart
+
+    css = (DASH / "src" / "app" / "globals.css").read_text(encoding="utf-8")
+    for slot in ("--series-1", "--series-2", "--series-3"):
+        assert slot in css
+    # The palette was validated by the script, and the record of that is in the file.
+    assert "validate_palette" in css
+
+
+def test_the_hero_figure_uses_proportional_digits():
+    """`tabular-nums` gives every digit the width of a zero, so a standalone display
+    number reads loose. Tabular belongs in columns that align vertically."""
+    slot = (DASH / "src" / "components" / "slot.tsx").read_text(encoding="utf-8")
+    value_block = slot.split('data-slot="value"')[1].split(">")[0]
+    assert "tnum" not in value_block

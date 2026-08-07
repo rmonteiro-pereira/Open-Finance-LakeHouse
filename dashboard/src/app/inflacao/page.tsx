@@ -1,3 +1,4 @@
+import { Columns, SeriesLine } from "@/components/chart";
 import { Stat } from "@/components/slot";
 import { getMeta, getObservations, seriesMeta } from "@/lib/release";
 
@@ -16,6 +17,20 @@ export default async function Page() {
   // is visible at Brazilian levels.
   const accum =
     last12.length === 12 ? (last12.reduce((acc, o) => acc * (1 + o.value / 100), 1) - 1) * 100 : null;
+
+  // The rolling 12-month accumulation, compounded at every point. Twelve monthly
+  // variations do not add up, and at Brazilian levels the difference is visible.
+  const asc = [...obs].reverse();
+  const accum12 = asc
+    .map((o, i) =>
+      i < 11
+        ? null
+        : {
+            date: o.date,
+            value: (asc.slice(i - 11, i + 1).reduce((a, r) => a * (1 + r.value / 100), 1) - 1) * 100,
+          },
+    )
+    .filter((x): x is { date: string; value: number } => x !== null);
 
   return (
     <div className="space-y-12">
@@ -39,6 +54,26 @@ export default async function Page() {
               : "composto, não somado"
           }
         />
+      </section>
+
+      {/* SMALL MULTIPLES, not a second y-axis. Monthly variation and a 12-month
+          accumulation live on scales an order of magnitude apart, and putting them on one
+          plot invents a correlation the data has not got. */}
+      <section className="space-y-8">
+        <div className="space-y-2">
+          <h2 className="rule-label">Variação mensal</h2>
+          <Columns points={[...obs].reverse().slice(-36)} unitSuffix="%" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="rule-label">Acumulado em 12 meses</h2>
+          {accum12 .length > 1 ? (
+            <SeriesLine points={accum12} meta={ipca} unitSuffix="%" />
+          ) : (
+            <p className="text-sm text-[var(--ink-muted)]">
+              Menos de 13 observações: não há janela de 12 meses fechada para acumular.
+            </p>
+          )}
+        </div>
       </section>
     </div>
   );

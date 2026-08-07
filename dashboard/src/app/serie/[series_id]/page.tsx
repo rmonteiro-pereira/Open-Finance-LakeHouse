@@ -1,3 +1,4 @@
+import { DistributionStrip, SeriesLine } from "@/components/chart";
 import { Stat, unitLabel } from "@/components/slot";
 import { getMeta, getObservations, getPercentiles, latest } from "@/lib/release";
 
@@ -38,6 +39,13 @@ export default async function Page({ params }: { params: Promise<{ series_id: st
     .filter((p) => p.series_id === series_id && p.window_label === "10y" && p.percentile_allowed)
     .sort((a, b) => (a.date < b.date ? 1 : -1))[0];
 
+  const asc = [...history].reverse();
+  // The window BEHIND the percentile. Publishing the rank without it asks for trust the
+  // product has not earned, on a site whose whole rule is that a number carries its proof.
+  const windowValues = rank
+    ? asc.filter((o) => o.date > rank.window_start && o.date <= rank.date).map((o) => o.value)
+    : [];
+
   return (
     <div className="space-y-12">
       <header className="space-y-1">
@@ -48,6 +56,13 @@ export default async function Page({ params }: { params: Promise<{ series_id: st
       </header>
 
       <Stat label="Última observação" value={now?.value} meta={series} />
+
+      {asc.length > 1 ? (
+        <section className="space-y-2">
+          <h2 className="rule-label">Histórico</h2>
+          <SeriesLine points={asc} meta={series} unitSuffix={unitLabel(series)} />
+        </section>
+      ) : null}
 
       <section className="space-y-2">
         <h2 className="rule-label">O que este número é</h2>
@@ -84,9 +99,18 @@ export default async function Page({ params }: { params: Promise<{ series_id: st
       </section>
 
       {rank ? (
-        <section data-slot="percentile" className="text-sm">
-          Percentil <strong>{(rank.pct_rank * 100).toFixed(0)}</strong> da janela de 10 anos, por
-          mid-rank sobre {rank.n_obs} observações.
+        <section data-slot="percentile" className="space-y-3">
+          <h2 className="rule-label">Onde este número cai</h2>
+          <p className="max-w-[68ch] text-sm">
+            Percentil <strong>{(rank.pct_rank * 100).toFixed(0)}</strong> da janela de 10 anos, por
+            mid-rank sobre {rank.n_obs} observações desde{" "}
+            <span className="tnum">{rank.window_start}</span>.
+          </p>
+          <DistributionStrip
+            values={windowValues}
+            current={now?.value ?? 0}
+            windowLabel="de 10 anos"
+          />
         </section>
       ) : null}
 

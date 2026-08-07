@@ -64,6 +64,7 @@ export type Percentile = {
   series_id: string;
   date: string;
   window_label: string;
+  window_start: string;
   pct_rank: number;
   n_obs: number;
   percentile_allowed: boolean;

@@ -1,7 +1,17 @@
 instrument_id,bond,maturity,date,buy_rate,sell_rate,provider,data_class
-75419c9a15c14ed55600919275c1fdfa26c08c85,Tesouro IPCA+,2035-05-15,2026-08-03,7.10,7.12,tesouro_direto,synthetic
+44c9fe3b3e013a5b5d24153f48bada7b79232613,Tesouro IPCA+,2029-05-15,2026-08-03,7.4,7.42,tesouro_direto,synthetic
+75419c9a15c14ed55600919275c1fdfa26c08c85,Tesouro IPCA+,2035-05-15,2026-08-03,7.1,7.12,tesouro_direto,synthetic
+0d97620c370f8b68dda9c2a0b3ecca8895ddc75f,Tesouro IPCA+,2045-05-15,2026-08-03,6.96,6.98,tesouro_direto,synthetic
 f62f556b773fc9e883ccff429319d26a322e0920,Tesouro IPCA+ com Juros Semestrais,2035-05-15,2026-08-03,7.04,7.06,tesouro_direto,synthetic
-605b231b1ff8a313f8b6a81233999247fe36e876,Tesouro Prefixado,2027-01-01,2026-08-03,13.88,13.90,tesouro_direto,synthetic
+62772e9b2866c092e419106816bb2d9059beb049,Tesouro IPCA+ com Juros Semestrais,2055-05-15,2026-08-03,6.88,6.9,tesouro_direto,synthetic
+605b231b1ff8a313f8b6a81233999247fe36e876,Tesouro Prefixado,2027-01-01,2026-08-03,13.88,13.9,tesouro_direto,synthetic
+212856fb82bf62ead37769776da1d5367e7423a3,Tesouro Prefixado,2029-01-01,2026-08-03,13.4,13.42,tesouro_direto,synthetic
+98e4dbff885745ebc2dbab2313dc85b5a93e8e4a,Tesouro Prefixado,2032-01-01,2026-08-03,13.03,13.05,tesouro_direto,synthetic
+44c9fe3b3e013a5b5d24153f48bada7b79232613,Tesouro IPCA+,2029-05-15,2026-08-04,7.43,7.45,tesouro_direto,synthetic
 75419c9a15c14ed55600919275c1fdfa26c08c85,Tesouro IPCA+,2035-05-15,2026-08-04,7.13,7.15,tesouro_direto,synthetic
+0d97620c370f8b68dda9c2a0b3ecca8895ddc75f,Tesouro IPCA+,2045-05-15,2026-08-04,6.99,7.01,tesouro_direto,synthetic
 f62f556b773fc9e883ccff429319d26a322e0920,Tesouro IPCA+ com Juros Semestrais,2035-05-15,2026-08-04,7.07,7.09,tesouro_direto,synthetic
-605b231b1ff8a313f8b6a81233999247fe36e876,Tesouro Prefixado,2027-01-01,2026-08-04,13.90,13.92,tesouro_direto,synthetic
+62772e9b2866c092e419106816bb2d9059beb049,Tesouro IPCA+ com Juros Semestrais,2055-05-15,2026-08-04,6.91,6.93,tesouro_direto,synthetic
+605b231b1ff8a313f8b6a81233999247fe36e876,Tesouro Prefixado,2027-01-01,2026-08-04,13.91,13.93,tesouro_direto,synthetic
+212856fb82bf62ead37769776da1d5367e7423a3,Tesouro Prefixado,2029-01-01,2026-08-04,13.43,13.45,tesouro_direto,synthetic
+98e4dbff885745ebc2dbab2313dc85b5a93e8e4a,Tesouro Prefixado,2032-01-01,2026-08-04,13.06,13.08,tesouro_direto,synthetic
