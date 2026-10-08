@@ -4,9 +4,10 @@
 - **Never commit or push to `main`, never force-push, never merge a PR.** Branch,
   then PR. Other checkouts of this repo may hold the owner's uncommitted work: only
   `git add` the exact paths you wrote.
-- **`ofl_silver` runs once per batch of bronze assets, not once per day.** It triggers
-  on *any* bronze asset and each run re-merges all of bronze (about 20 minutes of two
-  cores on the current hardware). A daily cycle runs it several times.
+- **`ofl_silver` waits for all ten source DAGs.** It runs once per ingest wave (it used
+  to run on *any* bronze asset, three or four full merges a night). Consequence: after
+  re-running one source by hand, trigger `ofl_silver` by hand as well, or set
+  `OFL_SILVER_TRIGGER=any`. Each run still re-merges all of bronze (about 30 minutes).
 - **`b3_cotahist` hard-codes `years: [2024, 2025]`.** It re-downloads both annual
   archives every day and never fetches 2026.
 - **Image builds are not lock-pinned.** They `uv pip install "."`, so versions float
