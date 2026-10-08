@@ -1,8 +1,13 @@
-"""IBGE extractor (Polars) — real ``servicodados`` indicadores API, ``observation`` fact.
+"""IBGE extractor (Polars) — real ``servicodados`` agregados API, ``observation`` fact.
 
 Used for indicators IBGE owns that BACEN/SGS does not duplicate (e.g. the PNAD
 Contínua unemployment rate). The API nests values under resultados->series->serie
 keyed by ``YYYYMM`` periods.
+
+A series names a table (``agregado``) and a variable in it (``indicador``). The older
+``/api/v1/indicadores/{id}`` route answered 503 after 60 s for every caller in 2026-10,
+so the handler reads the table route, which is what IBGE documents. Pick a MONTHLY
+table: quarterly ones key periods as ``YYYYQQ``, which would be read as months.
 """
 
 from __future__ import annotations
@@ -18,7 +23,10 @@ from ofl.registry import Series
 
 log = get_logger(__name__)
 
-IBGE_URL = "https://servicodados.ibge.gov.br/api/v1/indicadores/{indicador}"
+IBGE_URL = (
+    "https://servicodados.ibge.gov.br/api/v3/agregados/{agregado}"
+    "/periodos/all/variaveis/{indicador}?localidades=N1[all]"
+)
 _SKIP = {None, "...", "-", ""}
 
 
@@ -45,16 +53,17 @@ def _normalize(payload: list) -> pl.DataFrame:
     )
 
 
-def fetch_ibge(indicador: int) -> pl.DataFrame:
-    resp = requests.get(IBGE_URL.format(indicador=indicador), timeout=60)
+def fetch_ibge(agregado: int, indicador: int) -> pl.DataFrame:
+    resp = requests.get(IBGE_URL.format(agregado=agregado, indicador=indicador), timeout=60)
     resp.raise_for_status()
     return _normalize(resp.json())
 
 
 def ingest_ibge(series: Series) -> dict:
+    agregado = series.extra.get("agregado")
     indicador = series.extra.get("indicador")
-    if not indicador:
-        raise ValueError(f"series '{series.key}' has handler ibge but no indicador")
-    df = fetch_ibge(int(indicador))
-    log.info("ibge_fetched", series=series.key, indicador=indicador, rows=df.height)
+    if not agregado or not indicador:
+        raise ValueError(f"series '{series.key}' has handler ibge but needs extra.agregado + extra.indicador")
+    df = fetch_ibge(int(agregado), int(indicador))
+    log.info("ibge_fetched", series=series.key, agregado=agregado, indicador=indicador, rows=df.height)
     return land_bronze(series, df)

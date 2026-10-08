@@ -458,7 +458,8 @@ series:
   ibge:
     domain: market
     handler: ibge
-    indicador: 4099            # PNAD Contínua unemployment rate
+    agregado: 6381             # PNAD Contínua, monthly (moving quarter)
+    indicador: 4099            # unemployment rate
     name: "IBGE unemployment rate (PNAD Contínua)"
     category: labor
     unit: percent
