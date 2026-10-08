@@ -60,3 +60,22 @@ def test_header_and_trailer_skipped():
     trailer = "99" + " " * 243
     df = parse_cotahist((header + "\r\n" + trailer + "\r\n").encode("latin-1"))
     assert df.height == 0
+
+
+def test_years_back_rolls_with_the_calendar(monkeypatch):
+    from datetime import date as real_date
+
+    from ofl.ingestion import b3_cotahist
+
+    class _Date(real_date):
+        @classmethod
+        def today(cls):
+            return cls(2027, 1, 4)
+
+    monkeypatch.setattr(b3_cotahist, "date", _Date)
+    assert b3_cotahist._file_names({"years_back": 2}) == [
+        "COTAHIST_A2025.ZIP",
+        "COTAHIST_A2026.ZIP",
+        "COTAHIST_A2027.ZIP",
+    ]
+    assert b3_cotahist._file_names({"years_back": 0}) == ["COTAHIST_A2027.ZIP"]

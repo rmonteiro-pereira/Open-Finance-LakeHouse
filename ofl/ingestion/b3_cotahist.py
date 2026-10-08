@@ -44,10 +44,15 @@ _EMPTY = {
 def _file_names(extra: dict) -> list[str]:
     """Resolve the ZIP file name(s) for this series from its registry ``extra``.
 
-    ``years: [..]`` -> annual backfill (one file per year). Otherwise a single
-    daily file for ``day`` (``DDMMAAAA``) or today.
+    ``years_back: N`` -> annual backfill of the current year and the N before it,
+    resolved at run time so the window rolls on 1 January without a registry edit.
+    ``years: [..]`` -> the same with a fixed list. Otherwise a single daily file for
+    ``day`` (``DDMMAAAA``) or today.
     """
     years = extra.get("years")
+    if extra.get("years_back") is not None:
+        this_year = date.today().year
+        years = list(range(this_year - int(extra["years_back"]), this_year + 1))
     if years:
         return [f"COTAHIST_A{y}.ZIP" for y in years]
     if extra.get("month"):
@@ -88,12 +93,8 @@ def parse_cotahist(raw: bytes) -> pl.DataFrame:
     )
 
 
-def ingest_b3_cotahist(series: Series) -> dict:
-    extra = series.extra
-    names = _file_names(extra)
-    frames = [parse_cotahist(_download(n)) for n in names]
-    df = pl.concat(frames, how="vertical_relaxed") if frames else pl.DataFrame(schema=_EMPTY)
-
+def _select(df: pl.DataFrame, extra: dict) -> pl.DataFrame:
+    """Keep only the market segment and tickers this series asks for."""
     df = df.filter(
         pl.col("codbdi").is_in(extra.get("codbdi", ["02"]))
         & pl.col("tpmerc").is_in(extra.get("tpmerc", ["010"]))
@@ -101,9 +102,20 @@ def ingest_b3_cotahist(series: Series) -> dict:
     tickers = extra.get("tickers")
     if tickers:
         df = df.filter(pl.col("symbol").is_in(tickers))
-    df = df.select(_FINAL_COLS).unique(subset=["symbol", "date"], keep="last").sort("symbol", "date")
+    return df.select(_FINAL_COLS)
+
+
+def ingest_b3_cotahist(series: Series) -> dict:
+    extra = series.extra
+    names = _file_names(extra)
+    # Filter each file before concatenating: a full annual archive is ~2 GiB in memory,
+    # the filtered rows a few MiB, so the peak is one year however many are requested.
+    frames = [_select(parse_cotahist(_download(n)), extra) for n in names]
+    df = pl.concat(frames, how="vertical_relaxed") if frames else pl.DataFrame(schema=_EMPTY)
+    df = df.unique(subset=["symbol", "date"], keep="last").sort("symbol", "date")
 
     # Annual backfill replaces the table; a daily pull appends the new day.
-    mode = "overwrite" if extra.get("years") else "append"
+    annual = bool(extra.get("years")) or extra.get("years_back") is not None
+    mode = "overwrite" if annual else "append"
     log.info("b3_cotahist_fetched", series=series.key, files=len(names), rows=df.height, mode=mode)
     return land_bronze(series, df, mode=mode)
