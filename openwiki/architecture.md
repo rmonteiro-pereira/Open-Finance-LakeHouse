@@ -14,8 +14,10 @@
   handler in `ofl/ingestion/`.
 - **Orchestration** (`orchestration/airflow/dags/ofl_dags.py`): one `ofl_ingest_<handler>`
   DAG per handler, `@daily`, one task per series, each emitting
-  `Asset("lakehouse://bronze/<series>")`. `ofl_silver` triggers on **any** bronze
-  asset; `ofl_gold` on the silver asset. `ofl_backfill` is manual.
+  `Asset("lakehouse://bronze/<series>")`. Each DAG ends with `ingest_done`
+  (`all_done`), emitting `Asset("lakehouse://ingest/<handler>")`. `ofl_silver` triggers
+  when **all** ten of those have fired, so once per ingest wave; `ofl_gold` on the
+  silver asset. `ofl_backfill` is manual.
 - **Two images**, built from the repo root: `docker/Dockerfile` (`:slim`, ingest and
   gold) and `docker/Dockerfile.spark` (`:spark`, silver, JRE 17 plus baked jars).
   Entrypoint is the `ofl` CLI: `ofl ingest --series <key>`, `ofl silver`, `ofl gold`.
