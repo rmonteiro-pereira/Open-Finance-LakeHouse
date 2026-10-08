@@ -15,7 +15,7 @@ ENV UV_LINK_MODE=copy \
     UV_PYTHON_DOWNLOADS=never
 WORKDIR /app
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md LICENSE ./
 COPY ofl ./ofl
 COPY sources ./sources
 

@@ -15,7 +15,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /app
 
 # Project metadata + source (hatchling builds the `ofl` wheel from these).
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md LICENSE ./
 COPY ofl ./ofl
 COPY sources ./sources
 
