@@ -1,0 +1,66 @@
+# Container images — the two lanes the Airflow DAGs run (see docker/README.md).
+#
+#   * pull request: build both images, push nothing. A Dockerfile that no longer
+#     builds (it happened: LICENSE missing from the build stage) fails here, not
+#     on the cluster.
+#   * push to main: build and push to GHCR, tagged with the commit
+#     (`slim-<sha>`, `spark-<sha>`) and with the moving `slim` / `spark` tags.
+#     Deployments should pin the commit tag.
+#
+# Only runs when something that ends up inside an image changes.
+name: images
+
+on:
+  push:
+    branches: [main]
+    paths: &image_paths
+      - "docker/**"
+      - "ofl/**"
+      - "sources/**"
+      - "pyproject.toml"
+      - ".dockerignore"
+      - ".github/workflows/images.yml"
+  pull_request:
+    paths: *image_paths
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { lane: slim, dockerfile: docker/Dockerfile }
+          - { lane: spark, dockerfile: docker/Dockerfile.spark }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ghcr.io/rmonteiro-pereira/open-finance-lakehouse:${{ matrix.lane }}
+            ghcr.io/rmonteiro-pereira/open-finance-lakehouse:${{ matrix.lane }}-${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.lane }}
+          cache-to: type=gha,scope=${{ matrix.lane }},mode=max
