@@ -1,0 +1,6049 @@
+[
+ {
+  "name": "Verde",
+  "domain": "www.verdeasset.com.br",
+  "home": [
+   "200",
+   "https://www.verdeasset.com.br/",
+   3901
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "SPX",
+  "domain": "www.spxcapital.com",
+  "home": [
+   "200",
+   "https://www.spxcapital.com/",
+   138646
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://relatoconfidencial.com.br/spxcapital/",
+    "Canal de Denúncias"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://relatoconfidencial.com.br/spxcapital/",
+    "text": "Canal de Denúncias",
+    "code": "200",
+    "eff": "https://spx.app.bealiant.com/canal-de-denuncias/",
+    "len": 784772,
+    "plat": [
+     "nextjs"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: http://www.spxcapital.com/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Kapitalo",
+  "domain": "www.kapitalo.com.br",
+  "home": [
+   "200",
+   "https://www.kapitalo.com.br/",
+   33497
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.kapitalo.com.br/cartas-do-gestor",
+    "Cartas do Gestor"
+   ],
+   [
+    "https://www.kapitalo.com.br/carta-do-gestor/cartas-tematicas",
+    "Cartas Temáticas"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.kapitalo.com.br/cartas-do-gestor",
+    "text": "Cartas do Gestor",
+    "code": "200",
+    "eff": "https://www.kapitalo.com.br/cartas-do-gestor",
+    "len": 21582,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://www.kapitalo.com.br/carta-do-gestor/cartas-tematicas",
+    "text": "Cartas Temáticas",
+    "code": "200",
+    "eff": "https://www.kapitalo.com.br/carta-do-gestor/cartas-tematicas",
+    "len": 26251,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 6,
+    "pdf_sample": [
+     "https://www.kapitalo.com.br/wp-content/uploads/2022/09/Carta-Gestor_01_Trimestre.pdf",
+     "https://www.kapitalo.com.br/wp-content/uploads/2022/09/Carta-Gestor_02_Trimestre.pdf",
+     "https://www.kapitalo.com.br/wp-content/uploads/2022/09/cartagestor_final_16-12-22.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://www.kapitalo.com.br/xmlsitemap.xml\n\nAllow: /rsssitemap.xml\nAllow: /htmlsitemap.htm\n\n"
+  ]
+ },
+ {
+  "name": "Dynamo",
+  "domain": "www.dynamo.com.br",
+  "home": [
+   "200",
+   "https://www.dynamo.com.br/",
+   128265
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.dynamo.com.br/2436-2/",
+    "Cartas Dynamo"
+   ],
+   [
+    "https://www.dynamo.com.br/biblioteca/",
+    "Biblioteca"
+   ]
+  ],
+  "home_pdfs": [
+   "https://mcusercontent.com/067d257ea71f4941f6861e8e6/files/91bb3158-5bb7-59ae-4845-10d6c31f1df9/Carta_Dynamo_128.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.dynamo.com.br/2436-2/",
+    "text": "Cartas Dynamo",
+    "code": "200",
+    "eff": "https://www.dynamo.com.br/2436-2/",
+    "len": 150245,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 10,
+    "pdf_sample": [
+     "https://www.dynamo.com.br/wp-content/uploads/2021/08/703bfb9d5b23819e1f667312ca0412eaac715659.pdf",
+     "https://www.dynamo.com.br/wp-content/uploads/2021/08/a615cb4e89402e053db8cf63256714814c312510.pdf",
+     "https://www.dynamo.com.br/wp-content/uploads/2026/04/Carta-Dynamo-128.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://www.dynamo.com.br/biblioteca/",
+    "text": "Biblioteca",
+    "code": "200",
+    "eff": "https://www.dynamo.com.br/biblioteca/",
+    "len": 126365,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://www.dynamo.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Squadra",
+  "domain": "www.squadrainvest.com.br",
+  "home": [
+   "200",
+   "https://www.squadrainvest.com.br/",
+   150734
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.squadrainvest.com.br/cartas/",
+    "Cartas"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.squadrainvest.com.br/cartas/",
+    "text": "Cartas",
+    "code": "200",
+    "eff": "https://www.squadrainvest.com.br/cartas/",
+    "len": 191626,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 21,
+    "pdf_sample": [
+     "https://www.squadrainvest.com.br/wp-content/uploads/2022/09/carta-2011.pdf",
+     "https://www.squadrainvest.com.br/wp-content/uploads/2022/09/carta-2011semestre1.pdf",
+     "https://www.squadrainvest.com.br/wp-content/uploads/2026/08/Squadra_Carta_1S26.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow:\n\nSitemap: https://www.squadrainvest.com.br/sitemap_index.xml\n"
+  ]
+ },
+ {
+  "name": "Atmos",
+  "domain": "www.atmoscapital.com.br",
+  "home": [
+   "200",
+   "https://www.atmoscapital.com.br/",
+   19544
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.atmoscapital.com.br/cartas.php",
+    "Cartas"
+   ],
+   [
+    "http://www.atmoscapital.com.br/relatorio_mensal.php",
+    "&nbsp;"
+   ],
+   [
+    "https://www.atmoscapital.com.br/documentos.php",
+    "Documentos"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.atmoscapital.com.br/documentos/cartas/Carta-Atmos-32.pdf",
+   "https://www.atmoscapital.com.br/documentos/cartas/Carta-Atmos-33.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.atmoscapital.com.br/cartas.php",
+    "text": "Cartas",
+    "code": "200",
+    "eff": "https://www.atmoscapital.com.br/cartas.php",
+    "len": 33406,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 33,
+    "pdf_sample": [
+     "https://www.atmoscapital.com.br/documentos/cartas/Carta-Atmos-01.pdf",
+     "https://www.atmoscapital.com.br/documentos/cartas/Carta-Atmos-02.pdf",
+     "https://www.atmoscapital.com.br/documentos/cartas/Carta-Atmos-33.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "http://www.atmoscapital.com.br/relatorio_mensal.php",
+    "text": "&nbsp;",
+    "code": "200",
+    "eff": "http://www.atmoscapital.com.br/relatorio_mensal.php",
+    "len": 52273,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "IP Capital",
+  "domain": "www.ip-capitalpartners.com",
+  "home": [
+   "200",
+   "https://ip-capitalpartners.com/",
+   205348
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://ip-capitalpartners.com/relatorios/",
+    "Relatórios"
+   ],
+   [
+    "https://ip-capitalpartners.com/reports/ai-previsoes/",
+    "LEIA O RELATÓRIO"
+   ],
+   [
+    "https://ip-capitalpartners.com/reports/revolucao-barulhenta/",
+    "Leia o relatório"
+   ],
+   [
+    "https://ip-capitalpartners.com/insights/",
+    "Fique de olho nos Insights"
+   ],
+   [
+    "https://ip-capitalpartners.com/insights/?f=opiniao",
+    "Opinião"
+   ],
+   [
+    "https://ip-capitalpartners.com/insights/?f=noticias",
+    "Notícias"
+   ]
+  ],
+  "home_pdfs": [
+   "https://ip-capitalpartners.com/ip-capitalpartners.com/wp-content/uploads/2026/02/IP_RG_202602_AI-hi.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://ip-capitalpartners.com/relatorios/",
+    "text": "Relatórios",
+    "code": "200",
+    "eff": "https://ip-capitalpartners.com/relatorios/",
+    "len": 153030,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 4,
+    "pdf_sample": [
+     "https://ip-capitalpartners.com/wp-content/uploads/2024/01/IP_RG_obrigadocharlie.pdf",
+     "https://ip-capitalpartners.com/wp-content/uploads/2024/04/IP_RG_202404_Netflix-1.pdf",
+     "https://ip-capitalpartners.com/wp-content/uploads/2026/02/IP_RG_202602_AI-hi.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-N5KMXHD"
+    ],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://ip-capitalpartners.com/reports/ai-previsoes/",
+    "text": "LEIA O RELATÓRIO",
+    "code": "200",
+    "eff": "https://ip-capitalpartners.com/reports/revolucao-barulhenta/",
+    "len": 206882,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 7,
+    "pdf_sample": [
+     "https://ip-capitalpartners.com/wp-content/uploads/2022/06/IP_RG_JUN_22_.pdf",
+     "https://ip-capitalpartners.com/wp-content/uploads/2023/01/IP_RG_Jan23_01022023.pdf",
+     "https://ip-capitalpartners.com/wp-content/uploads/2026/02/IP_RG_202602_AI-hi.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-N5KMXHD"
+    ],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n"
+  ]
+ },
+ {
+  "name": "Legacy",
+  "domain": "www.legacycapital.com.br",
+  "home": [
+   "200",
+   "https://www.legacycapital.com.br/",
+   245587
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://www.legacycapital.com.br/cartas-e-calls-mensais/",
+    "Conteúdo"
+   ],
+   [
+    "https://www.legacycapital.com.br/cartas-e-calls-de-credito/",
+    "Cartas e Calls de Crédito"
+   ],
+   [
+    "https://www.legacycapital.com.br/documentos-cvm/",
+    "Documentos CVM"
+   ],
+   [
+    "https://www.legacycapital.com.br/?page_id=3512",
+    "Documentos Legais"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.legacycapital.com.br/wp-content/uploads/202609_Carta-Mensal.pdf",
+   "https://www.legacycapital.com.br/wp-content/uploads/LGPD_Legacy-Capital-Termo-de-Consentimento_Padrao_2026.pdf",
+   "https://www.legacycapital.com.br/wp-content/uploads/Legacy-Capital_6a-Carta-de-Credito.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.legacycapital.com.br/cartas-e-calls-mensais/",
+    "text": "Conteúdo",
+    "code": "200",
+    "eff": "https://www.legacycapital.com.br/cartas-e-calls-mensais/",
+    "len": 149035,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 2,
+    "pdf_sample": [
+     "https://www.legacycapital.com.br/wp-content/uploads/LGPD_Legacy-Capital-Termo-de-Consentimento_Padrao_2026.pdf",
+     "https://www.legacycapital.com.br/wp-content/uploads/TermoDeUsoPoliticaPrivacidade.pdf",
+     "https://www.legacycapital.com.br/wp-content/uploads/TermoDeUsoPoliticaPrivacidade.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://www.legacycapital.com.br/cartas-e-calls-de-credito/",
+    "text": "Cartas e Calls de Crédito",
+    "code": "200",
+    "eff": "https://www.legacycapital.com.br/cartas-e-calls-de-credito/",
+    "len": 147378,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 2,
+    "pdf_sample": [
+     "https://www.legacycapital.com.br/wp-content/uploads/LGPD_Legacy-Capital-Termo-de-Consentimento_Padrao_2026.pdf",
+     "https://www.legacycapital.com.br/wp-content/uploads/TermoDeUsoPoliticaPrivacidade.pdf",
+     "https://www.legacycapital.com.br/wp-content/uploads/TermoDeUsoPoliticaPrivacidade.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://www.legacycapital.com.br/sitemap_index.xml\n"
+  ]
+ },
+ {
+  "name": "Ibiuna",
+  "domain": "www.ibiunainvest.com.br",
+  "home": [
+   "200",
+   "https://www.ibiunainvest.com.br/",
+   251094
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://brasil.moodys-local.com/reporte/rating-action/moodys-local-brasil-atribui-avaliacoes-de-qualidade-de-gestor-de-investimentos-mq1-br-a-ibiuna-macro-gestao-de-recursos-ltda-a-ibiuna-credito-gestao-de-recursos-ltda-e-a-ibiuna-acoes-gesta/?_gl=1*823951*_up*MQ..*_ga*MTExODgxNjA2Ni4xNzIwMDk3MzI4*_ga_9C6J50JJB8*MTcyMDA5NzMyNy4xLjEuMTcyMDA5NzMzNy4wLjAuMA",
+    "Acesse aqui"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.ibiunainvest.com.br/wp-content/themes/ibiuna/docs/politica_privacidade.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://brasil.moodys-local.com/reporte/rating-action/moodys-local-brasil-atribui-avaliacoes-de-qualidade-de-gestor-de-investimentos-mq1-br-a-ibiuna-macro-gestao-de-recursos-ltda-a-ibiuna-credito-gestao-de-recursos-ltda-e-a-ibiuna-acoes-gesta/?_gl=1*823951*_up*MQ..*_ga*MTExODgxNjA2Ni4xNzIwMDk3MzI4*_ga_9C6J50JJB8*MTcyMDA5NzMyNy4xLjEuMTcyMDA5NzMzNy4wLjAuMA",
+    "text": "Acesse aqui",
+    "code": "000",
+    "eff": "https://brasil.moodys-local.com/reporte/rating-action/moodys-local-brasil-atribui-avaliacoes-de-qualidade-de-gestor-de-investimentos-mq1-br-a-ibiuna-macro-gestao-de-recursos-ltda-a-ibiuna-credito-gestao-de-recursos-ltda-e-a-ibiuna-acoes-gesta/?_gl=1*823951*_up*MQ..*_ga*MTExODgxNjA2Ni4xNzIwMDk3MzI4*_ga_9C6J50JJB8*MTcyMDA5NzMyNy4xLjEuMTcyMDA5NzMzNy4wLjAuMA",
+    "len": 0,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://www.ibiunainvest.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Adam",
+  "domain": "www.adamcapital.com.br",
+  "home": [
+   "200",
+   "https://adamcapital.com.br/",
+   83968
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://adamcapital.com.br/documentos/relatorios-e-call/",
+    "Relatórios e Call"
+   ],
+   [
+    "https://adamcapital.com.br/documentos/",
+    "Documentos"
+   ],
+   [
+    "https://adamcapital.com.br/documentos/politicas-e-manuais/",
+    "Políticas e Manuais"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://adamcapital.com.br/documentos/relatorios-e-call/",
+    "text": "Relatórios e Call",
+    "code": "200",
+    "eff": "https://adamcapital.com.br/documentos/relatorios-e-call/",
+    "len": 82028,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 6,
+    "pdf_sample": [
+     "https://adamcapital.com.br/wp-content/uploads/2026/10/Relatorio-Gerencial-Adam-Advanced-II-Set-2026.pdf",
+     "https://adamcapital.com.br/wp-content/uploads/2026/10/Relatorio-Gerencial-Adam-Icatu-Prev-Set-2026.pdf",
+     "https://adamcapital.com.br/wp-content/uploads/2026/10/Set-2026.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://adamcapital.com.br/documentos/",
+    "text": "Documentos",
+    "code": "200",
+    "eff": "https://adamcapital.com.br/documentos/relatorios-e-call/",
+    "len": 82028,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 6,
+    "pdf_sample": [
+     "https://adamcapital.com.br/wp-content/uploads/2026/10/Relatorio-Gerencial-Adam-Advanced-II-Set-2026.pdf",
+     "https://adamcapital.com.br/wp-content/uploads/2026/10/Relatorio-Gerencial-Adam-Icatu-Prev-Set-2026.pdf",
+     "https://adamcapital.com.br/wp-content/uploads/2026/10/Set-2026.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://adamcapital.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Bahia",
+  "domain": "www.bahiaasset.com.br",
+  "home": [
+   "200",
+   "https://www.bahiaasset.com.br/",
+   1002555
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.bahiaasset.com.br/carta-do-gestor/",
+    ">  Carta do gestor"
+   ],
+   [
+    "https://www.bahiaasset.com.br/documentos-de-fundos/",
+    ">  DOCUMENTOS  >  DE FUNDOS"
+   ],
+   [
+    "https://www.intrag.com.br/pt-br/documentos",
+    "https://www.intrag.com.br/pt-br/documentos"
+   ]
+  ],
+  "home_pdfs": [
+   "http://www.bahiaasset.com.br//wp-content/uploads/2025/05/Bahia-AM-Long-Biased-Red-FIF-CIC-Mult-Resp-Ltda-Sumario-Maio-2025.pdf",
+   "http://www.bahiaasset.com.br//wp-content/uploads/2025/06/Bahia-AM-Marau-S-FIF-CIC-Mult-Resp-Ltda-Sumario-Junho-2025.pdf",
+   "http://www.bahiaasset.com.br/wp-content/uploads/2025/05/Bahia-AM-A-Previdenciario-Ativo-FIF-RF-LP-Resp-Ltda-Sumario-Maio-2025.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.bahiaasset.com.br/carta-do-gestor/",
+    "text": ">  Carta do gestor",
+    "code": "200",
+    "eff": "https://www.bahiaasset.com.br/carta-do-gestor/",
+    "len": 939968,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 73,
+    "pdf_sample": [
+     "http://www.bahiaasset.com.br//wp-content/uploads/2025/05/Bahia-AM-Long-Biased-Red-FIF-CIC-Mult-Resp-Ltda-Sumario-Maio-2025.pdf",
+     "http://www.bahiaasset.com.br//wp-content/uploads/2025/06/Bahia-AM-Marau-S-FIF-CIC-Mult-Resp-Ltda-Sumario-Junho-2025.pdf",
+     "https://www.bahiaasset.com.br/wp-content/uploads/2026/09/Bahia-AM-DI-FIF-CI-RF-Simples-Resp-Ltda-Setembro-2026.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://www.bahiaasset.com.br/documentos-de-fundos/",
+    "text": ">  DOCUMENTOS  >  DE FUNDOS",
+    "code": "200",
+    "eff": "https://www.bahiaasset.com.br/documentos-de-fundos/",
+    "len": 903515,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 73,
+    "pdf_sample": [
+     "http://www.bahiaasset.com.br//wp-content/uploads/2025/05/Bahia-AM-Long-Biased-Red-FIF-CIC-Mult-Resp-Ltda-Sumario-Maio-2025.pdf",
+     "http://www.bahiaasset.com.br//wp-content/uploads/2025/06/Bahia-AM-Marau-S-FIF-CIC-Mult-Resp-Ltda-Sumario-Junho-2025.pdf",
+     "https://www.bahiaasset.com.br/wp-content/uploads/2026/09/Bahia-AM-DI-FIF-CI-RF-Simples-Resp-Ltda-Setembro-2026.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://www.bahiaasset.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Kinea",
+  "domain": "www.kinea.com.br",
+  "home": [
+   "200",
+   "https://www.kinea.com.br/",
+   314011
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.kinea.com.br/blog/carta-do-gestor-highlander-guerreiro-imortal/",
+    "Highlander, o guerreiro imortal  Leia a Carta do Gestor comp"
+   ],
+   [
+    "https://www.kinea.com.br/blog/categoria/carta-do-gestor/",
+    "Cartas do Gestor"
+   ],
+   [
+    "https://www.kinea.com.br/blog/carta-do-gestor-a-hora-do-pesadelo/",
+    ""
+   ],
+   [
+    "https://www.kinea.com.br/blog/carta-do-gestor-dr-strangelove-quatro-guerras-mercado/",
+    ""
+   ],
+   [
+    "https://www.kinea.com.br/blog/carta-do-gestor-apollo-13/",
+    ""
+   ],
+   [
+    "javascript:void(0)",
+    "Materiais"
+   ],
+   [
+    "https://www.kinea.com.br/blog/kinea-insights-bolsa-brasileira-juros-valuation/",
+    ""
+   ],
+   [
+    "https://www.kinea.com.br/blog/categoria/insights/",
+    "Insights"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.kinea.com.br/blog/carta-do-gestor-highlander-guerreiro-imortal/",
+    "text": "Highlander, o guerreiro imortal  Leia a Carta do Gestor comp",
+    "code": "200",
+    "eff": "https://www.kinea.com.br/blog/carta-do-gestor-highlander-guerreiro-imortal/",
+    "len": 352993,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-T7NDC85"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://www.kinea.com.br/blog/categoria/carta-do-gestor/",
+    "text": "Cartas do Gestor",
+    "code": "200",
+    "eff": "https://www.kinea.com.br/blog/categoria/carta-do-gestor/",
+    "len": 310183,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-T7NDC85"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\r\nDisallow: /wp-admin/\r\nDisallow: /author/\r\nDisallow: /category/\r\nDisallow: /categorias_documentos_restritos/\r\nDisallow: /footer/\r\nDisallow: /pdf/\r\nDisallow: /fale-conosco-copy/\r\nDisallow: /fundos/consultas/\r\nDisallow: /teste-parametros/\r\nDisallow: /mrasrestritos/\r\nDisallow: /documentosrestritos/\r\nDisallow: /documentos-restritos/\r\nDisallow: /documentos_restritos/\r\nDisallow: /tipo_de_documento/\r\nDisallow: /comunicado/\r\nDisallow: /wp-content/uploads/*sumario*.pdf\r\nAllow: /wp-admin/admin-ajax.php\r\n\r\nSitemap: https://www.kinea.com.br/sitemap.xml\r\n"
+  ]
+ },
+ {
+  "name": "Absolute",
+  "domain": "www.absoluteinvestimentos.com.br",
+  "home": [
+   "200",
+   "https://www.absoluteinvestimentos.com.br/",
+   154457
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.absoluteinvestimentos.com.br/wp-content/uploads/oficial-docs/Documentos_de_Investimento_Responsavel.zip",
+    "Documentos de Investimento Responsável"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.absoluteinvestimentos.com.br/wp-content/uploads/oficial-docs/Documentos_de_Investimento_Responsavel.zip",
+    "text": "Documentos de Investimento Responsável",
+    "code": "200",
+    "eff": "https://www.absoluteinvestimentos.com.br/wp-content/uploads/oficial-docs/Documentos_de_Investimento_Responsavel.zip",
+    "len": 1195900,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Vinland",
+  "domain": "www.vinlandcap.com",
+  "home": [
+   "200",
+   "https://www.vinlandcap.com/",
+   33357
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://www.vinlandcap.com/documentos",
+    ""
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.vinlandcap.com/documentos",
+    "text": "",
+    "code": "200",
+    "eff": "https://www.vinlandcap.com/documentos",
+    "len": 2545,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   ""
+  ]
+ },
+ {
+  "name": "Genoa",
+  "domain": "genoacapital.com.br",
+  "home": [
+   "200",
+   "https://genoacapital.com.br/",
+   81600
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/FormRefAdmCart/ConsultaFormReferenciaAdmCarteiraPJ.aspx?PK_PARTIC=182667&COMPTC=2025",
+    "Formulário de Referência"
+   ],
+   [
+    "https://genoacapital.com.br/relatorios.html",
+    "Relatórios"
+   ],
+   [
+    "https://genoacapital.com.br/cvm175.html",
+    "Documentos regulatórios"
+   ]
+  ],
+  "home_pdfs": [
+   "https://genoacapital.com.br/docs/CodigoEtica.pdf",
+   "https://genoacapital.com.br/docs/Material_Divulgacao_Arpa_Ago26.pdf",
+   "https://genoacapital.com.br/docs/Material_Divulgacao_CruisePrev_Ago26.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/FormRefAdmCart/ConsultaFormReferenciaAdmCarteiraPJ.aspx?PK_PARTIC=182667&COMPTC=2025",
+    "text": "Formulário de Referência",
+    "code": "200",
+    "eff": "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/FormRefAdmCart/ConsultaFormReferenciaAdmCarteiraPJ.aspx?PK_PARTIC=182667&COMPTC=2025",
+    "len": 121679,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://genoacapital.com.br/relatorios.html",
+    "text": "Relatórios",
+    "code": "200",
+    "eff": "https://genoacapital.com.br/relatorios.html",
+    "len": 117144,
+    "plat": [],
+    "npdf": 78,
+    "pdf_sample": [
+     "https://genoacapital.com.br/docs/BP_Servicos_Digitais_Jan2025.pdf",
+     "https://genoacapital.com.br/docs/CartaMensalGenoaCapital_Abr21.pdf",
+     "https://genoacapital.com.br/docs/RelatórioSemestral_GENOA_CAPITAL_ARPA_Nov21.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Vista",
+  "domain": "www.vistacapital.com.br",
+  "home": [
+   "200",
+   "https://vistacapital.com.br/",
+   447694
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://vistacapital.com.br/relatorios/",
+    "Relatórios Mensais e Cartas"
+   ],
+   [
+    "https://vistacapital.com.br/outros-documentos/",
+    "Outros documentos"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://vistacapital.com.br/relatorios/",
+    "text": "Relatórios Mensais e Cartas",
+    "code": "200",
+    "eff": "https://vistacapital.com.br/relatorios/",
+    "len": 137710,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 88,
+    "pdf_sample": [
+     "https://vistacapital.com.br/wp-content/uploads/2025/06/Atribuicao-de-Performance-junho-17-vlgg-1.pdf",
+     "https://vistacapital.com.br/wp-content/uploads/2025/06/Carta-do-Gestor-042017.pdf",
+     "https://vistacapital.com.br/wp-content/uploads/2025/06/Vista-Multiestrategia-FIM-Atribuicao-de-Performance-Julho-2017-.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-P2D75XZ7"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://vistacapital.com.br/outros-documentos/",
+    "text": "Outros documentos",
+    "code": "200",
+    "eff": "https://vistacapital.com.br/outros-documentos/",
+    "len": 121135,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://vistacapital.com.br/wp-content/uploads/2026/04/Sumario_da_Remuneracao_-_PREV_PLUS.pdf",
+     "https://vistacapital.com.br/wp-content/uploads/2026/04/Sumario_da_Remuneracao_-_PREV_PLUS.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-P2D75XZ7"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\r\nAllow: /\r\n\r\nUser-agent: Pinterestbot\r\nDisallow: /\r\n\r\nSitemap: https://vistacapital.com.br/sitemap.xml"
+  ]
+ },
+ {
+  "name": "Encore",
+  "domain": "www.encore.am",
+  "home": [
+   "200",
+   "https://www.encore.am/",
+   2326762
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://www.encore.am/midias/comentario-mensal-maio-2026/",
+    ""
+   ],
+   [
+    "https://www.encore.am/midias/comentario-mensal-marcoabril-2026/",
+    ""
+   ],
+   [
+    "https://www.encore.am/midias/comentario-mensal-janeiro-2026/",
+    ""
+   ],
+   [
+    "https://www.encore.am/midias/comentario-mensal-dezembro-2025/",
+    ""
+   ],
+   [
+    "https://www.encore.am/midias/comentario-mensal-setembro-2025/",
+    ""
+   ],
+   [
+    "https://www.encore.am/midias/comentario-mensal-agosto-2025/",
+    ""
+   ],
+   [
+    "https://www.encore.am/midias/comentario-mensal-maio-2025/",
+    ""
+   ],
+   [
+    "https://www.encore.am/midias/comentario-mensal-julho-2025/",
+    ""
+   ]
+  ],
+  "home_pdfs": [
+   "https://encoresite.blob.core.windows.net/media/2022/07/Encore.AM-Politica-de-privacidade-e-seguranca.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.encore.am/midias/comentario-mensal-maio-2026/",
+    "text": "",
+    "code": "200",
+    "eff": "https://www.encore.am/#midias",
+    "len": 2326762,
+    "plat": [],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://encoresite.blob.core.windows.net/media/2022/07/Encore.AM-Politica-de-privacidade-e-seguranca.pdf",
+     "https://encoresite.blob.core.windows.net/media/2022/07/Encore.AM-Politica-de-privacidade-e-seguranca.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://www.encore.am/midias/comentario-mensal-marcoabril-2026/",
+    "text": "",
+    "code": "200",
+    "eff": "https://www.encore.am/#midias",
+    "len": 2326762,
+    "plat": [],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://encoresite.blob.core.windows.net/media/2022/07/Encore.AM-Politica-de-privacidade-e-seguranca.pdf",
+     "https://encoresite.blob.core.windows.net/media/2022/07/Encore.AM-Politica-de-privacidade-e-seguranca.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "\nUser-agent: *\nAllow: /\n\n# Internal and non-indexable endpoints\nDisallow: /admin/\nDisallow: /login/\nDisallow: /callback/\nDisallow: /logout/\nDisallow: /health/\nDisallow: /locale/\nDisallow: /newsletter/\nDisallow: /media-assets/\nDisallow: /documentos/download/\nDisallow: /fundo/*/download-retornos/\nDisallow: /graficos/fundos.csv\n\n# LLM-oriented website map\nAllow: /llms.txt\n\n"
+  ]
+ },
+ {
+  "name": "Alaska",
+  "domain": "www.alaska-asset.com.br",
+  "home": [
+   "200",
+   "https://www.alaska-asset.com.br/",
+   154061
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.alaska-asset.com.br/cartas/",
+    "Cartas"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.alaska-asset.com.br/pdf/informativo-diario.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.alaska-asset.com.br/cartas/",
+    "text": "Cartas",
+    "code": "200",
+    "eff": "https://www.alaska-asset.com.br/cartas/",
+    "len": 139210,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 130,
+    "pdf_sample": [
+     "https://www.alaska-asset.com.br/pdf/cartas/2014/trimestre4.pdf",
+     "https://www.alaska-asset.com.br/pdf/cartas/2015/trimestre1_2015.pdf",
+     "https://www.alaska-asset.com.br/pdf/cartas/Mensais/2026/setembro26.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\r\nDisallow: /wp-admin/\r\nAllow: /wp-admin/admin-ajax.php\r\n\r\nSitemap: https://www.alaska-asset.com.br/sitemap.xml\r\nSitemap: https://www.alaska-asset.com.br/sitemap.rss\n"
+  ]
+ },
+ {
+  "name": "Brasil Capital",
+  "domain": "www.brasilcapital.com",
+  "home": [
+   "200",
+   "https://brasilcapital.com/",
+   245106
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://brasilcapital.com/cartas-de-gestao/",
+    "Conteúdo"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://brasilcapital.com/cartas-de-gestao/",
+    "text": "Conteúdo",
+    "code": "200",
+    "eff": "https://brasilcapital.com/cartas-de-gestao/",
+    "len": 59716,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 8,
+    "pdf_sample": [
+     "https://brasilcapital.com/wp-content/uploads/2024/10/Carta_BC_3T24.pdf",
+     "https://brasilcapital.com/wp-content/uploads/2024/12/Carta-BC_4T2024.pdf",
+     "https://brasilcapital.com/wp-content/uploads/2026/07/Carta-BC_2T26.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://brasilcapital.com/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Constellation",
+  "domain": "www.constellation.com.br",
+  "home": [
+   "200",
+   "https://constellation.com.br/",
+   81742
+  ],
+  "plat": [
+   "wordpress",
+   "s3"
+  ],
+  "cands": [
+   [
+    "https://constellation.com.br/documentos-relevantes/",
+    "Documentos relevantes"
+   ],
+   [
+    "https://constellation.com.br/leituras/",
+    "Biblioteca"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://constellation.com.br/documentos-relevantes/",
+    "text": "Documentos relevantes",
+    "code": "200",
+    "eff": "https://constellation.com.br/documentos-relevantes/",
+    "len": 196521,
+    "plat": [
+     "wordpress",
+     "s3"
+    ],
+    "npdf": 38,
+    "pdf_sample": [
+     "https://constellation.com.br/wp-content/uploads/2019/02/SulAmérica-Formulário-de-Informações-Complementares.pdf",
+     "https://constellation.com.br/wp-content/uploads/2022/12/Constellation-Politica-ASG-_PT_-v3_12.-2022.pdf",
+     "https://constellation.com.br/wp-content/uploads/2026/09/Factsheet-XP-Seguros-70-08-2026.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://constellation.com.br/leituras/",
+    "text": "Biblioteca",
+    "code": "200",
+    "eff": "https://constellation.com.br/leituras/",
+    "len": 125611,
+    "plat": [
+     "wordpress",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://constellation.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Velt",
+  "domain": "www.velt.com",
+  "home": [
+   "200",
+   "https://www.velt.com/",
+   635574
+  ],
+  "plat": [
+   "nuxt",
+   "hubspot",
+   "drupal"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "# START nuxt-robots (indexable)\nUser-agent: *\nDisallow: \n\n# END nuxt-robots"
+  ]
+ },
+ {
+  "name": "Bogari",
+  "domain": "www.bogaricapital.com.br",
+  "home": [
+   "200",
+   "https://bogaricapital.com.br/",
+   57595
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://bogaricapital.com.br/biblioteca/cartas/",
+    "Cartas"
+   ],
+   [
+    "https://bogaricapital.com.br/a-empresa/documentos/",
+    "Documentos"
+   ]
+  ],
+  "home_pdfs": [
+   "http://bogaricapital.com.br/wp-content/uploads/2017/04/Estudo-Lockton-201703.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://bogaricapital.com.br/biblioteca/cartas/",
+    "text": "Cartas",
+    "code": "200",
+    "eff": "https://bogaricapital.com.br/biblioteca/cartas/",
+    "len": 56400,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 37,
+    "pdf_sample": [
+     "http://bogaricapital.com.br/wp-content/uploads/2015/07/Carta-Bogari-29-Discurso-x-Pr%C3%A1tica.pdf",
+     "http://bogaricapital.com.br/wp-content/uploads/2015/07/Carta-Bogari-29-Discurso-x-Prática.pdf",
+     "http://bogaricapital.com.br/wp-content/uploads/2021/04/Carta-Bogari-35-Saúde.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://bogaricapital.com.br/a-empresa/documentos/",
+    "text": "Documentos",
+    "code": "200",
+    "eff": "https://bogaricapital.com.br/a-empresa/documentos/",
+    "len": 44383,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 10,
+    "pdf_sample": [
+     "http://bogaricapital.com.br/wp-content/uploads/2019/01/Código-de-Conduta-e-Ética-v20190102_limpa.pdf",
+     "http://bogaricapital.com.br/wp-content/uploads/2019/01/Política-de-Atuação-na-Distribuição-v20190102_Limpa.pdf",
+     "https://bogaricapital.com.br/wp-content/uploads/2024/09/2024.08.26-Politica-de-Investimentos-Pessoais_vfLimpa.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nCrawl-delay: 1\nDisallow: /wp-content/plugins/\nDisallow: /wp-admin/\n"
+  ]
+ },
+ {
+  "name": "Tork",
+  "domain": "www.torkcapital.com.br",
+  "home": [
+   "000",
+   "https://www.torkcapital.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Oceana",
+  "domain": "www.oceanainvestimentos.com.br",
+  "home": [
+   "403",
+   "https://www.oceanainvestimentos.com.br/",
+   75193
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "403",
+   ""
+  ]
+ },
+ {
+  "name": "Guepardo",
+  "domain": "www.guepardoinvest.com.br",
+  "home": [
+   "403",
+   "https://www.guepardoinvest.com.br/",
+   75193
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "403",
+   ""
+  ]
+ },
+ {
+  "name": "Indie",
+  "domain": "www.indiecapital.com.br",
+  "home": [
+   "200",
+   "https://indiecapital.com.br/",
+   60706
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [],
+  "home_pdfs": [
+   "https://indiecapital.com.br/wp-content/uploads/2026/09/Indie-Capital-Comentario-mensal-Agosto_26.pdf"
+  ],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\n\nSitemap: http://www.indiecapital.com.br/sitemap_index.xml\n"
+  ]
+ },
+ {
+  "name": "Neo",
+  "domain": "www.neo.com.br",
+  "home": [
+   "200",
+   "https://www.neo.com.br/",
+   152953
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://www.neo.com.br/cartas-de-gestao/",
+    "Cartas do Gestor"
+   ],
+   [
+    "https://www.neo.com.br/cartas-do-gestor-agosto-2026/",
+    "Cartas do Gestor - Agosto 2026"
+   ],
+   [
+    "https://www.neo.com.br/cartas-do-gestor-julho-2026/",
+    "Cartas do Gestor - Julho 2026"
+   ],
+   [
+    "https://www.neo.com.br/cartas-do-gestor-junho-2026/",
+    "Cartas do Gestor - Junho 2026"
+   ],
+   [
+    "https://www.neo.com.br/noticias/",
+    "Relatórios Econômicos"
+   ],
+   [
+    "https://neo.com.br/index.php/documentos-relevantes/",
+    "Documentos relevantes"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.neo.com.br/cartas-de-gestao/",
+    "text": "Cartas do Gestor",
+    "code": "200",
+    "eff": "https://www.neo.com.br/cartas-de-gestao/",
+    "len": 115505,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "/wp-admin/admin-ajax.php",
+     "api"
+    ]
+   },
+   {
+    "url": "https://www.neo.com.br/cartas-do-gestor-agosto-2026/",
+    "text": "Cartas do Gestor - Agosto 2026",
+    "code": "200",
+    "eff": "https://www.neo.com.br/cartas-do-gestor-agosto-2026/",
+    "len": 106694,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "/wp-admin/admin-ajax.php",
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://www.neo.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Opportunity",
+  "domain": "www.opportunity.com.br",
+  "home": [
+   "200",
+   "https://www.opportunity.com.br/",
+   42681
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://www.opportunity.com.br/Home/Destaques",
+    "CARTAS DE GESTÃO"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.opportunity.com.br/Content/pdf/carta_gestor/CartaGestao_Total.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.opportunity.com.br/Home/Destaques",
+    "text": "CARTAS DE GESTÃO",
+    "code": "200",
+    "eff": "https://www.opportunity.com.br/Home/Destaques",
+    "len": 46098,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-PKRL9Q8"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\r\n\r\nSitemap: https://www.opportunity.com.br/sitemap.xml\r\nSitemap: https://www.opportunity.com.br/sitemap-mobile.xml\r\n"
+  ]
+ },
+ {
+  "name": "JGP",
+  "domain": "www.jgp.com.br",
+  "home": [
+   "200",
+   "https://www.jgp.com.br/",
+   167065
+  ],
+  "plat": [
+   "wordpress",
+   "s3"
+  ],
+  "cands": [
+   [
+    "https://www.jgp.com.br/comunicacoes/carta/",
+    "Cartas"
+   ],
+   [
+    "https://www.jgp.com.br/comunicacoes/relatorios/",
+    "Relatórios de Gestão"
+   ],
+   [
+    "https://www.jgp.com.br/ofertas-publicas/",
+    "Ofertas Públicas"
+   ],
+   [
+    "https://www.jgp.com.br/comunicacao/artigo-pib-segue-puxado-por-agropecuaria-e-industria-extrativa/",
+    "Artigo: PIB segue puxado por agropecuária e indústria extrat"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.jgp.com.br/wp-content/uploads/2026/06/JGP-Asset-Carta-Gestao-Endividamento-Equities.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.jgp.com.br/comunicacoes/carta/",
+    "text": "Cartas",
+    "code": "200",
+    "eff": "https://www.jgp.com.br/comunicacoes/carta/",
+    "len": 2377884,
+    "plat": [
+     "wordpress",
+     "s3"
+    ],
+    "npdf": 336,
+    "pdf_sample": [
+     "https://www.jgp.com.br/wp-content/uploads/2020/09/jgp-relatorio-de-gestao-fundos-de-acoes-set20pdf-202010091656.pdf",
+     "https://www.jgp.com.br/wp-content/uploads/2021/08/JGP-Carta-ESG_Credito_set21.pdf",
+     "https://www.jgp.com.br/wp-content/uploads/2026/10/JGP_Relatorio-de-Gestao_Fundos-de-Multimercados_Set26.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-T2WTSHH"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://www.jgp.com.br/comunicacoes/relatorios/",
+    "text": "Relatórios de Gestão",
+    "code": "200",
+    "eff": "https://www.jgp.com.br/comunicacoes/relatorios/",
+    "len": 2377909,
+    "plat": [
+     "wordpress",
+     "s3"
+    ],
+    "npdf": 336,
+    "pdf_sample": [
+     "https://www.jgp.com.br/wp-content/uploads/2020/09/jgp-relatorio-de-gestao-fundos-de-acoes-set20pdf-202010091656.pdf",
+     "https://www.jgp.com.br/wp-content/uploads/2021/08/JGP-Carta-ESG_Credito_set21.pdf",
+     "https://www.jgp.com.br/wp-content/uploads/2026/10/JGP_Relatorio-de-Gestao_Fundos-de-Multimercados_Set26.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-T2WTSHH"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://www.jgp.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Gavea",
+  "domain": "www.gaveainvest.com.br",
+  "home": [
+   "403",
+   "https://www.gaveainvest.com.br/",
+   5711
+  ],
+  "plat": [
+   "cloudflare-challenge"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "403",
+   ""
+  ]
+ },
+ {
+  "name": "Itau Asset",
+  "domain": "www.itauassetmanagement.com.br",
+  "home": [
+   "200",
+   "https://www.itauassetmanagement.com.br/",
+   127255
+  ],
+  "plat": [
+   "wordpress",
+   "mziq"
+  ],
+  "cands": [
+   [
+    "https://www.itauassetmanagement.com.br/carteiras-administradas/",
+    "carteiras administradas"
+   ],
+   [
+    "https://www.itauassetmanagement.com.br/insights/economia/",
+    "economia"
+   ],
+   [
+    "https://www.itauassetmanagement.com.br/insights/podcast-mind-asset/",
+    "podcast Mind Asset"
+   ],
+   [
+    "https://www.itauassetmanagement.com.br/insights/estudos/",
+    "estudos"
+   ],
+   [
+    "https://www.itau.com.br/investimentos/",
+    "blog"
+   ],
+   [
+    "https://blog.itau.com.br/itauasset",
+    "blog"
+   ]
+  ],
+  "home_pdfs": [
+   "https://assetfront.arquivosparceiros.cloud.itau.com.br/FND/FICFI51679_Itau_Personnalite_Privilege.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.itauassetmanagement.com.br/carteiras-administradas/",
+    "text": "carteiras administradas",
+    "code": "200",
+    "eff": "https://www.itauassetmanagement.com.br/carteiras-administradas/",
+    "len": 137140,
+    "plat": [
+     "wordpress",
+     "mziq"
+    ],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://assetfront.arquivosparceiros.cloud.itau.com.br/ISG/Disclaimer%20Carteira%20Administrada.pdf",
+     "https://assetfront.arquivosparceiros.cloud.itau.com.br/ISG/Disclaimer%20Carteira%20Administrada.pdf"
+    ],
+    "iframes": [
+     "https://www.youtube.com/embed/U45ldcypZgI?feature=oembed"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://www.itauassetmanagement.com.br/insights/economia/",
+    "text": "economia",
+    "code": "200",
+    "eff": "https://www.itauassetmanagement.com.br/insights/economia/",
+    "len": 96711,
+    "plat": [
+     "wordpress",
+     "mziq"
+    ],
+    "npdf": 2,
+    "pdf_sample": [
+     "https://assetfront.arquivosparceiros.cloud.itau.com.br/SMN/Projecoes_Macro_ItauAsset.pdf",
+     "https://www.itau.com.br/media/dam/m/2691f34dddb74af2/original/por-dentro-do-cenario-semanal.pdf",
+     "https://www.itau.com.br/media/dam/m/2691f34dddb74af2/original/por-dentro-do-cenario-semanal.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "403",
+   ""
+  ]
+ },
+ {
+  "name": "XP Asset",
+  "domain": "www.xpasset.com.br",
+  "home": [
+   "403",
+   "https://www.xpasset.com.br/",
+   949
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "403",
+   ""
+  ]
+ },
+ {
+  "name": "BTG Asset",
+  "domain": "www.btgpactual.com/asset-management",
+  "home": [
+   "200",
+   "https://www.btgpactual.com/asset-management",
+   9688
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: *\nAllow: /\nDisallow: /login\n\nSitemap: https://www.btgpactual.com/sitemap.xml"
+  ]
+ },
+ {
+  "name": "Occam",
+  "domain": "www.occambrasil.com.br",
+  "home": [
+   "200",
+   "https://occambrasil.com.br/",
+   43009
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://occambrasil.com.br/cartas-mensais/",
+    "Conteúdos"
+   ],
+   [
+    "https://occambrasil.com.br/cartas-tematicas/",
+    "Cartas Temáticas"
+   ],
+   [
+    "https://occambrasil.com.br/documentos/",
+    "Documentos"
+   ],
+   [
+    "https://occambrasil.com.br/biblioteca/",
+    "Biblioteca"
+   ]
+  ],
+  "home_pdfs": [
+   "https://occambrasil.com.br/wp-content/uploads/2020/12/Politica-de-Investimentos-Responsaveis-e-Integracao-ESG-4.pdf",
+   "https://occambrasil.com.br/wp-content/uploads/2026/06/OCCAM-BRASIL_Stewardship_2025-v_30062026.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://occambrasil.com.br/cartas-mensais/",
+    "text": "Conteúdos",
+    "code": "200",
+    "eff": "https://occambrasil.com.br/cartas-mensais/",
+    "len": 63284,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 52,
+    "pdf_sample": [
+     "https://occambrasil.com.br/wp-content/uploads/2020/12/Politica-de-Investimentos-Responsaveis-e-Integracao-ESG-4.pdf",
+     "https://occambrasil.com.br/wp-content/uploads/2024/10/Carta_Mensal_Credito_Setembro_2024.pdf",
+     "https://occambrasil.com.br/wp-content/uploads/2026/10/Carta_Mensal_Setembro__2026.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://occambrasil.com.br/cartas-tematicas/",
+    "text": "Cartas Temáticas",
+    "code": "200",
+    "eff": "https://occambrasil.com.br/cartas-tematicas/",
+    "len": 47816,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 13,
+    "pdf_sample": [
+     "https://occambrasil.com.br/wp-content/uploads/2019/08/Carta-01-Superapp.pdf",
+     "https://occambrasil.com.br/wp-content/uploads/2020/06/Carta-02-A-Revolta-de-Atlas-e-a-Pandemia-1.pdf",
+     "https://occambrasil.com.br/wp-content/uploads/2026/06/OCCAM-BRASIL_Stewardship_2025-v_30062026.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://occambrasil.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Mar Asset",
+  "domain": "www.marasset.com.br",
+  "home": [
+   "200",
+   "https://www.marasset.com.br/",
+   205531
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.marasset.com.br/conteudo-mar/",
+    "Conteúdo Mar"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.marasset.com.br/conteudo-mar/",
+    "text": "Conteúdo Mar",
+    "code": "200",
+    "eff": "https://www.marasset.com.br/conteudo-mar/",
+    "len": 256750,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /site/wp-admin/\nAllow: /site/wp-admin/admin-ajax.php\n\n# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://www.marasset.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Ace",
+  "domain": "www.acecapital.com.br",
+  "home": [
+   "200",
+   "https://acecapital.com.br/",
+   111588
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://acecapital.com.br/cartas-multimercado/",
+    "MULTIMERCADO"
+   ],
+   [
+    "https://acecapital.com.br/cartas-renda-variavel/",
+    "RENDA VARIÁVEL"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://acecapital.com.br/cartas-multimercado/",
+    "text": "MULTIMERCADO",
+    "code": "200",
+    "eff": "https://acecapital.com.br/cartas-multimercado/",
+    "len": 219931,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 84,
+    "pdf_sample": [
+     "https://acecapital.com.br/wp-content/uploads/Carta-Abril-2020.pdf",
+     "https://acecapital.com.br/wp-content/uploads/Carta-Abril-2021.pdf",
+     "https://acecapital.com.br/wp-content/uploads/CartaJaneiro2022.pdf"
+    ],
+    "iframes": [
+     "https://maps.google.com/maps?q=Rua%20Funchal%20418%2C%20Vila%20Ol%C3%ADmpia%2C%20S%C3%A3o%20Paulo&#038;t=m&#038;z=15&#038;output=embed&#038;iwloc=near"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://acecapital.com.br/cartas-renda-variavel/",
+    "text": "RENDA VARIÁVEL",
+    "code": "200",
+    "eff": "https://acecapital.com.br/cartas-renda-variavel/",
+    "len": 150915,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 8,
+    "pdf_sample": [
+     "https://acecapital.com.br/wp-content/uploads/Carta-Dezembro-2022_-Ace-Capital-Absoluto.pdf",
+     "https://acecapital.com.br/wp-content/uploads/Carta-Dezembro2023_Ace-Capital-Absoluto.pdf",
+     "https://acecapital.com.br/wp-content/uploads/Carta-primeiro-trimestre-2024_Ace-Capital-Absoluto.pdf"
+    ],
+    "iframes": [
+     "https://maps.google.com/maps?q=Rua%20Funchal%20418%2C%20Vila%20Ol%C3%ADmpia%2C%20S%C3%A3o%20Paulo&#038;t=m&#038;z=15&#038;output=embed&#038;iwloc=near"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://acecapital.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Clave",
+  "domain": "www.clavecapital.com.br",
+  "home": [
+   "000",
+   "https://www.clavecapital.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Novus",
+  "domain": "www.novuscapital.com.br",
+  "home": [
+   "200",
+   "https://novuscapital.com.br/",
+   355756
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://novuscapital.com.br/cartas-ao-investidor/",
+    "ARTIGOS CRÉDITO"
+   ],
+   [
+    "https://novuscapital.com.br/report-mensal/",
+    "REPORT MENSAL"
+   ],
+   [
+    "https://novuscapital.com.br/artigos/",
+    "ARTIGOS MACRO"
+   ],
+   [
+    "https://novuscapital.com.br/biblioteca/",
+    "BIBLIOTECA"
+   ]
+  ],
+  "home_pdfs": [
+   "https://novuscapital.com.br/.doc,.docx,.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://novuscapital.com.br/cartas-ao-investidor/",
+    "text": "ARTIGOS CRÉDITO",
+    "code": "200",
+    "eff": "https://novuscapital.com.br/cartas-ao-investidor/",
+    "len": 159377,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 7,
+    "pdf_sample": [
+     "https://novuscapital.com.br/cartas-ao-investidor/.doc,.docx,.pdf",
+     "https://novuscapital.com.br/cartas-ao-investidor/\\/\\/novuscapital.com.br\\/storage\\/2025\\/08\\/Carta-ao-Investidor-1o-Trimestre-de-2024-.pdf",
+     "https://novuscapital.com.br/cartas-ao-investidor/\\/\\/novuscapital.com.br\\/storage\\/2025\\/10\\/Novus-Carta-3T25.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://novuscapital.com.br/report-mensal/",
+    "text": "REPORT MENSAL",
+    "code": "200",
+    "eff": "https://novuscapital.com.br/report-mensal/",
+    "len": 155515,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://novuscapital.com.br/report-mensal/.doc,.docx,.pdf",
+     "https://novuscapital.com.br/report-mensal/.doc,.docx,.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\r\nDisallow: /wp-admin/\r\nAllow: /wp-admin/ajax-administrator.php"
+  ]
+ },
+ {
+  "name": "Truxt",
+  "domain": "www.truxt.com.br",
+  "home": [
+   "000",
+   "https://www.truxt.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Studio",
+  "domain": "www.studioinvest.com.br",
+  "home": [
+   "000",
+   "https://www.studioinvest.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Trigono",
+  "domain": "www.trigonocapital.com",
+  "home": [
+   "403",
+   "https://www.trigonocapital.com/",
+   75193
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "403",
+   ""
+  ]
+ },
+ {
+  "name": "Organon",
+  "domain": "www.organoncapital.com.br",
+  "home": [
+   "200",
+   "https://organoncapital.com.br/",
+   59776
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://organoncapital.com.br/cartas/",
+    "Cartas"
+   ]
+  ],
+  "home_pdfs": [
+   "https://organoncapital.com.br/wp-content/uploads/2025/12/Lamina_FIC60_Set_2026.pdf",
+   "https://organoncapital.com.br/wp-content/uploads/2025/12/Lamina_Institucional_Set_2026.pdf",
+   "https://organoncapital.com.br/wp-content/uploads/2025/12/Lamina_Set_2026.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://organoncapital.com.br/cartas/",
+    "text": "Cartas",
+    "code": "200",
+    "eff": "https://organoncapital.com.br/cartas/",
+    "len": 44316,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 11,
+    "pdf_sample": [
+     "https://organoncapital.com.br/wp-content/uploads/2026/07/Carta_01_1S21.pdf",
+     "https://organoncapital.com.br/wp-content/uploads/2026/07/Carta_02_2S21.pdf",
+     "https://organoncapital.com.br/wp-content/uploads/2026/07/Carta_11_1S26.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://organoncapital.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Real Investor",
+  "domain": "www.realinvestor.com.br",
+  "home": [
+   "200",
+   "https://www.realinvestor.com.br/",
+   184556
+  ],
+  "plat": [
+   "nextjs"
+  ],
+  "cands": [
+   [
+    "https://www.anbima.com.br/pt_br/index.htm",
+    ".css-976xea{width:200px;height:auto;position:relative;}@medi"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.anbima.com.br/pt_br/index.htm",
+    "text": ".css-976xea{width:200px;height:auto;position:relative;}@medi",
+    "code": "200",
+    "eff": "https://www.anbima.com.br/pt_br/index.htm",
+    "len": 278559,
+    "plat": [],
+    "npdf": 73,
+    "pdf_sample": [
+     "https://www.anbima.com.br/data/files/01/61/92/C9/97FBD91029F6DAD9BA2BA2A8/15.04.2026%20-%20Julgamento%20-%20Processo%20AGRT008.2025%20-%20Oslo%20Capital%20DTVM%20S.A.pdf",
+     "https://www.anbima.com.br/data/files/09/21/1F/F9/73F0C91052FACFB9F82BA2A8/19.01.2026%20-%20CR%20-%20AGRT%20-%20FIDD%20Administracao%20De%20Recursos%20Ltda.pdf",
+     "https://www.anbima.com.br/data/files/FE/51/49/B9/97FBD91029F6DAD9BA2BA2A8/15.04.2026%20-%20Advertencia%20Publica%20-%20Oslo%20Capital%20DTVM%20-%20Processo%20AGRT%20008.2025.pdf"
+    ],
+    "iframes": [
+     "https://assistente.anbima.com.br/",
+     "https://www.youtube.com/embed/CpzJdbIxf3g",
+     "https://www.youtube.com/embed/6fFJVsLErzU"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# *\nUser-agent: *\nAllow: /\n\n# Host\nHost: https://www.realinvestor.com.br\n\n# Sitemaps\nSitemap: https://www.realinvestor.com.br/sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "AZ Quest",
+  "domain": "azquest.com.br",
+  "home": [
+   "200",
+   "https://azquest.com.br/",
+   65658
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://azquest.com.br/documentos.php",
+    "Documentos"
+   ]
+  ],
+  "home_pdfs": [
+   "https://azquest.com.br/arquivos/documento/Política-de-Privacidade.pdf",
+   "https://azquest.com.br/arquivos/fato/AVISO_AZQ.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://azquest.com.br/documentos.php",
+    "text": "Documentos",
+    "code": "200",
+    "eff": "https://azquest.com.br/documentos.php",
+    "len": 47696,
+    "plat": [],
+    "npdf": 3,
+    "pdf_sample": [
+     "https://azquest.com.br/arquivos/documento/Política-de-Privacidade.pdf",
+     "https://azquest.com.br/arquivos/documento/Tabela_Sumario_Anbima_AZQuest.pdf",
+     "https://azquest.com.br/arquivos/fato/AVISO_AZQ.pdf"
+    ],
+    "iframes": [
+     "https://www.youtube.com/embed/2oGgPcd5LcI?rel=0&amp;showinfo=0&amp;background=1&amp;autoplay=1&amp;loop=1&amp;mute=1&amp;playlist=2oGgPcd5LcI"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "Página não encontrada."
+  ]
+ },
+ {
+  "name": "Leblon",
+  "domain": "www.leblonequities.com.br",
+  "home": [
+   "000",
+   "https://www.leblonequities.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Navi",
+  "domain": "www.navi.com.br",
+  "home": [
+   "200",
+   "https://www.navi.com.br/",
+   66753
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.navi.com.br/documentos/",
+    "Documentos"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.navi.com.br/documentos/",
+    "text": "Documentos",
+    "code": "200",
+    "eff": "https://www.navi.com.br/documentos/",
+    "len": 64310,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 10,
+    "pdf_sample": [
+     "https://www.navi.com.br/wp-content/uploads/2023.12.06-PoliticadeInvestimentosResponsaveis.pdf",
+     "https://www.navi.com.br/wp-content/uploads/Sumario-Taxas-Capital-08072025.pdf",
+     "https://www.navi.com.br/wp-content/uploads/rateio-e-divisao-de-ordens-set.2026.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://www.navi.com.br/sitemap_index.xml\n"
+  ]
+ },
+ {
+  "name": "Charles River",
+  "domain": "www.charlesriver.com.br",
+  "home": [
+   "200",
+   "https://charlesriver.com.br/",
+   49485
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://charlesriver.com.br/conteudo/",
+    "Conteúdo"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://charlesriver.com.br/conteudo/",
+    "text": "Conteúdo",
+    "code": "200",
+    "eff": "https://charlesriver.com.br/conteudo/",
+    "len": 89929,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 3,
+    "pdf_sample": [
+     "http://charlesriver.com.br/wp-content/uploads/Carta-01-Uma-sintese-de-historico-filosofia-processos-performance-acumulada-e-caso-de-investimento.pdf",
+     "http://charlesriver.com.br/wp-content/uploads/Carta-02-Gestao-de-risco-na-selecao-de-investimentos.pdf",
+     "https://charlesriver.com.br/wp-content/uploads/Carta-03-Gestao-ativa-da-exposicao-liquida-6.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://charlesriver.com.br/sitemap_index.xml\n"
+  ]
+ },
+ {
+  "name": "HIX",
+  "domain": "www.hixcapital.com.br",
+  "home": [
+   "200",
+   "https://hixcapital.com.br/",
+   95887
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://hixcapital.com.br/index.php/conteudo/",
+    "Conteúdos"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://hixcapital.com.br/index.php/conteudo/",
+    "text": "Conteúdos",
+    "code": "200",
+    "eff": "https://hixcapital.com.br/index.php/conteudo/",
+    "len": 81959,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 32,
+    "pdf_sample": [
+     "http://54.226.246.61/wp-content/uploads/2021/08/HIX-Capital-Carta-aos-Investidores-Dez-2016.pdf",
+     "http://54.226.246.61/wp-content/uploads/2021/08/HIX-Capital-Carta-aos-Investidores-Dez-2017.pdf",
+     "https://hixcapital.com.br/wp-content/uploads/2026/08/HIX-Capital_Carta-aos-Investidores_1o-Semestre-2026.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://hixcapital.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Forpus",
+  "domain": "www.forpuscapital.com.br",
+  "home": [
+   "200",
+   "https://www.forpuscapital.com.br/",
+   23461
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://www.forpuscapital.com.br/relatorios-mensais",
+    "Relatórios Mensais"
+   ],
+   [
+    "javascript:",
+    "Relatório e Cotas"
+   ],
+   [
+    "https://www.forpuscapital.com.br/Download.aspx?Arquivo=fBtEHaPQAnChqLsKn99jyQ==",
+    "Relatório Mensal"
+   ],
+   [
+    "javascript:void(0);",
+    "Documentos"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.forpuscapital.com.br/relatorios-mensais",
+    "text": "Relatórios Mensais",
+    "code": "200",
+    "eff": "https://www.forpuscapital.com.br/relatorios-mensais",
+    "len": 223302,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "javascript:",
+    "text": "Relatório e Cotas",
+    "code": "000",
+    "eff": "javascript:",
+    "len": 0,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Nucleo",
+  "domain": "www.nucleocapital.com.br",
+  "home": [
+   "200",
+   "https://www.nucleocapital.com.br/",
+   19172
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/ResultBuscaPartic.aspx?TpConsulta=16&CNPJNome=14229647000102",
+    "Formulário de Referência"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.nucleocapital.com.br/pdf/politicas-e-manuais/1_202605_Codigo_de_Etica.pdf",
+   "https://www.nucleocapital.com.br/pdf/politicas-e-manuais/2_202605_Politica-de-Investimentos-Pessoais_Personal-Trading-Policy.pdf",
+   "https://www.nucleocapital.com.br/pdf/politicas-e-manuais/6_202605_Manual-de-Compliance_Manual-of-Compliance.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/ResultBuscaPartic.aspx?TpConsulta=16&CNPJNome=14229647000102",
+    "text": "Formulário de Referência",
+    "code": "200",
+    "eff": "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/FormRefAdmCart/ConsultaFormReferenciaAdmCarteiraPJ.aspx?PK_PARTIC=119151&COMPTC=2025",
+    "len": 118644,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Garde",
+  "domain": "www.garde.com.br",
+  "home": [
+   "000",
+   "https://www.garde.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Vinci Compass",
+  "domain": "www.vincicompass.com",
+  "home": [
+   "200",
+   "https://www.vincicompass.com/",
+   53237
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://www.vincicompass.com/noticias/indice/3",
+    "Relat&#243;rios"
+   ],
+   [
+    "https://id.addepar.com/login?continue=%7B%22targetName%22%3A%22oauth2.authorize%22%2C%22queryParams%22%3A%7B%22response_type%22%3A%22code%22%2C%22scope%22%3A%22session%22%2C%22client_id%22%3A%22iverson%22%2C%22state%22%3A%22%7B%7D%22%2C%22code_challenge%22%3A%2234ef6c04d47350d7ca7b145d94e409b3e9168fc1c79ec89e21f68b1f5e10c75c%22%2C%22redirect_uri%22%3A%22https%3A%2F%2Fcompassgroup.addepar.com%2Foauth2%2Fcb%22%2C%22firm%22%3A%22compassgroup%22%7D%7D&firm=compassgroup",
+    "VC DYNAMIC REPORTS"
+   ],
+   [
+    "https://www.vincicompass.com/home/documentos-e-politicas",
+    "Documentos e Pol&#237;ticas"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.vincicompass.com/noticias/indice/3",
+    "text": "Relat&#243;rios",
+    "code": "200",
+    "eff": "https://www.vincicompass.com/noticias/indice/3",
+    "len": 124389,
+    "plat": [],
+    "npdf": 138,
+    "pdf_sample": [
+     "https://vinciinstitucionalprd.blob.core.windows.net/doc/1002215723.pdf",
+     "https://vinciinstitucionalprd.blob.core.windows.net/doc/1011028521.pdf",
+     "https://vinciinstitucionalprd.blob.core.windows.net/doc/995248037.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://id.addepar.com/login?continue=%7B%22targetName%22%3A%22oauth2.authorize%22%2C%22queryParams%22%3A%7B%22response_type%22%3A%22code%22%2C%22scope%22%3A%22session%22%2C%22client_id%22%3A%22iverson%22%2C%22state%22%3A%22%7B%7D%22%2C%22code_challenge%22%3A%2234ef6c04d47350d7ca7b145d94e409b3e9168fc1c79ec89e21f68b1f5e10c75c%22%2C%22redirect_uri%22%3A%22https%3A%2F%2Fcompassgroup.addepar.com%2Foauth2%2Fcb%22%2C%22firm%22%3A%22compassgroup%22%7D%7D&firm=compassgroup",
+    "text": "VC DYNAMIC REPORTS",
+    "code": "200",
+    "eff": "https://id.addepar.com/login?continue=%7B%22targetName%22%3A%22oauth2.authorize%22%2C%22queryParams%22%3A%7B%22response_type%22%3A%22code%22%2C%22scope%22%3A%22session%22%2C%22client_id%22%3A%22iverson%22%2C%22state%22%3A%22%7B%7D%22%2C%22code_challenge%22%3A%2234ef6c04d47350d7ca7b145d94e409b3e9168fc1c79ec89e21f68b1f5e10c75c%22%2C%22redirect_uri%22%3A%22https%3A%2F%2Fcompassgroup.addepar.com%2Foauth2%2Fcb%22%2C%22firm%22%3A%22compassgroup%22%7D%7D&firm=compassgroup",
+    "len": 29653,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "/api/branding/",
+     "/api/public/auth/firm?subdomain=",
+     "api.appcues.net"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   ""
+  ]
+ },
+ {
+  "name": "RPS",
+  "domain": "www.rpscapital.com.br",
+  "home": [
+   "200",
+   "https://www.rpscapital.com.br/",
+   40533
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/FormRefAdmCart/ConsultaFormReferenciaAdmCarteiraPJ.aspx?PK_PARTIC=133870&COMPTC=2023",
+    "Formulário de Referência"
+   ],
+   [
+    "javascript:void(0);",
+    "Cartas"
+   ],
+   [
+    "https://www.rpscapital.com.br/cartas-gestao",
+    "Cartas Gestão"
+   ],
+   [
+    "https://www.rpscapital.com.br/Download.aspx?Arquivo=o1i7h9Laj40xF2B2NSJpxA==",
+    "Dezembro/2020 - Relatório Macroeconômico"
+   ],
+   [
+    "https://www.rpscapital.com.br/modalRegulatorio",
+    "Documentos"
+   ],
+   [
+    "javascript:void();",
+    "Receba nossos materiais  periódicos"
+   ],
+   [
+    "https://www.rpscapital.com.br/Download.aspx?Arquivo=jj1jNoQgzQWtgXr+JN/+EQ==",
+    "Press Release"
+   ],
+   [
+    "https://www.rpscapital.com.br/Download.aspx?Arquivo=njEahZb4cuVnmfk1ymQzjg==",
+    "Termos de Uso"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/FormRefAdmCart/ConsultaFormReferenciaAdmCarteiraPJ.aspx?PK_PARTIC=133870&COMPTC=2023",
+    "text": "Formulário de Referência",
+    "code": "200",
+    "eff": "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/FormRefAdmCart/ConsultaFormReferenciaAdmCarteiraPJ.aspx?PK_PARTIC=133870&COMPTC=2023",
+    "len": 103983,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "javascript:void(0);",
+    "text": "Cartas",
+    "code": "000",
+    "eff": "javascript:void(0);",
+    "len": 0,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Sparta",
+  "domain": "www.sparta.com.br",
+  "home": [
+   "200",
+   "https://www.sparta.com.br/",
+   153783
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.sparta.com.br/cartas-mensais/",
+    "Leia a nossa carta"
+   ],
+   [
+    "https://www.sparta.com.br/conteudos/",
+    "Conteúdo"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.sparta.com.br/cartas-mensais/",
+    "text": "Leia a nossa carta",
+    "code": "200",
+    "eff": "https://www.sparta.com.br/cartas-mensais/",
+    "len": 106706,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 36,
+    "pdf_sample": [
+     "https://www.sparta.com.br/uploads/CartaMensal_202301.pdf",
+     "https://www.sparta.com.br/uploads/CartaMensal_202302.pdf",
+     "https://www.sparta.com.br/uploads/CartaMensal_202512.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://www.sparta.com.br/conteudos/",
+    "text": "Conteúdo",
+    "code": "200",
+    "eff": "https://www.sparta.com.br/conteudos/",
+    "len": 122658,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 2,
+    "pdf_sample": [
+     "https://sparta.com.br/uploads/IndexadorIMAB5_202412.pdf",
+     "https://www.sparta.com.br/uploads/SpartaDebRenda_202609.pdf",
+     "https://www.sparta.com.br/uploads/SpartaDebRenda_202609.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   ""
+  ]
+ },
+ {
+  "name": "Quantitas",
+  "domain": "www.quantitas.com.br",
+  "home": [
+   "200",
+   "https://www.quantitas.com.br/",
+   63978
+  ],
+  "plat": [
+   "wordpress",
+   "mziq"
+  ],
+  "cands": [
+   [
+    "https://www.quantitas.com.br/cartas/",
+    "Cartas"
+   ],
+   [
+    "https://www.quantitas.com.br/documentos/",
+    "Documentos"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.quantitas.com.br/cartas/",
+    "text": "Cartas",
+    "code": "200",
+    "eff": "https://www.quantitas.com.br/cartas/",
+    "len": 72356,
+    "plat": [
+     "wordpress",
+     "mziq"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://www.quantitas.com.br/documentos/",
+    "text": "Documentos",
+    "code": "200",
+    "eff": "https://www.quantitas.com.br/documentos/",
+    "len": 52553,
+    "plat": [
+     "wordpress",
+     "mziq"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nUser-Agent: Googlebot\nUser-Agent: GoogleOther\nUser-Agent: Bingbot\nUser-Agent: Googlebot-Mobile\nAllow: /\nDisallow: /wp-admin/\nDisallow: /wp-includes/\nDisallow: /wp-content/\n# Allow access to theme files, which include critical JS and CSS\nAllow: /wp-content/themes/mziq_quantitas_ri/\nAllow: /wp-content/uploads/*.jpg\nAllow: /wp-content/uploads/*.jpeg\nAllow: /wp-content/uploads/*.png\nAllow: /wp-content/uploads/*.gif\nSitemap: /sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "ARX",
+  "domain": "www.arxinvestimentos.com.br",
+  "home": [
+   "200",
+   "https://www.arxinvestimentos.com.br/",
+   105644
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [
+   "https://www.arxinvestimentos.com.br/content/dam/arxinvestment/documents/homepage/awards/RelatorioDeAvaliacao_ARX-Investimentos_Mar26_MLBR.pdf",
+   "https://www.arxinvestimentos.com.br/content/dam/arxinvestment/documents/homepage/policies/Anexo%20E%20-%20Res%2021%20-%20Mar%202026.pdf",
+   "https://www.arxinvestimentos.com.br/content/dam/arxinvestment/documents/homepage/policies/BNY%20Brasil%20Estratégia%20de%20Investimentos.pdf"
+  ],
+  "pages": [],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Moat",
+  "domain": "www.moat.com.br",
+  "home": [
+   "200",
+   "https://www.moat.com.br/",
+   25160
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /cms/wp-admin/\nAllow: /cms/wp-admin/admin-ajax.php\n\nSitemap: https://www.moat.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Sharp",
+  "domain": "sharpcapital.com.br",
+  "home": [
+   "200",
+   "https://sharpcapital.com.br/",
+   77841
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://sharpcapital.com.br/relatorios-de-gestao/",
+    "Relatórios"
+   ]
+  ],
+  "home_pdfs": [
+   "https://sharpcapital.com.br/uploads/apresentacoes/Sharp-Capital-Apresentacao-Institucional.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://sharpcapital.com.br/relatorios-de-gestao/",
+    "text": "Relatórios",
+    "code": "200",
+    "eff": "https://sharpcapital.com.br/relatorios-de-gestao/",
+    "len": 85848,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 9,
+    "pdf_sample": [
+     "https://sharpcapital.com.br/uploads/apresentacoes/Sharp-Capital-Apresentacao-Institucional.pdf",
+     "https://sharpcapital.com.br/uploads/cartas/Carta-Sharp-Capital-janeiro-2019.pdf",
+     "https://sharpcapital.com.br/uploads/cartas/Carta-Sharp-Capital-janeiro-2026.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api_domain"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://sharpcapital.com.br/wp-sitemap.xml\n\nUser-agent: *\nDisallow: /wp-content/uploads/wpo/wpo-plugins-tables-list.json\n"
+  ]
+ },
+ {
+  "name": "Canvas",
+  "domain": "www.canvascapital.com.br",
+  "home": [
+   "200",
+   "https://www.canvascapital.com.br/",
+   74972
+  ],
+  "plat": [
+   "wordpress",
+   "mziq",
+   "s3"
+  ],
+  "cands": [
+   [
+    "https://www.canvascapital.com.br/conteudo/comunicacoes/",
+    "Comunicações"
+   ],
+   [
+    "https://www.canvascapital.com.br/conteudo/cotas-e-rentabilidade/",
+    "Cotas e Rentabilidade"
+   ],
+   [
+    "https://www.canvascapital.com.br/conteudo/documentos/",
+    "Informações Regulatórias"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.canvascapital.com.br/conteudo/comunicacoes/",
+    "text": "Comunicações",
+    "code": "200",
+    "eff": "https://www.canvascapital.com.br/conteudo/comunicacoes/",
+    "len": 71580,
+    "plat": [
+     "wordpress",
+     "mziq",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://www.canvascapital.com.br/conteudo/cotas-e-rentabilidade/",
+    "text": "Cotas e Rentabilidade",
+    "code": "200",
+    "eff": "https://www.canvascapital.com.br/conteudo/cotas-e-rentabilidade/",
+    "len": 102266,
+    "plat": [
+     "wordpress",
+     "mziq",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "apiCode"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nUser-Agent: Googlebot\nUser-Agent: GoogleOther\nUser-Agent: Bingbot\nUser-Agent: Googlebot-Mobile\nAllow: /\nDisallow: /wp-admin/\nDisallow: /wp-includes/\nDisallow: /wp-content/\n# Allow access to theme files, which include critical JS and CSS\nAllow: /wp-content/themes/mziq_canvas_capital/\nAllow: /wp-content/uploads/*.jpg\nAllow: /wp-content/uploads/*.jpeg\nAllow: /wp-content/uploads/*.png\nAllow: /wp-content/uploads/*.gif\nSitemap: https://www.canvascapital.com.br/sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "Giant Steps",
+  "domain": "www.gscap.com.br",
+  "home": [
+   "429",
+   "https://www.gscap.com.br/",
+   31203
+  ],
+  "plat": [
+   "react-root"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "429",
+   ""
+  ]
+ },
+ {
+  "name": "Dahlia",
+  "domain": "www.dahliacapital.com.br",
+  "home": [
+   "200",
+   "https://www.dahliacapital.com.br/",
+   629517
+  ],
+  "plat": [
+   "elementor",
+   "wix"
+  ],
+  "cands": [
+   [
+    "https://www.dahliacapital.com.br/nossas-cartas",
+    "Nossas Cartas"
+   ]
+  ],
+  "home_pdfs": [
+   "https://6a2c0ff8-8a6a-4053-847e-f2271aeed98a.usrfiles.com/ugd/6a2c0f_d465ec6120d94f4eb12a0697c149b7ca.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.dahliacapital.com.br/nossas-cartas",
+    "text": "Nossas Cartas",
+    "code": "200",
+    "eff": "https://www.dahliacapital.com.br/nossas-cartas",
+    "len": 900051,
+    "plat": [
+     "elementor",
+     "wix"
+    ],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://6a2c0ff8-8a6a-4053-847e-f2271aeed98a.usrfiles.com/ugd/6a2c0f_d465ec6120d94f4eb12a0697c149b7ca.pdf",
+     "https://6a2c0ff8-8a6a-4053-847e-f2271aeed98a.usrfiles.com/ugd/6a2c0f_d465ec6120d94f4eb12a0697c149b7ca.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "/api/",
+     "apiAggregatorBaseUrl",
+     "apiBaseUrl",
+     "apiBaseUrlClient",
+     "apiExperimentsBaseUrlClient"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nAllow: /\nDisallow: *?lightbox=\n\n# Optimization for Google Ads Bot\nUser-agent: AdsBot-Google-Mobile\nUser-agent: AdsBot-Google\nDisallow: /_partials*\nDisallow: /pro-gallery-webapp/v1/galleries/*\n\n# Block PetalBot\nUser-agent: PetalBot\nDisallow: /\n\n# Crawl delay for overly enthusiastic bots\nUser-agent: dotbot\nCrawl-delay: 10\nUser-agent: AhrefsBot\nCrawl-delay: 10\n\nSitemap: https://www.dahliacapital.com.br/sitemap.xml\n\n# Auto generated, go to SEO Tools > Robots.txt Editor to change this"
+  ]
+ },
+ {
+  "name": "Persevera",
+  "domain": "www.persevera.com.br",
+  "home": [
+   "200",
+   "https://www.persevera.com.br/",
+   981221
+  ],
+  "plat": [
+   "elementor",
+   "wix"
+  ],
+  "cands": [
+   [
+    "https://www.persevera.com.br/carta-mensal",
+    "CARTA TRIMESTRAL"
+   ],
+   [
+    "https://www.persevera.com.br/promocartamensal",
+    "CONFIRA MAIS CARTAS"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.persevera.com.br/_files/ugd/056676_c77bf06ade654fd3bc4aa8a0d43a208b.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.persevera.com.br/carta-mensal",
+    "text": "CARTA TRIMESTRAL",
+    "code": "200",
+    "eff": "https://www.persevera.com.br/carta-mensal",
+    "len": 1181874,
+    "plat": [
+     "elementor",
+     "wix"
+    ],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://www.persevera.com.br/_files/ugd/056676_c77bf06ade654fd3bc4aa8a0d43a208b.pdf",
+     "https://www.persevera.com.br/_files/ugd/056676_c77bf06ade654fd3bc4aa8a0d43a208b.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "/api/",
+     "apiAggregatorBaseUrl",
+     "apiBaseUrl",
+     "apiBaseUrlClient",
+     "apiExperimentsBaseUrlClient"
+    ]
+   },
+   {
+    "url": "https://www.persevera.com.br/promocartamensal",
+    "text": "CONFIRA MAIS CARTAS",
+    "code": "200",
+    "eff": "https://www.persevera.com.br/promocartamensal",
+    "len": 626921,
+    "plat": [
+     "elementor",
+     "wix"
+    ],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://www.persevera.com.br/_files/ugd/056676_c77bf06ade654fd3bc4aa8a0d43a208b.pdf",
+     "https://www.persevera.com.br/_files/ugd/056676_c77bf06ade654fd3bc4aa8a0d43a208b.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "/api/",
+     "apiAggregatorBaseUrl",
+     "apiBaseUrl",
+     "apiBaseUrlClient",
+     "apiExperimentsBaseUrlClient"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nAllow: /\nDisallow: *?lightbox=\n\n# Optimization for Google Ads Bot\nUser-agent: AdsBot-Google-Mobile\nUser-agent: AdsBot-Google\nDisallow: /_partials*\nDisallow: /pro-gallery-webapp/v1/galleries/*\n\n# Block PetalBot\nUser-agent: PetalBot\nDisallow: /\n\n# Crawl delay for overly enthusiastic bots\nUser-agent: dotbot\nCrawl-delay: 10\nUser-agent: AhrefsBot\nCrawl-delay: 10\n\nSitemap: https://www.persevera.com.br/en_en-sitemap.xml\nSitemap: https://www.persevera.com.br/sitemap.xml\n\n# Auto generated, go to SEO Tools > Robots.txt Editor to change this"
+  ]
+ },
+ {
+  "name": "Kadima",
+  "domain": "www.kadimaasset.com.br",
+  "home": [
+   "200",
+   "https://www.kadimaasset.com.br/",
+   265218
+  ],
+  "plat": [
+   "wordpress",
+   "mziq",
+   "s3"
+  ],
+  "cands": [
+   [
+    "https://www.kadimaasset.com.br/biblioteca/",
+    "Ler cartas anteriores"
+   ]
+  ],
+  "home_pdfs": [
+   "https://cdn-sites-assets.mziq.com/wp-content/uploads/sites/1234/2026/04/Carta-Trimestral-2026_03-2.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.kadimaasset.com.br/biblioteca/",
+    "text": "Ler cartas anteriores",
+    "code": "200",
+    "eff": "https://www.kadimaasset.com.br/biblioteca/",
+    "len": 117782,
+    "plat": [
+     "wordpress",
+     "mziq",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-K3P3LN5"
+    ],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nUser-Agent: Googlebot\nUser-Agent: GoogleOther\nUser-Agent: Bingbot\nUser-Agent: Googlebot-Mobile\nAllow: /\nDisallow: /wp-admin/\nDisallow: /wp-includes/\nDisallow: /wp-content/\n# Allow access to theme files, which include critical JS and CSS\nAllow: /wp-content/themes/mziq_kadima_asset/\nAllow: /wp-content/uploads/*.jpg\nAllow: /wp-content/uploads/*.jpeg\nAllow: /wp-content/uploads/*.png\nAllow: /wp-content/uploads/*.gif\nSitemap: /sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "Tenax",
+  "domain": "www.tenax.capital",
+  "home": [
+   "200",
+   "https://www.tenax.capital/",
+   82522
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://www.tenax.capital/conteudos",
+    "Conteúdos"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.tenax.capital/arquivos/site/tenax-capital-codigodeetica-v6-19-11-2025-19-50-22.pdf",
+   "https://www.tenax.capital/arquivos/site/tenax-capital-formulario-de-referencia-ref-2025-vf-26-03-2026-13-51-08.pdf",
+   "https://www.tenax.capital/arquivos/site/tenax-capital-politicadeinvestimentospessoais-v6-19-11-2025-19-52-12.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.tenax.capital/conteudos",
+    "text": "Conteúdos",
+    "code": "200",
+    "eff": "https://www.tenax.capital/conteudos",
+    "len": 52281,
+    "plat": [],
+    "npdf": 8,
+    "pdf_sample": [
+     "https://www.tenax.capital/arquivos/site/tenax-capital-codigodeetica-v6-19-11-2025-19-50-22.pdf",
+     "https://www.tenax.capital/arquivos/site/tenax-capital-formulario-de-referencia-ref-2025-vf-26-03-2026-13-51-08.pdf",
+     "https://www.tenax.capital/arquivos/site/tenaxcapital-politicadevoto-v41-19-11-2025-19-53-08.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "ASA",
+  "domain": "asa.com.br",
+  "home": [
+   "200",
+   "https://www.asa.com.br/",
+   377543
+  ],
+  "plat": [
+   "s3"
+  ],
+  "cands": [
+   [
+    "https://www.asa.com.br/central-de-conteudos",
+    "Central de Conteúdos"
+   ],
+   [
+    "https://www.asa.com.br/central-de-conteudos/macroeconomia/ata-fed",
+    "Macroeconomia · 07 de outubro de 2026   Ata de decisão do Fe"
+   ],
+   [
+    "https://www.asa.com.br/central-de-conteudos/investimentos/mercado-secundario-debentures",
+    "Investimentos · 07 de outubro de 2026   Mercado secundário d"
+   ],
+   [
+    "https://www.asa.com.br/central-de-conteudos/investimentos/fidcs-patrimonio-liquido",
+    "Investimentos · 06 de outubro de 2026   FIDCs atingem marca "
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.asa.com.br/*.pdf",
+   "https://www.asa.com.br/storage/documents/files/asa-i-codigo-de-etica-e-conduta-vf-site-6a8733e85c556.pdf",
+   "https://www.asa.com.br/storage/documents/files/asa-i-formulario-de-referencia-coordenacao-de-ofertas-publicas-66c3b09e1c1f6.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.asa.com.br/central-de-conteudos",
+    "text": "Central de Conteúdos",
+    "code": "200",
+    "eff": "https://www.asa.com.br/central-de-conteudos",
+    "len": 215447,
+    "plat": [
+     "s3"
+    ],
+    "npdf": 48,
+    "pdf_sample": [
+     "https://www.asa.com.br/*.pdf",
+     "https://www.asa.com.br/storage/documents/files/asa-i-codigo-de-etica-e-conduta-vf-site-6a8733e85c556.pdf",
+     "https://www.asa.com.br/storage/documents/files/termos-e-condicoes-gerais-para-operacoes-de-cambio-ebury-bank-v3052024-69b1b468a15a5.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-KFV75VD",
+     "https://cdn-site-institucional-asa-prd.asa.com.br/asa-faq-web.html"
+    ],
+    "apis": [
+     "/api/*"
+    ]
+   },
+   {
+    "url": "https://www.asa.com.br/central-de-conteudos/macroeconomia/ata-fed",
+    "text": "Macroeconomia · 07 de outubro de 2026   Ata de decisão do Fe",
+    "code": "200",
+    "eff": "https://www.asa.com.br/central-de-conteudos/macroeconomia/ata-fed",
+    "len": 180823,
+    "plat": [
+     "s3"
+    ],
+    "npdf": 48,
+    "pdf_sample": [
+     "https://www.asa.com.br/*.pdf",
+     "https://www.asa.com.br/storage/documents/files/asa-i-codigo-de-etica-e-conduta-vf-site-6a8733e85c556.pdf",
+     "https://www.asa.com.br/storage/documents/files/termos-e-condicoes-gerais-para-operacoes-de-cambio-ebury-bank-v3052024-69b1b468a15a5.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-KFV75VD",
+     "https://cdn-site-institucional-asa-prd.asa.com.br/asa-faq-web.html"
+    ],
+    "apis": [
+     "/api/*"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow:\n\nSitemap: https://www.asa.com.br/sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Artica",
+  "domain": "artica.capital",
+  "home": [
+   "200",
+   "https://artica.capital/",
+   78917
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://artica.capital/sitemap_index.xml\n"
+  ]
+ },
+ {
+  "name": "Tavola",
+  "domain": "www.tavolacapital.com.br",
+  "home": [
+   "200",
+   "https://www.tavolacapital.com.br/",
+   52126
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://www.tavolacapital.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Skopos",
+  "domain": "www.skopos.com.br",
+  "home": [
+   "200",
+   "https://www.skopos.com.br/",
+   77225
+  ],
+  "plat": [
+   "wordpress",
+   "mziq",
+   "s3"
+  ],
+  "cands": [
+   [
+    "https://www.skopos.com.br/produtos/carteira-administrada/",
+    "Carteira Administrada"
+   ],
+   [
+    "https://www.skopos.com.br/blog/cartas-historicas/",
+    "Cartas Antigas"
+   ],
+   [
+    "https://www.skopos.com.br/research/",
+    "Research"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.skopos.com.br/produtos/carteira-administrada/",
+    "text": "Carteira Administrada",
+    "code": "200",
+    "eff": "https://www.skopos.com.br/produtos/carteira-administrada/",
+    "len": 69167,
+    "plat": [
+     "wordpress",
+     "mziq",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://www.skopos.com.br/blog/cartas-historicas/",
+    "text": "Cartas Antigas",
+    "code": "200",
+    "eff": "https://www.skopos.com.br/blog/cartas-historicas/",
+    "len": 166037,
+    "plat": [
+     "wordpress",
+     "mziq",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nUser-Agent: Googlebot\nUser-Agent: GoogleOther\nUser-Agent: Bingbot\nUser-Agent: Googlebot-Mobile\n\nAllow: /\n\nDisallow: /wp-admin/\nDisallow: /wp-includes/\nDisallow: /wp-content/\n\n# Allow access to theme files, which include critical JS and CSS\n\nAllow: /wp-content/themes/mziq_skopos_fundo/\nAllow: /wp-content/uploads/*.jpg\nAllow: /wp-content/uploads/*.jpeg\nAllow: /wp-content/uploads/*.png\nAllow: /wp-content/uploads/*.gif\n\nSitemap: /sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "Equitas",
+  "domain": "www.equitas.com.br",
+  "home": [
+   "200",
+   "https://dryscapital.com.br/",
+   34060
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://dryscapital.com.br/insights",
+    "Conteúdo"
+   ],
+   [
+    "javascript:;",
+    "Insights"
+   ],
+   [
+    "https://dryscapital.com.br/documentos",
+    "Documentos"
+   ],
+   [
+    "https://dryscapital.com.br/insights/o-que-aprendemos-errado-com-warren-buffett",
+    "O que aprendemos errado com Warren Buffett"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://dryscapital.com.br/insights",
+    "text": "Conteúdo",
+    "code": "200",
+    "eff": "https://dryscapital.com.br/insights",
+    "len": 36875,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "javascript:;",
+    "text": "Insights",
+    "code": "000",
+    "eff": "javascript:;",
+    "len": 0,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow:\n"
+  ]
+ },
+ {
+  "name": "Mapfre",
+  "domain": "www.mapfreinvestimentos.com.br",
+  "home": [
+   "200",
+   "https://www.mapfre.com.br/para-voce/investimentos/",
+   159164
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.mapfre.com.br/para-voce/outros-seguros/perda-roubo/",
+    "Seguro Cartão Protegido"
+   ],
+   [
+    "https://www.mapfre.com.br/para-voce/parceiros/mapfre-demais-parceiros/cdebeneficios",
+    "Cartões de Benefícios"
+   ],
+   [
+    "https://www.mapfre.com.br/quem-somos/opinioes-mapfre/",
+    "Opiniões sobre a MAPFRE"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.mapfre.com.br/media/p02-politica-de-pld-ft.pdf",
+   "https://www.mapfre.com.br/media/plc01-codigo-de-conduta-vsg1825.pdf",
+   "https://www.mapfre.com.br/media/plc39_politica-do-sistema-interno-de-informacao_sg-mapfre_v2.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.mapfre.com.br/para-voce/outros-seguros/perda-roubo/",
+    "text": "Seguro Cartão Protegido",
+    "code": "200",
+    "eff": "https://www.mapfre.com.br/para-voce/outros-seguros/perda-roubo/",
+    "len": 174935,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 24,
+    "pdf_sample": [
+     "https://www.mapfre.com.br/media/CG_Cartao_Prot_200116_tcm909-398673.pdf",
+     "https://www.mapfre.com.br/media/CG_Perda_ou_Roubo_de_Cartoes_de_Credito_-_V.1.5a_-_15414.004716_2004-23_tcm909-248295.pdf",
+     "https://www.mapfre.com.br/para-voce/outros-seguros/perda-roubo/perda-ou-roubo-cartoes-v15-vigencia-07-05-2015.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-TD7PKFX"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://www.mapfre.com.br/para-voce/parceiros/mapfre-demais-parceiros/cdebeneficios",
+    "text": "Cartões de Benefícios",
+    "code": "200",
+    "eff": "https://www.mapfre.com.br/para-voce/parceiros/mapfre-demais-parceiros/cdebeneficios/",
+    "len": 169132,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 21,
+    "pdf_sample": [
+     "https://www.mapfre.com.br/media/4166-MAPFRE-SEGUROS-ASSISTENCIA-AFFINITY-PESSOAS.pdf",
+     "https://www.mapfre.com.br/media/4167-MAPFRE-SEGUROS-ASSISTENCIA-AFFINITY-PET.pdf",
+     "https://www.mapfre.com.br/media/regulamento-microsseguro-premiado_f.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-TD7PKFX"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\r\nDisallow: /pesquisar/?query=*\r\nSitemap: https://www.mapfre.com.br/sitemap.xml\r\nSitemap: https://atendimento.mapfre.com.br/sitemap-posttype-offices.xml\r\n"
+  ]
+ },
+ {
+  "name": "Icatu Vanguarda",
+  "domain": "www.icatuvanguarda.com.br",
+  "home": [
+   "200",
+   "https://www.icatuvanguarda.com.br/",
+   82136
+  ],
+  "plat": [
+   "nextjs"
+  ],
+  "cands": [
+   [
+    "https://www.icatuvanguarda.com.br/relatorios",
+    "Saiba mais"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.icatuvanguarda.com.br/relatorios",
+    "text": "Saiba mais",
+    "code": "200",
+    "eff": "https://www.icatuvanguarda.com.br/relatorios",
+    "len": 3157551,
+    "plat": [
+     "nextjs"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Rio Bravo",
+  "domain": "riobravo.com.br",
+  "home": [
+   "200",
+   "https://www.riobravo.com.br/",
+   256047
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.riobravo.com.br/poupah",
+    "Carteira Administrada"
+   ],
+   [
+    "https://www.riobravo.com.br/fundos/fii-rio-bravo-renda-varejo",
+    "Diversifique sua carteira com cotas de renda variável e índi"
+   ],
+   [
+    "https://www.riobravo.com.br/categoria/carta-estrategias/",
+    ""
+   ],
+   [
+    "https://www.riobravo.com.br/poupah/",
+    "Carteira administrada"
+   ],
+   [
+    "https://www.riobravo.com.br/orbita/carta-estrategias",
+    "Carta Estratégias"
+   ],
+   [
+    "https://www.riobravo.com.br/informe-de-rendimentos/",
+    "Informe de Rendimentos"
+   ],
+   [
+    "https://www.riobravo.com.br/orbita/artigos-pt",
+    "Artigos"
+   ]
+  ],
+  "home_pdfs": [
+   "https://backend.riobravo.com.br/storage/v1/object/sign/@77393386-6baf-48c7-9e51-eed6232c75b1/public/0cdf85a3-51e6-4bd6-a875-5151eea3e99e.pdf",
+   "https://www.riobravo.com.br/wp-content/uploads/2026/09/carta_estrategias_agosto26_-3.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.riobravo.com.br/poupah",
+    "text": "Carteira Administrada",
+    "code": "200",
+    "eff": "https://www.riobravo.com.br/poupah/",
+    "len": 206788,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-WL5V6TD",
+     "https://www.youtube.com/embed/4d7bcJzodbg"
+    ],
+    "apis": [
+     "/wp-json/datalake/v1/track"
+    ]
+   },
+   {
+    "url": "https://www.riobravo.com.br/fundos/fii-rio-bravo-renda-varejo",
+    "text": "Diversifique sua carteira com cotas de renda variável e índi",
+    "code": "200",
+    "eff": "https://www.riobravo.com.br/fundos/fii-rio-bravo-renda-varejo/",
+    "len": 1592870,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 2277,
+    "pdf_sample": [
+     "https://docs.riobravo.com.br/RBVA11/assembleia/assembleia-2017-04-27-11994.pdf",
+     "https://docs.riobravo.com.br/RBVA11/assembleia/assembleia-2017-04-27-12165.pdf",
+     "https://www.riobravo.com.br/fundos/fii-rio-bravo-renda-varejo/https%3A%2F%2Fdocs.riobravo.com.br%2FRBVA11%2Frelatorios%2Frelatorios-2026-08-31-1321749.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-WL5V6TD"
+    ],
+    "apis": [
+     "/wp-json/datalake/v1/track"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\nDisallow: /*?s=\nDisallow: /search/\nDisallow: /*?preview=\n\n# Bots de IA — liberados intencionalmente (uso/citação por IA)\nUser-agent: GPTBot\nUser-agent: OAI-SearchBot\nUser-agent: ChatGPT-User\nUser-agent: ClaudeBot\nUser-agent: PerplexityBot\nUser-agent: Google-Extended\nUser-agent: Applebot-Extended\nAllow: /\n\nSitemap: https://www.riobravo.com.br/sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "Capitania",
+  "domain": "www.capitaniainvestimentos.com.br",
+  "home": [
+   "200",
+   "https://capitaniainvestimentos.com.br/",
+   176663
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://capitaniainvestimentos.com.br/relatorios/",
+    "RELATÓRIOS"
+   ]
+  ],
+  "home_pdfs": [
+   "https://capitaniainvestimentos.com.br/wp-content/uploads/MQ1_Capitania.pdf",
+   "https://capitaniainvestimentos.com.br/wp-content/uploads/politica-de-privacidade.pdf",
+   "https://capitaniainvestimentos.com.br/wp-content/uploads/relatorios/CPTI11_Aviso_ao_Mercado.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://capitaniainvestimentos.com.br/relatorios/",
+    "text": "RELATÓRIOS",
+    "code": "200",
+    "eff": "https://capitaniainvestimentos.com.br/relatorios/",
+    "len": 123717,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 10,
+    "pdf_sample": [
+     "https://capitaniainvestimentos.com.br/wp-content/uploads/MQ1_Capitania.pdf",
+     "https://capitaniainvestimentos.com.br/wp-content/uploads/politica-de-privacidade.pdf",
+     "https://capitaniainvestimentos.com.br/wp-content/uploads/relatorios/relatorio-mensal-202608.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://capitaniainvestimentos.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Ventor",
+  "domain": "www.ventorinvestimentos.com.br",
+  "home": [
+   "200",
+   "https://www.ventorinvestimentos.com.br/",
+   126495
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.ventorinvestimentos.com.br/documentos-regulatorios/",
+    "Informações Regulatórias"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.ventorinvestimentos.com.br/documentos-regulatorios/",
+    "text": "Informações Regulatórias",
+    "code": "200",
+    "eff": "https://www.ventorinvestimentos.com.br/documentos-regulatorios/",
+    "len": 187341,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 11,
+    "pdf_sample": [
+     "https://www.ventorinvestimentos.com.br/wp-content/uploads/2025/03/Manual-de-Controles-Internos-2025.pdf",
+     "https://www.ventorinvestimentos.com.br/wp-content/uploads/2026/01/Politica-de-Gestao-de-Risco.pdf",
+     "https://www.ventorinvestimentos.com.br/wp-content/uploads/2026/08/Politica-de-Gestao-do-Risco-de-Liquidez.pdf"
+    ],
+    "iframes": [
+     "https://www.ventorinvestimentos.com.br/contato/"
+    ],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://www.ventorinvestimentos.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Gauss",
+  "domain": "www.gausscapital.com.br",
+  "home": [
+   "000",
+   "https://www.gausscapital.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "GTI",
+  "domain": "www.gtinvest.com.br",
+  "home": [
+   "200",
+   "https://www.gtinvest.com.br/",
+   834693
+  ],
+  "plat": [
+   "elementor",
+   "wix"
+  ],
+  "cands": [
+   [
+    "https://www.gtinvest.com.br/conteudo",
+    "Conteúdo"
+   ],
+   [
+    "https://www.gtinvest.com.br/blog-feed.xml",
+    ""
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.gtinvest.com.br/conteudo",
+    "text": "Conteúdo",
+    "code": "200",
+    "eff": "https://www.gtinvest.com.br/conteudo",
+    "len": 974934,
+    "plat": [
+     "elementor",
+     "wix"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "/api/",
+     "apiAggregatorBaseUrl",
+     "apiBaseUrl",
+     "apiBaseUrlClient",
+     "apiExperimentsBaseUrlClient"
+    ]
+   },
+   {
+    "url": "https://www.gtinvest.com.br/blog-feed.xml",
+    "text": "",
+    "code": "200",
+    "eff": "https://www.gtinvest.com.br/blog-feed.xml",
+    "len": 19524,
+    "plat": [
+     "wix"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nAllow: /\nDisallow: *?lightbox=\n\n# Optimization for Google Ads Bot\nUser-agent: AdsBot-Google-Mobile\nUser-agent: AdsBot-Google\nDisallow: /_partials*\nDisallow: /pro-gallery-webapp/v1/galleries/*\n\n# Block PetalBot\nUser-agent: PetalBot\nDisallow: /\n\n# Crawl delay for overly enthusiastic bots\nUser-agent: dotbot\nCrawl-delay: 10\nUser-agent: AhrefsBot\nCrawl-delay: 10\n\nSitemap: https://www.gtinvest.com.br/sitemap.xml\n\n# Auto generated, go to SEO Tools > Robots.txt Editor to change this"
+  ]
+ },
+ {
+  "name": "Finacap",
+  "domain": "www.finacap.com.br",
+  "home": [
+   "200",
+   "https://www.finacap.com.br/",
+   2930
+  ],
+  "plat": [
+   "react-root"
+  ],
+  "cands": [],
+  "home_pdfs": [
+   "https://www.finacap.com.br/regulatorio/manual-controles-internos.pdf",
+   "https://www.finacap.com.br/regulatorio/politica-privacidade.pdf"
+  ],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: Googlebot\nAllow: /\n\nUser-agent: Bingbot\nAllow: /\n\nUser-agent: Twitterbot\nAllow: /\n\nUser-agent: facebookexternalhit\nAllow: /\n\nUser-agent: *\nAllow: /\n"
+  ]
+ },
+ {
+  "name": "Fama",
+  "domain": "www.famarecapital.com",
+  "home": [
+   "200",
+   "https://famarecapital.com/",
+   155233
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://famarecapital.com/conteudos/",
+    "Conteúdos"
+   ],
+   [
+    "https://famarecapital.com/documentos-regulatorios/",
+    "Documentos Regulatórios"
+   ],
+   [
+    "https://famarecapital.com/conteudos/etica/",
+    "Ética &#038; Ouvidoria"
+   ],
+   [
+    "https://famarecapital.com/informediario/",
+    "Informe Diário"
+   ]
+  ],
+  "home_pdfs": [
+   "https://famarecapital.com/wp-content/uploads/Agricultura-Regenerativa-Resiliencia-Climatica-e-Produtividade-Licoes-do-Caso-SLC-Agricola-.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://famarecapital.com/conteudos/",
+    "text": "Conteúdos",
+    "code": "200",
+    "eff": "https://famarecapital.com/conteudos/",
+    "len": 117127,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://famarecapital.com/documentos-regulatorios/",
+    "text": "Documentos Regulatórios",
+    "code": "200",
+    "eff": "https://famarecapital.com/documentos-regulatorios/",
+    "len": 83741,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 33,
+    "pdf_sample": [
+     "https://famarecapital.com/documentos-regulatorios/\\/\\/famarecapital.com\\/documentos_regulatorios_download\\/C\\u00f3digo%20de%20Etica%20e%20Conduta%20Corporativa.pdf",
+     "https://famarecapital.com/documentos-regulatorios/\\/\\/famarecapital.com\\/documentos_regulatorios_download\\/Manual%20de%20Compliance.pdf",
+     "https://famarecapital.com/wp-content/uploads/fama_re.capital_Politica_Condicoes_de_Trabalho_v3.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://famarecapital.com/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Kiron",
+  "domain": "www.kironcapital.com.br",
+  "home": [
+   "200",
+   "https://www.kironcapital.com.br/",
+   199723
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://conteudos.xpi.com.br/fundos-de-investimento/kiron-fic-fia/",
+    "XP"
+   ]
+  ],
+  "home_pdfs": [
+   "http://www.kironcapital.com.br/wp-content/uploads/2018/05/Anexo-6-Regulamento-Kiron-FIC-FIA.pdf",
+   "http://www.kironcapital.com.br/wp-content/uploads/2018/05/Dezembro-2017-Lamina-Kiron-FIC-FIA.pdf",
+   "http://www.kironcapital.com.br/wp-content/uploads/2018/05/Fevereiro-2018-Lamina-Kiron-FIC-FIA.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://conteudos.xpi.com.br/fundos-de-investimento/kiron-fic-fia/",
+    "text": "XP",
+    "code": "403",
+    "eff": "https://conteudos.xpi.com.br/fundos-de-investimento/kiron-fic-fia/",
+    "len": 949,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "STK",
+  "domain": "www.stkcapital.com.br",
+  "home": [
+   "200",
+   "https://stkcapital.com.br/",
+   80345
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/FormRefAdmCart/ConsultaFormReferenciaAdmCarteiraPJ.aspx?PK_PARTIC=103634&COMPTC=2025",
+    "Formulário de Referência"
+   ],
+   [
+    "https://stkcapital.com.br/conteudo-comentarios-mensais/",
+    "Comentários mensais"
+   ],
+   [
+    "https://stkcapital.com.br/conteudo-na-midia/",
+    "Na mídia"
+   ]
+  ],
+  "home_pdfs": [
+   "https://stkcapital.com.br/wp-content/uploads/2025/02/2025-02-03-Politica-de-Voto.pdf",
+   "https://stkcapital.com.br/wp-content/uploads/2025/02/2025.02.03-Manual-de-Compliance.pdf",
+   "https://stkcapital.com.br/wp-content/uploads/2025/02/2025.02.03-Manual-de-Etica-e-Conduta.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/FormRefAdmCart/ConsultaFormReferenciaAdmCarteiraPJ.aspx?PK_PARTIC=103634&COMPTC=2025",
+    "text": "Formulário de Referência",
+    "code": "200",
+    "eff": "https://cvmweb.cvm.gov.br/SWB/Sistemas/SCW/CPublica/FormRefAdmCart/ConsultaFormReferenciaAdmCarteiraPJ.aspx?PK_PARTIC=103634&COMPTC=2025",
+    "len": 114536,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://stkcapital.com.br/conteudo-comentarios-mensais/",
+    "text": "Comentários mensais",
+    "code": "200",
+    "eff": "https://stkcapital.com.br/conteudo-comentarios-mensais/",
+    "len": 99671,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 40,
+    "pdf_sample": [
+     "https://stkcapital.com.br/wp-content/uploads/2025/02/Comentario-Mensal-STK-Long-Biased-FIC-FIA-Janeiro.pdf",
+     "https://stkcapital.com.br/wp-content/uploads/2025/02/Comentario-Mensal-STK-Long-Only-FIA-Janeiro.pdf",
+     "https://stkcapital.com.br/wp-content/uploads/2026/09/Comentario-Mensal-STK-Long-Only-FIA-Agosto-2026.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://stkcapital.com.br/sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "WHG",
+  "domain": "www.whg.com.br",
+  "home": [
+   "403",
+   "https://www.whg.com.br/",
+   5426
+  ],
+  "plat": [
+   "cloudflare-challenge"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\r\n# ---------------------------\r\nUser-agent: *\r\nDisallow:\r\n\r\nSitemap: https://whg.com.br/sitemap_index.xml\r\n# ---------------------------\r\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Pacifico",
+  "domain": "www.pacificogestao.com.br",
+  "home": [
+   "000",
+   "https://www.pacificogestao.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Miles",
+  "domain": "www.milescapital.com.br",
+  "home": [
+   "200",
+   "https://www.milescapital.com.br/",
+   24550
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.milescapital.com.br/cartas/",
+    "Cartas e Comunicados"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.milescapital.com.br/cartas/",
+    "text": "Cartas e Comunicados",
+    "code": "200",
+    "eff": "https://www.milescapital.com.br/cartas/",
+    "len": 17518,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Apex",
+  "domain": "www.apexcapital.com.br",
+  "home": [
+   "200",
+   "https://apexcapital.com.br/",
+   184808
+  ],
+  "plat": [
+   "nextjs"
+  ],
+  "cands": [
+   [
+    "https://apexcapital.com.br/cartas",
+    "Cartas"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://apexcapital.com.br/cartas",
+    "text": "Cartas",
+    "code": "200",
+    "eff": "https://apexcapital.com.br/cartas",
+    "len": 158377,
+    "plat": [
+     "nextjs"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Gap",
+  "domain": "www.gapasset.com.br",
+  "home": [
+   "000",
+   "https://www.gapasset.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Santa Fe",
+  "domain": "www.santafe.com.br",
+  "home": [
+   "200",
+   "https://santafe.com.br/",
+   166887
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://santafe.com.br/relatorios/",
+    "Cartas Trimestrais"
+   ]
+  ],
+  "home_pdfs": [
+   "https://santafe.com.br/wp-content/uploads/2019/12/informativo-diario.pdf",
+   "https://santafe.com.br/wp-content/uploads/2020/04/informativo-diario-scorpius.pdf",
+   "https://santafe.com.br/wp-content/uploads/2025/07/informativo-diario-Cash.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://santafe.com.br/relatorios/",
+    "text": "Cartas Trimestrais",
+    "code": "200",
+    "eff": "https://santafe.com.br/relatorios/",
+    "len": 152438,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 18,
+    "pdf_sample": [
+     "https://santafe.com.br/wp-content/uploads/2022/04/2022_01_Tri.pdf",
+     "https://santafe.com.br/wp-content/uploads/2022/07/2022_02_Tri.pdf",
+     "https://santafe.com.br/wp-content/uploads/2026/07/2026_02_Tri.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-PV3VL3PQ"
+    ],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://santafe.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Mos",
+  "domain": "www.moscapital.com.br",
+  "home": [
+   "200",
+   "https://www.moscapital.com.br/",
+   9234
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://www.moscapital.com.br/pages/cartas.html",
+    "Cartas"
+   ],
+   [
+    "https://www.moscapital.com.br/pages/documentos.html",
+    "Documentos"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.moscapital.com.br/pages/cartas.html",
+    "text": "Cartas",
+    "code": "200",
+    "eff": "https://www.moscapital.com.br/pages/cartas.html",
+    "len": 3554,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://www.moscapital.com.br/pages/documentos.html",
+    "text": "Documentos",
+    "code": "200",
+    "eff": "https://www.moscapital.com.br/pages/documentos.html",
+    "len": 3600,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Norte",
+  "domain": "www.norteasset.com.br",
+  "home": [
+   "200",
+   "https://norteasset.com.br/",
+   181232
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://norteasset.com.br/downloads/",
+    "Downloads"
+   ]
+  ],
+  "home_pdfs": [
+   "https://norteasset.com.br/wp-content/uploads/2022/02/Norte-Asset-Termo-de-Uso-e-Politica-de-Privacidade-07-12-21-Versao-Final.pdf",
+   "https://norteasset.com.br/wp-content/uploads/2025/08/01.-NORTE-CODIGO-DE-ETICA-E-CONDUTA-PROFISSIONAL_JULHO-2025-1.pdf",
+   "https://norteasset.com.br/wp-content/uploads/2025/08/02.-NORTE-POLITICA-DE-COMPLIANCE-E-CONTROLES-INTERNOS_JULHO-2025-1.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://norteasset.com.br/downloads/",
+    "text": "Downloads",
+    "code": "200",
+    "eff": "https://norteasset.com.br/downloads/",
+    "len": 123760,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 10,
+    "pdf_sample": [
+     "https://norteasset.com.br/wp-content/uploads/2022/02/Norte-Asset-Termo-de-Uso-e-Politica-de-Privacidade-07-12-21-Versao-Final.pdf",
+     "https://norteasset.com.br/wp-content/uploads/2022/03/Norte-Asset-Formulario-de-Referencia_31032022_COMPLETED.pdf",
+     "https://norteasset.com.br/wp-content/uploads/2025/08/10.-NORTE-PROXY-VOTING_JULHO-2025.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# As a condition of accessing this website, you agree to abide by the following\n# content signals:\n\n# (a)  If a content-signal = yes, you may collect content for the corresponding\n#      use.\n# (b)  If a content-signal = no, you may not collect content for the\n#      corresponding use.\n# (c)  If the website operator does not include a content signal for a\n#      corresponding use, the website operator neither grants nor restricts\n#      permission via content signal with respect to the corresponding use.\n\n# The content signals and their meanings are:\n\n# search:   building a search index and pr"
+  ]
+ },
+ {
+  "name": "Nest",
+  "domain": "www.nestam.com.br",
+  "home": [
+   "200",
+   "https://nestam.com.br/",
+   76430
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://nestam.com.br/relatorios/",
+    "Relatórios"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://nestam.com.br/relatorios/",
+    "text": "Relatórios",
+    "code": "200",
+    "eff": "https://nestam.com.br/relatorios/",
+    "len": 354178,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 388,
+    "pdf_sample": [
+     "https://nestam.com.br/wp-content/uploads/2021/09/2017-08-31-Nest-FIA.pdf",
+     "https://nestam.com.br/wp-content/uploads/2021/09/2017-09-30-Nest-FIA.pdf",
+     "https://nestam.com.br/wp-content/uploads/2025/01/2026-09-30-Nest-Fenix.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://nestam.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Sita",
+  "domain": "sitagestao.com.br",
+  "home": [
+   "200",
+   "https://sitagestao.com.br/",
+   105933
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "Sitemap: https://sitagestao.com.br/sitemap.xml\nSitemap: https://sitagestao.com.br/news-sitemap.xml\nUser-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n"
+  ]
+ },
+ {
+  "name": "Logos",
+  "domain": "www.logoscapital.com.br",
+  "home": [
+   "200",
+   "https://logoscapital.com.br/",
+   167591
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [],
+  "home_pdfs": [
+   "https://logoscapital.com.br/.doc,.docx,.pdf",
+   "https://logoscapital.com.br/wp-content/uploads/2020/01/Regulamento-Logos-LB-FIC-FIM-20.09.2019.pdf",
+   "https://logoscapital.com.br/wp-content/uploads/2022/04/Logos-Capital-Plano-de-Contingencia-Abril-2022.pdf"
+  ],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n"
+  ]
+ },
+ {
+  "name": "Arbor",
+  "domain": "www.arborcapital.com.br",
+  "home": [
+   "200",
+   "https://www.arborcapital.com.br/",
+   600415
+  ],
+  "plat": [
+   "elementor",
+   "wix"
+  ],
+  "cands": [
+   [
+    "https://www.arborcapital.com.br/documentos",
+    "DOCUMENTOS REGULAT&Oacute;RIOS"
+   ],
+   [
+    "https://www.arborcapital.com.br/publicacoes",
+    "Publicações"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.arborcapital.com.br/\\/\\/e6f4016f-fd49-43df-bc2d-8dd3282771fa.usrfiles.com\\/ugd\\/e6f401_3a5e627d834744238ef4d46d337912c6.pdf",
+   "https://www.arborcapital.com.br/\\/\\/e6f4016f-fd49-43df-bc2d-8dd3282771fa.usrfiles.com\\/ugd\\/e6f401_8af8ce0e205f4d87887b8c444c9f4dfc.pdf",
+   "https://www.arborcapital.com.br/\\/\\/www.arborcapital.com.br\\/_files\\/ugd\\/205f8e_db4a00713041426184d4d8ce02246214.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.arborcapital.com.br/documentos",
+    "text": "DOCUMENTOS REGULAT&Oacute;RIOS",
+    "code": "200",
+    "eff": "https://www.arborcapital.com.br/documentos",
+    "len": 560107,
+    "plat": [
+     "elementor",
+     "wix"
+    ],
+    "npdf": 13,
+    "pdf_sample": [
+     "https://www.arborcapital.com.br/_files/ugd/489ff2_037ef77a5ecc4d608d48c2cc100e093a.pdf",
+     "https://www.arborcapital.com.br/_files/ugd/489ff2_504e5f5927e04b1f9a384ddf1ab974e1.pdf",
+     "https://www.arborcapital.com.br/_files/ugd/e6f401_fd71e9632b2e45b6b0b7b41faf3cae28.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "/api/",
+     "apiAggregatorBaseUrl",
+     "apiBaseUrl",
+     "apiBaseUrlClient",
+     "apiExperimentsBaseUrlClient"
+    ]
+   },
+   {
+    "url": "https://www.arborcapital.com.br/publicacoes",
+    "text": "Publicações",
+    "code": "200",
+    "eff": "https://www.arborcapital.com.br/publicacoes",
+    "len": 817176,
+    "plat": [
+     "elementor",
+     "wix"
+    ],
+    "npdf": 18,
+    "pdf_sample": [
+     "https://22e1f691-37be-40ae-810b-00e6248d7096.filesusr.com/ugd/205f8e_071b3400b1f543ceac09fca1f67a7f32.pdf",
+     "https://22e1f691-37be-40ae-810b-00e6248d7096.filesusr.com/ugd/205f8e_4f5c671f7606431b80e1a817ab9d6168.pdf",
+     "https://www.arborcapital.com.br/_files/ugd/489ff2_d8665d2481914a5dac1589d3ae550480.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "/api/",
+     "apiAggregatorBaseUrl",
+     "apiBaseUrl",
+     "apiBaseUrlClient",
+     "apiExperimentsBaseUrlClient"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nAllow: /\nDisallow: *?lightbox=\n\n# Optimization for Google Ads Bot\nUser-agent: AdsBot-Google-Mobile\nUser-agent: AdsBot-Google\nDisallow: /_partials*\nDisallow: /pro-gallery-webapp/v1/galleries/*\n\n# Block PetalBot\nUser-agent: PetalBot\nDisallow: /\n\n# Crawl delay for overly enthusiastic bots\nUser-agent: dotbot\nCrawl-delay: 10\nUser-agent: AhrefsBot\nCrawl-delay: 10\n\nSitemap: https://www.arborcapital.com.br/sitemap.xml\n\n# Auto generated, go to SEO Tools > Robots.txt Editor to change this"
+  ]
+ },
+ {
+  "name": "Jardim Botanico",
+  "domain": "www.jbinvest.com.br",
+  "home": [
+   "000",
+   "https://www.jbinvest.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Exploritas",
+  "domain": "www.exploritas.com.br",
+  "home": [
+   "200",
+   "https://www.exploritas.com.br/",
+   122481
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://www.exploritas.com.br/cartas-mensais/",
+    "Cartas Mensais"
+   ],
+   [
+    "https://www.exploritas.com.br/relatorios/",
+    "Relatórios"
+   ],
+   [
+    "https://www.exploritas.com.br/documentos-legais/",
+    "REGULAMENTOS"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.exploritas.com.br/cartas-mensais/",
+    "text": "Cartas Mensais",
+    "code": "200",
+    "eff": "https://www.exploritas.com.br/cartas-mensais/",
+    "len": 80407,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://www.exploritas.com.br/relatorios/",
+    "text": "Relatórios",
+    "code": "200",
+    "eff": "https://www.exploritas.com.br/relatorios/",
+    "len": 70694,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://www.exploritas.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Vokin",
+  "domain": "www.vokin.com.br",
+  "home": [
+   "200",
+   "https://www.vokin.com.br/",
+   68899
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://www.vokin.com.br/cartas-mensais/",
+    "Cartas Mensais"
+   ],
+   [
+    "https://www.vokin.com.br/cartas-mensais/carta-260-setembro-2026/",
+    "Continue lendo a Carta Online"
+   ],
+   [
+    "https://creators.spotify.com/pod/profile/vokin-investimentos/episodes/Carta-260---Carta-Mensal-Vokin-e3q0c5f/a-acub8u1",
+    ""
+   ],
+   [
+    "https://podcasts.apple.com/us/podcast/carta-260-carta-mensal-vokin/id1520783837?i=1000793468040",
+    ""
+   ],
+   [
+    "https://www.vokin.com.br/cartas-mensais/carta-259-agosto-2026/",
+    "Continue lendo a Carta Online"
+   ],
+   [
+    "https://podcasts.apple.com/us/podcast/carta-259-carta-mensal-vokin/id1520783837?i=1000787708791",
+    ""
+   ],
+   [
+    "https://www.vokin.com.br/cartas-mensais/carta-258-julho-2026/",
+    "Continue lendo a Carta Online"
+   ],
+   [
+    "https://podcasts.apple.com/br/podcast/carta-258-carta-mensal-vokin/id1520783837?i=1000780132928",
+    ""
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.vokin.com.br/wp-content/uploads/2026/08/Carta-Mensal-Vokin-Investimentos-JUL2026.pdf",
+   "https://www.vokin.com.br/wp-content/uploads/2026/09/Carta-Mensal-Vokin-Investimentos-AGO2026-3.pdf",
+   "https://www.vokin.com.br/wp-content/uploads/2026/10/Carta-Mensal-Vokin-Investimentos-SET2026-1.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://www.vokin.com.br/cartas-mensais/",
+    "text": "Cartas Mensais",
+    "code": "200",
+    "eff": "https://www.vokin.com.br/cartas-mensais/",
+    "len": 63884,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 8,
+    "pdf_sample": [
+     "https://www.vokin.com.br/wp-content/uploads/2026/03/Carta-Mensal-Vokin-Investimentos-FEV2026.pdf",
+     "https://www.vokin.com.br/wp-content/uploads/2026/04/Carta-Mensal-Vokin-Investimentos-MAR2026-1.pdf",
+     "https://www.vokin.com.br/wp-content/uploads/2026/10/Carta-Mensal-Vokin-Investimentos-SET2026-1.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-NQ8MMNGN"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://www.vokin.com.br/cartas-mensais/carta-260-setembro-2026/",
+    "text": "Continue lendo a Carta Online",
+    "code": "200",
+    "eff": "https://www.vokin.com.br/cartas-mensais/carta-260-setembro-2026/",
+    "len": 90230,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://www.vokin.com.br/wp-content/uploads/2026/10/Carta-Mensal-Vokin-Investimentos-SET2026-1.pdf",
+     "https://www.vokin.com.br/wp-content/uploads/2026/10/Carta-Mensal-Vokin-Investimentos-SET2026-1.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-NQ8MMNGN"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\r\nAllow: /wp-admin/admin-ajax.php\r\nAllow: /wp-content/uploads/\r\nDisallow: /wp-admin/\r\nDisallow: /wp-includes/\r\nDisallow: /wp-content/plugins/\r\nDisallow: /readme.html\r\nDisallow: /license.txt\r\nDisallow: /?s=\r\nDisallow: /search/\r\nDisallow: /refer/\r\nDisallow: /wp-login.php\r\nDisallow: /xmlrpc.php\r\nDisallow: /wp-register.php\r\n\r\nSitemap: https://www.vokin.com.br/sitemap_index.xml\r\n# ---------------------------\r\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Polo",
+  "domain": "www.polocapital.com",
+  "home": [
+   "200",
+   "https://www.polocapital.com/",
+   55265
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://app.denouncefy.com/portal/polocapital",
+    "Canal de Reporte da Polo Capital"
+   ],
+   [
+    "https://www.polocapital.com/comunicacao/documentos-regulatorios/",
+    "Documentos Regulatórios"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://app.denouncefy.com/portal/polocapital",
+    "text": "Canal de Reporte da Polo Capital",
+    "code": "200",
+    "eff": "https://app.denouncefy.com/portal/polocapital",
+    "len": 9454,
+    "plat": [
+     "nextjs"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-543S2Z8F"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://www.polocapital.com/comunicacao/documentos-regulatorios/",
+    "text": "Documentos Regulatórios",
+    "code": "200",
+    "eff": "https://www.polocapital.com/comunicacao/documentos-regulatorios/",
+    "len": 46723,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 26,
+    "pdf_sample": [
+     "https://www.polocapital.com/wp-content/uploads/2025/04/Sumário-da-Remuneração-de-Prestadores-de-Serviços-BEAGLE-PRO-FIC-MM-CP-RL.pdf",
+     "https://www.polocapital.com/wp-content/uploads/2025/04/Sumário-da-Remuneração-de-Prestadores-de-Serviços-MEROS-PRO-FIC-MM-CP-RL.pdf",
+     "https://www.polocapital.com/wp-content/uploads/2026/06/Fato-Relevante-FIDC-POLO-RECUPERAÇÃO-DE-CRÉDITO-FUNDO-DE-INVESTIMENTO-EM-DIREITOS-CREDITÓRIOS-NÃO-PADRONIZADOS.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "apiSettings"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://www.polocapital.com/sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "BLP",
+  "domain": "www.blp.com.br",
+  "home": [
+   "200",
+   "https://www.blp.com.br/",
+   70501
+  ],
+  "plat": [
+   "wordpress",
+   "mziq",
+   "s3"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: *\nUser-Agent: Googlebot\nUser-Agent: GoogleOther\nUser-Agent: Bingbot\nUser-Agent: Googlebot-Mobile\n\nAllow: /\n\nDisallow: /wp-admin/\nDisallow: /wp-includes/\nDisallow: /wp-content/\n\n# Allow access to theme files, which include critical JS and CSS\n\nAllow: /wp-content/themes/mziq_blp_capital/\nAllow: /wp-content/uploads/*.jpg\nAllow: /wp-content/uploads/*.jpeg\nAllow: /wp-content/uploads/*.png\nAllow: /wp-content/uploads/*.gif\n\nSitemap: /sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "Lakewood",
+  "domain": "www.lkwd.com.br",
+  "home": [
+   "200",
+   "https://lkwd.com.br/",
+   41810
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://lkwd.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Root",
+  "domain": "www.rootcapital.com.br",
+  "home": [
+   "200",
+   "https://www.rootcapital.com.br/",
+   530744
+  ],
+  "plat": [
+   "elementor",
+   "wix"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: *\nAllow: /\nDisallow: *?lightbox=\n\n# Optimization for Google Ads Bot\nUser-agent: AdsBot-Google-Mobile\nUser-agent: AdsBot-Google\nDisallow: /_partials*\nDisallow: /pro-gallery-webapp/v1/galleries/*\n\n# Block PetalBot\nUser-agent: PetalBot\nDisallow: /\n\n# Crawl delay for overly enthusiastic bots\nUser-agent: dotbot\nCrawl-delay: 10\nUser-agent: AhrefsBot\nCrawl-delay: 10\n\nSitemap: https://www.rootcapital.com.br/en_en-sitemap.xml\nSitemap: https://www.rootcapital.com.br/sitemap.xml\n\n# Auto generated, go to SEO Tools > Robots.txt Editor to change this"
+  ]
+ },
+ {
+  "name": "Avantgarde",
+  "domain": "www.avantgardeam.com.br",
+  "home": [
+   "200",
+   "https://www.avantgardeam.com.br/",
+   245965
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://www.avantgardeam.com.br/cartas-da-gestao/",
+    "Cartas da Gestão"
+   ],
+   [
+    "https://www.avantgardeam.com.br/documentos-para-download/",
+    "Documentos"
+   ],
+   [
+    "https://www.avantgardeam.com.br/artigos/",
+    "Artigos"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.avantgardeam.com.br/cartas-da-gestao/",
+    "text": "Cartas da Gestão",
+    "code": "200",
+    "eff": "https://www.avantgardeam.com.br/cartas-da-gestao/",
+    "len": 215782,
+    "plat": [
+     "wordpress",
+     "elementor",
+     "s3"
+    ],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://avantgarde-site-files.s3.us-east-1.amazonaws.com/carta-gestao/carta-{Y}-{M}.pdf",
+     "https://avantgarde-site-files.s3.us-east-1.amazonaws.com/carta-gestao/carta-{Y}-{M}.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-KQ8NWSD8",
+     "https://www.googletagmanager.com/ns.html?id=G-VYVXLK3F4R"
+    ],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://www.avantgardeam.com.br/documentos-para-download/",
+    "text": "Documentos",
+    "code": "200",
+    "eff": "https://www.avantgardeam.com.br/documentos-para-download/",
+    "len": 116061,
+    "plat": [
+     "wordpress",
+     "elementor",
+     "s3"
+    ],
+    "npdf": 8,
+    "pdf_sample": [
+     "https://avantgarde-site-files.s3.us-east-1.amazonaws.com/files/Avantgarde+Asset+Management+-+C%C3%B3digo+de+%C3%89tica+-+02+05+25+-+V2.pdf",
+     "https://avantgarde-site-files.s3.us-east-1.amazonaws.com/files/Avantgarde+Asset+Management+-+Pol%C3%ADtica+de+Controles+Internos+-+02+05+25+-+V2.pdf",
+     "https://avantgarde-site-files.s3.us-east-1.amazonaws.com/files/manual-marcacao-a-mercado-btg-julho22-vf.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=G-VYVXLK3F4R",
+     "https://www.googletagmanager.com/ns.html?id=GTM-KQ8NWSD8"
+    ],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\r\n# ---------------------------\r\nUser-agent: *\r\nDisallow:\r\n\r\nSitemap: http://www.avantgardeam.com.br/sitemap_index.xml\r\n# ---------------------------\r\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Safari",
+  "domain": "www.safaricapital.com.br",
+  "home": [
+   "200",
+   "https://safaricapital.com.br/",
+   50532
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://safaricapital.com.br/category/cartas-de-gestao/",
+    "Cartas de Gestão"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://safaricapital.com.br/category/cartas-de-gestao/",
+    "text": "Cartas de Gestão",
+    "code": "200",
+    "eff": "https://safaricapital.com.br/category/cartas-de-gestao/",
+    "len": 81537,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-MM7NCKW"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://safaricapital.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Absoluto",
+  "domain": "www.absolutopartners.com.br",
+  "home": [
+   "000",
+   "https://www.absolutopartners.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Reach",
+  "domain": "www.reachcapital.com.br",
+  "home": [
+   "200",
+   "https://reachcapital.com.br/",
+   141117
+  ],
+  "plat": [
+   "wordpress",
+   "s3"
+  ],
+  "cands": [
+   [
+    "https://reachcapital.com.br/conteudo/",
+    "Conteúdo"
+   ],
+   [
+    "https://reachcapital.com.br/conteudo",
+    "Conteúdo"
+   ]
+  ],
+  "home_pdfs": [
+   "http://reachcapital.web123.kinghost.net/wp-content/uploads/2026/02/Politica-de-Pivacidade-Site-Reach-Capital-1.pdf",
+   "https://reachcapital.com.br/wp-content/uploads/2026/06/Politica-de-Privacidade-Site-Reach-Capital-1.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://reachcapital.com.br/conteudo/",
+    "text": "Conteúdo",
+    "code": "200",
+    "eff": "https://reachcapital.com.br/conteudo/",
+    "len": 70336,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 43,
+    "pdf_sample": [
+     "http://reachcapital.web123.kinghost.net/wp-content/uploads/2026/02/Politica-de-Pivacidade-Site-Reach-Capital-1.pdf",
+     "https://reachcapital.com.br/wp-content/uploads/2026/01/052025-Panorama-Macroeconomico_Reach-Capital.pdf",
+     "https://www.reachcapital.com.br/_files/ugd/ce5253_d2a48af8433c48f390f8ab046953a036.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://reachcapital.com.br/conteudo",
+    "text": "Conteúdo",
+    "code": "200",
+    "eff": "https://reachcapital.com.br/conteudo/",
+    "len": 70336,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 43,
+    "pdf_sample": [
+     "http://reachcapital.web123.kinghost.net/wp-content/uploads/2026/02/Politica-de-Pivacidade-Site-Reach-Capital-1.pdf",
+     "https://reachcapital.com.br/wp-content/uploads/2026/01/052025-Panorama-Macroeconomico_Reach-Capital.pdf",
+     "https://www.reachcapital.com.br/_files/ugd/ce5253_d2a48af8433c48f390f8ab046953a036.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://reachcapital.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Murano",
+  "domain": "www.muranoinvest.com",
+  "home": [
+   "000",
+   "https://www.muranoinvest.com/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Porto Asset",
+  "domain": "www.portoasset.com.br",
+  "home": [
+   "200",
+   "https://www.portoasset.com.br/",
+   126946
+  ],
+  "plat": [
+   "wordpress",
+   "mziq"
+  ],
+  "cands": [
+   [
+    "https://www.portoasset.com.br/relatorios-economicos/",
+    "Relatórios Econômicos"
+   ],
+   [
+    "https://www.fitchratings.com/research/fund-asset-managers/fitch-affirms-porto-asset-investment-management-quality-rating-at-excellent-15-09-2026",
+    "Ver relatório"
+   ],
+   [
+    "https://www.portoasset.com.br/governanca/documentos-obrigatorios/",
+    "Documentos Obrigatórios"
+   ],
+   [
+    "https://www.portoasset.com.br/conteudo/porto-asset-na-midia/",
+    "Porto Asset na Mídia"
+   ],
+   [
+    "https://www.portoasset.com.br/conteudo/perguntas-frequentes/",
+    "Perguntas Frequentes"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.portoasset.com.br/relatorios-economicos/",
+    "text": "Relatórios Econômicos",
+    "code": "200",
+    "eff": "https://www.portoasset.com.br/relatorios-economicos/",
+    "len": 83161,
+    "plat": [
+     "wordpress",
+     "mziq"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://www.fitchratings.com/research/fund-asset-managers/fitch-affirms-porto-asset-investment-management-quality-rating-at-excellent-15-09-2026",
+    "text": "Ver relatório",
+    "code": "200",
+    "eff": "https://www.fitchratings.com/research/fund-asset-managers/fitch-affirms-porto-asset-investment-management-quality-rating-at-excellent-15-09-2026",
+    "len": 1788908,
+    "plat": [
+     "elementor",
+     "squarespace",
+     "hubspot",
+     "drupal",
+     "gatsby",
+     "contentful"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-545N25M&gtm_auth=OwLA0DghFB1uj-tl4E1L4A&gtm_preview=env-2&gtm_cookies_win=x"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nUser-Agent: Googlebot\nUser-Agent: GoogleOther\nUser-Agent: Bingbot\nUser-Agent: Googlebot-Mobile\n\nAllow: /\n\nDisallow: /wp-admin/\nDisallow: /wp-includes/\nDisallow: /wp-content/\n\n# Allow access to theme files, which include critical JS and CSS\n\nAllow: /wp-content/themes/mziq_porto_seguro_asset/\nAllow: /wp-content/uploads/*.jpg\nAllow: /wp-content/uploads/*.jpeg\nAllow: /wp-content/uploads/*.png\nAllow: /wp-content/uploads/*.gif\n\nSitemap: https://www.portoasset.com.br/sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "Bradesco Asset",
+  "domain": "www.bradescoasset.com.br",
+  "home": [
+   "200",
+   "https://bradescoasset.com.br/",
+   1817476
+  ],
+  "plat": [
+   "wordpress",
+   "mziq",
+   "s3"
+  ],
+  "cands": [
+   [
+    "https://bradescoasset.com.br/conteudo/informes-economicos/",
+    "Informes Econômicos"
+   ],
+   [
+    "https://bradescoasset.com.br/conteudo/fique-por-dentro/",
+    "Fique por Dentro"
+   ],
+   [
+    "https://bradescoasset.com.br/conteudo/aprenda/",
+    "Aprenda"
+   ],
+   [
+    "https://bradescoasset.com.br/governanca/normas-e-documentos/",
+    "Normas e documentos"
+   ],
+   [
+    "https://open.spotify.com/show/0WLXFEWyxgR3xzQxKS7aJo",
+    "Podcast               Podcast &#8211; Insights   Nesta série"
+   ],
+   [
+    "https://brazilstockguide.com/br/insights-br/bradesco-bria11-etf-inteligencia-artificial-eua-china/",
+    "Brazil Stock Guide"
+   ],
+   [
+    "https://einvestidor.estadao.com.br/colunas/marcelo-toledo/",
+    "Artigos                           Coluna Marcelo Toledo   Es"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://bradescoasset.com.br/conteudo/informes-economicos/",
+    "text": "Informes Econômicos",
+    "code": "200",
+    "eff": "https://bradescoasset.com.br/conteudo/informes-economicos/",
+    "len": 157811,
+    "plat": [
+     "wordpress",
+     "mziq",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.youtube.com/embed/PjMDJoSsD2M",
+     "https://www.youtube.com/embed/PjMDJoSsD2M",
+     "https://www.youtube.com/embed/dNFma7m4OZk"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://bradescoasset.com.br/conteudo/fique-por-dentro/",
+    "text": "Fique por Dentro",
+    "code": "200",
+    "eff": "https://bradescoasset.com.br/conteudo/fique-por-dentro/",
+    "len": 5540043,
+    "plat": [
+     "wordpress",
+     "mziq",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.youtube.com/embed/ydji_BBhuI8",
+     "https://www.youtube.com/embed/dipp5i6vDfc",
+     "https://www.youtube.com/embed/dipp5i6vDfc"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nAllow: /\nDisallow: /wp-admin/\nDisallow: /wp-includes/\nDisallow: /*?s=\nDisallow: /homologacao/\n\n# Permissão explícita para IAs (Opcional, mas recomendado para GEO)\nUser-agent: Google-Extended\nAllow: /\n\nUser-agent: GPTBot\nAllow: /\n\nSitemap: https://gestora-bradescoasset.mz-sites.com/sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "BB Asset",
+  "domain": "www.bbasset.com.br",
+  "home": [
+   "200",
+   "https://www.bbasset.com.br/",
+   101279
+  ],
+  "plat": [
+   "wordpress",
+   "mziq",
+   "s3"
+  ],
+  "cands": [
+   [
+    "https://www.bbasset.com.br/documentos-institucionais/",
+    "Documentos Institucionais"
+   ],
+   [
+    "https://www.bbasset.com.br/fundos/documentos-fundos/",
+    "Documentos de Fundos"
+   ],
+   [
+    "https://www.bbasset.com.br/conteudo/",
+    "Conteúdo"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.bbasset.com.br/documentos-institucionais/",
+    "text": "Documentos Institucionais",
+    "code": "200",
+    "eff": "https://www.bbasset.com.br/documentos-institucionais/",
+    "len": 84056,
+    "plat": [
+     "wordpress",
+     "mziq",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-TR4MF6T",
+     "https://www.googletagmanager.com/ns.html?id=GTM-PZ5NMJG"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://www.bbasset.com.br/fundos/documentos-fundos/",
+    "text": "Documentos de Fundos",
+    "code": "200",
+    "eff": "https://www.bbasset.com.br/fundos/documentos-fundos/",
+    "len": 88420,
+    "plat": [
+     "wordpress",
+     "mziq",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-TR4MF6T",
+     "https://www.googletagmanager.com/ns.html?id=GTM-PZ5NMJG"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nUser-Agent: Googlebot\nUser-Agent: GoogleOther\nUser-Agent: Bingbot\nUser-Agent: Googlebot-Mobile\n\nAllow: /\n\nDisallow: /wp-admin/\nDisallow: /wp-includes/\nDisallow: /wp-content/\n\n# Allow access to theme files, which include critical JS and CSS\n\nAllow: /wp-content/themes/abc_template_dev/\nAllow: /wp-content/uploads/*.jpg\nAllow: /wp-content/uploads/*.jpeg\nAllow: /wp-content/uploads/*.png\nAllow: /wp-content/uploads/*.gif\n\nSitemap: /sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "Western",
+  "domain": "www.westernasset.com.br",
+  "home": [
+   "200",
+   "https://www.westernasset.com.br/pt/tc/tca.cfm?goto=%2Findex%2Ecfm",
+   31910
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://www.westernasset.com.br/pt/research/newsletters.cfm",
+    "Relatórios"
+   ],
+   [
+    "https://www.westernasset.com.br/pt/regulatory/index.cfm",
+    "Documentos Legais"
+   ],
+   [
+    "https://www.westernasset.com.br/pt/research/artigos.cfm",
+    "Artigos"
+   ],
+   [
+    "https://www.westernasset.com.br/pt/research/key-convictions.cfm",
+    "Principais Convicções"
+   ],
+   [
+    "https://www.westernasset.com.br/pt/research/blog/",
+    "Blog"
+   ],
+   [
+    "https://www.westernasset.com.br/pt/research/blog",
+    "Blog"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.westernasset.com.br/pt/research/newsletters.cfm",
+    "text": "Relatórios",
+    "code": "200",
+    "eff": "https://www.westernasset.com.br/pt/tc/tca.cfm?goto=%2Fpt%2Fresearch%2Fnewsletters%2Ecfm",
+    "len": 31932,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-PL9RZ52&gtm_auth=4Hf85v-MCbP2mTHP5Fm2-w&gtm_preview=env-1&gtm_cookies_win=x"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://www.westernasset.com.br/pt/regulatory/index.cfm",
+    "text": "Documentos Legais",
+    "code": "200",
+    "eff": "https://www.westernasset.com.br/pt/tc/tca.cfm?goto=%2Fpt%2Fregulatory%2Findex%2Ecfm",
+    "len": 31928,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-PL9RZ52&gtm_auth=4Hf85v-MCbP2mTHP5Fm2-w&gtm_preview=env-1&gtm_cookies_win=x"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "SulAmerica",
+  "domain": "www.sulamericainvestimentos.com.br",
+  "home": [
+   "200",
+   "https://www.sulamericainvestimentos.com.br/",
+   187660
+  ],
+  "plat": [
+   "wordpress",
+   "mziq",
+   "s3"
+  ],
+  "cands": [
+   [
+    "https://api.mziq.com/mzfilemanager/v2/d/b739156f-d43e-418e-8291-48db3249944c/54b0beae-9ec0-ba78-0311-00db72d5025c?origin=2",
+    "Acesse a carta"
+   ],
+   [
+    "https://www.sulamericainvestimentos.com.br/fundos-listados/infra-cdi/",
+    "Acesse o relatório"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.sulamericainvestimentos.com.br/\\/\\/filemanager-cdn.mziq.com\\/published\\/b739156f-d43e-418e-8291-48db3249944c\\/b2ffbcfb-a743-412a-9d4f-c3444c6dd556_12.carta_semestral_smartfit_athena_dezembro_2025.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://api.mziq.com/mzfilemanager/v2/d/b739156f-d43e-418e-8291-48db3249944c/54b0beae-9ec0-ba78-0311-00db72d5025c?origin=2",
+    "text": "Acesse a carta",
+    "code": "200",
+    "eff": "https://api.mziq.com/mzfilemanager/v2/d/b739156f-d43e-418e-8291-48db3249944c/54b0beae-9ec0-ba78-0311-00db72d5025c?origin=2",
+    "len": 1448458,
+    "plat": [
+     "mziq"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://www.sulamericainvestimentos.com.br/fundos-listados/infra-cdi/",
+    "text": "Acesse o relatório",
+    "code": "404",
+    "eff": "https://www.sulamericainvestimentos.com.br/fundos-listados/infra-cdi/",
+    "len": 74239,
+    "plat": [
+     "wordpress",
+     "mziq",
+     "s3"
+    ],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nUser-Agent: Googlebot\nUser-Agent: GoogleOther\nUser-Agent: Bingbot\nUser-Agent: Googlebot-Mobile\n\nAllow: /\n\nDisallow: /wp-admin/\nDisallow: /wp-includes/\nDisallow: /wp-content/\n\n# Allow access to theme files, which include critical JS and CSS\n\nAllow: /wp-content/themes/abc_template_dev/\nAllow: /wp-content/uploads/*.jpg\nAllow: /wp-content/uploads/*.jpeg\nAllow: /wp-content/uploads/*.png\nAllow: /wp-content/uploads/*.gif\n\nSitemap: /sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "Claritas",
+  "domain": "www.claritas.com.br",
+  "home": [
+   "200",
+   "https://principalam.com.br/",
+   109182
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [
+   [
+    "https://principalam.com.br/informe-se/insights",
+    "Insights"
+   ],
+   [
+    "https://principalam.com.br/informe-se/insights/",
+    "Insights"
+   ],
+   [
+    "https://principalam.com.br/Informe-se/Insights",
+    "Insigths"
+   ],
+   [
+    "https://principalam.com.br/informe-se/insights/latam-economic-outlook-fevereiro-2026/",
+    "Ver perspectiva"
+   ],
+   [
+    "https://principalam.com.br/informe-se/insights/cenario-macroeconomico-janeiro-2026/",
+    "Leia mais"
+   ],
+   [
+    "https://principalam.com.br/insights/cenario-global-e-implicacoes-para-a-america-latina-dezembro-de-2025/",
+    "Leia mais"
+   ]
+  ],
+  "home_pdfs": [
+   "https://principalam.com.br/wp-content/uploads/Politica-de-Privacidade-Principal-Claritas.pdf",
+   "https://principalam.com.br/wp-content/uploads/Politica-de-Privacidade-geral-fev.2025-1.pdf",
+   "https://principalam.com.br/wp-content/uploads/Politica-de-Privacidade-geral-fev.2025.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://principalam.com.br/informe-se/insights",
+    "text": "Insights",
+    "code": "200",
+    "eff": "https://principalam.com.br/informe-se/insights/",
+    "len": 79560,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 4,
+    "pdf_sample": [
+     "https://principalam.com.br/wp-content/uploads/Politica-de-Privacidade-Principal-Claritas.pdf",
+     "https://principalam.com.br/wp-content/uploads/Politica-de-Privacidade-geral-fev.2025-1.pdf",
+     "https://principalam.com.br/wp-content/uploads/Termos-e-Condicoes-Principal-Claritas.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://principalam.com.br/informe-se/insights/",
+    "text": "Insights",
+    "code": "200",
+    "eff": "https://principalam.com.br/informe-se/insights/",
+    "len": 79560,
+    "plat": [
+     "wordpress",
+     "elementor"
+    ],
+    "npdf": 4,
+    "pdf_sample": [
+     "https://principalam.com.br/wp-content/uploads/Politica-de-Privacidade-Principal-Claritas.pdf",
+     "https://principalam.com.br/wp-content/uploads/Politica-de-Privacidade-geral-fev.2025-1.pdf",
+     "https://principalam.com.br/wp-content/uploads/Termos-e-Condicoes-Principal-Claritas.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\r\n# ---------------------------\r\nUser-agent: *\r\nDisallow:\r\n\r\nSitemap: https://principalam.com.br/sitemap_index.xml\r\n# ---------------------------\r\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Daycoval Asset",
+  "domain": "www.daycovalasset.com.br",
+  "home": [
+   "000",
+   "https://www.daycovalasset.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ },
+ {
+  "name": "Santander AM",
+  "domain": "www.santanderassetmanagement.com.br",
+  "home": [
+   "200",
+   "https://www.santanderassetmanagement.com.br/pessoa-fisica",
+   190359
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://www.santanderassetmanagement.com.br/conteudos/carta-mensal",
+    "Carta Mensal"
+   ],
+   [
+    "https://www.santanderassetmanagement.com.br/conteudos/minutos-a-fundo",
+    "Minutos a Fundo"
+   ],
+   [
+    "https://www.santanderassetmanagement.com.br/conteudos/novidades-e-eventos",
+    "Novidades e Eventos"
+   ],
+   [
+    "https://www.santanderassetmanagement.com.br/conteudos/documentos-de-fundos",
+    "Documentos de Fundos"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.santanderassetmanagement.com.br/conteudos/carta-mensal",
+    "text": "Carta Mensal",
+    "code": "200",
+    "eff": "https://www.santanderassetmanagement.com.br/conteudos/carta-mensal",
+    "len": 184846,
+    "plat": [],
+    "npdf": 13,
+    "pdf_sample": [
+     "https://www.santanderassetmanagement.com.br/content/view/18864/file/Carta%20Mensal%20Julho.pdf",
+     "https://www.santanderassetmanagement.com.br/content/view/19128/file/Carta%20Mensal%20Agosto.pdf",
+     "https://www.santanderassetmanagement.com.br/content/view/21363/file/Carta%20Mensal%20Setembro.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://www.santanderassetmanagement.com.br/conteudos/minutos-a-fundo",
+    "text": "Minutos a Fundo",
+    "code": "200",
+    "eff": "https://www.santanderassetmanagement.com.br/conteudos/minutos-a-fundo",
+    "len": 210529,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [
+     "https://www.youtube.com/embed/JN0NOrywr4s?rel=0&amp;amp;showinfo=0&autoplay=0&mute=0&loop=0&controls=1&playlist=JN0NOrywr4s"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /web/search\nDisallow: /web/tag-search\nDisallow: /profile\nDisallow: /https-www.santander.com.br-institucional-santander-seguranca\nDisallow: /politica-de-privacidade\nDisallow: /politica-de-cookies\nDisallow: /pessoa-fisica/termos-legais\nDisallow: /pessoa-juridica/termos-legais\nSitemap: https://www.santanderassetmanagement.com.br/sitemap.xml"
+  ]
+ },
+ {
+  "name": "Galapagos",
+  "domain": "galapagoscapital.com",
+  "home": [
+   "200",
+   "https://galapagoscapital.com/",
+   316192
+  ],
+  "plat": [
+   "wordpress",
+   "elementor",
+   "hubspot"
+  ],
+  "cands": [
+   [
+    "https://galapagoscapital.com/conteudo",
+    "CONTEÚDO"
+   ],
+   [
+    "https://galapagoscapital.com/conteudo/ww-talks",
+    "WW Talks"
+   ],
+   [
+    "https://galapagoscapital.com/conteudo/fmi",
+    "FMI"
+   ],
+   [
+    "https://galapagoscapital.com/conteudo/",
+    "Blog"
+   ],
+   [
+    "https://galapagoscapital.com/conteudo/blog/um-novo-bolso-para-as-seguradoras-a-letra-de-risco-de-seguro",
+    ""
+   ],
+   [
+    "https://galapagoscapital.com/conteudo/blog/galapagos-ve-fit-com-publico-da-jhsf-e-abre-casa-de-arte-no-mall-do-boa-vista",
+    ""
+   ],
+   [
+    "https://galapagoscapital.com/conteudo/blog/etf-selic",
+    ""
+   ],
+   [
+    "https://galapagoscapital.com/conteudo/blog/bndes-etfs",
+    ""
+   ]
+  ],
+  "home_pdfs": [
+   "https://galapagoscapital.com/wp-content/uploads/2026/03/Complete_com_o_Docusign_Aviso-Privacidade_vf.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://galapagoscapital.com/conteudo",
+    "text": "CONTEÚDO",
+    "code": "200",
+    "eff": "https://galapagoscapital.com/conteudo",
+    "len": 365913,
+    "plat": [
+     "wordpress",
+     "elementor",
+     "hubspot"
+    ],
+    "npdf": 7,
+    "pdf_sample": [
+     "https://galapagoscapital.com/wp-content/uploads/2024/12/AF-Carta-Trimestral-WM-3T24.pdf",
+     "https://galapagoscapital.com/wp-content/uploads/2024/12/Carta-WM-Perspectivas-Investimento-2025.pdf",
+     "https://galapagoscapital.com/wp-content/uploads/2026/05/Tudo-que-voce-precisa-saber-sobre-FIIs.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-P4TPKG5"
+    ],
+    "apis": []
+   },
+   {
+    "url": "https://galapagoscapital.com/conteudo/ww-talks",
+    "text": "WW Talks",
+    "code": "200",
+    "eff": "https://galapagoscapital.com/conteudo/ww-talks",
+    "len": 268644,
+    "plat": [
+     "wordpress",
+     "elementor",
+     "hubspot"
+    ],
+    "npdf": 3,
+    "pdf_sample": [
+     "https://galapagoscapital.com/wp-content/uploads/2026/03/Complete_com_o_Docusign_Aviso-Privacidade_vf.pdf",
+     "https://galapagoscapital.com/wp-content/uploads/2026/04/GLP_Ebook_WW_Talks_EP_01.pdf",
+     "https://galapagoscapital.com/wp-content/uploads/2026/06/GLP_Ebook-WW-Talks_EP02_2205.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-P4TPKG5",
+     "https://www.youtube.com/embed/6XAMs6jann4?&amp;autohide=1&amp;showtitle=0&amp;controls=1&amp;showinfo=0&amp;modestbranding=0&amp;rel=1"
+    ],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://galapagoscapital.com/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Augme",
+  "domain": "www.augme.com.br",
+  "home": [
+   "200",
+   "https://www.augme.com.br/",
+   622084
+  ],
+  "plat": [
+   "elementor",
+   "wix"
+  ],
+  "cands": [
+   [
+    "https://www.augme.com.br/cartas-gestao",
+    "Cartas de Gestão"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.augme.com.br/cartas-gestao",
+    "text": "Cartas de Gestão",
+    "code": "200",
+    "eff": "https://www.augme.com.br/cartas-gestao",
+    "len": 959900,
+    "plat": [
+     "elementor",
+     "wix"
+    ],
+    "npdf": 100,
+    "pdf_sample": [
+     "https://www.augme.com.br/_files/ugd/0405c7_06b8fc152be540f2a9345002f9433212.pdf",
+     "https://www.augme.com.br/_files/ugd/0405c7_072275da55294ac0b5146c0ddc0b9b72.pdf",
+     "https://www.augme.com.br/_files/ugd/c3ac2e_fd16404856834cb8ba6b3a7b275c4cdc.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "/api/"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nAllow: /\nDisallow: *?lightbox=\n\n# Optimization for Google Ads Bot\nUser-agent: AdsBot-Google-Mobile\nUser-agent: AdsBot-Google\nDisallow: /_partials*\nDisallow: /pro-gallery-webapp/v1/galleries/*\n\n# Block PetalBot\nUser-agent: PetalBot\nDisallow: /\n\n# Crawl delay for overly enthusiastic bots\nUser-agent: dotbot\nCrawl-delay: 10\nUser-agent: AhrefsBot\nCrawl-delay: 10\n\nSitemap: https://www.augme.com.br/sitemap.xml\n\n# Auto generated, go to SEO Tools > Robots.txt Editor to change this"
+  ]
+ },
+ {
+  "name": "Valora",
+  "domain": "www.valorainvest.com.br",
+  "home": [
+   "200",
+   "https://valorainvest.com.br/",
+   117769
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://valorainvest.com.br/fundo/somapay-fidc/",
+    "Somapay Cartão Consignado Público FIDC RL"
+   ],
+   [
+    "https://valorainvest.com.br/material-de-divulgacao-valora-absolute-firf-cp-lp-agosto-26/",
+    "MATERIAL DE DIVULGAÇÃO &#8211; Valora Absolute FIRF CP LP (A"
+   ],
+   [
+    "https://valorainvest.com.br/material-de-divulgacao-v051-fidc-rl-agosto-26/",
+    "MATERIAL DE DIVULGAÇÃO &#8211; V051 FIDC RL (Agosto/26)"
+   ]
+  ],
+  "home_pdfs": [
+   "https://valorainvest.com.br/wp-content/uploads/2026/06/Carta_Mensal-05.26.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://valorainvest.com.br/fundo/somapay-fidc/",
+    "text": "Somapay Cartão Consignado Público FIDC RL",
+    "code": "200",
+    "eff": "https://valorainvest.com.br/fundo/somapay-fidc/",
+    "len": 151238,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://valorainvest.com.br/wp-content/uploads/2025/06/DOC_REGUL_82250_127520_2025_03.pdf",
+     "https://valorainvest.com.br/wp-content/uploads/2025/06/DOC_REGUL_82250_127520_2025_03.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-WKW43ZN"
+    ],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://valorainvest.com.br/material-de-divulgacao-valora-absolute-firf-cp-lp-agosto-26/",
+    "text": "MATERIAL DE DIVULGAÇÃO &#8211; Valora Absolute FIRF CP LP (A",
+    "code": "200",
+    "eff": "https://valorainvest.com.br/material-de-divulgacao-valora-absolute-firf-cp-lp-agosto-26/",
+    "len": 122920,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 1,
+    "pdf_sample": [
+     "https://valorainvest.com.br/wp-content/uploads/2026/10/Valora-Absolute-FIRF-CP-LP.pdf",
+     "https://valorainvest.com.br/wp-content/uploads/2026/10/Valora-Absolute-FIRF-CP-LP.pdf"
+    ],
+    "iframes": [
+     "https://www.googletagmanager.com/ns.html?id=GTM-WKW43ZN"
+    ],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://valorainvest.com.br/wp-sitemap.xml\n\nUser-agent: *\nDisallow: /wp-content/uploads/wpo-plugins-tables-list.json\n"
+  ]
+ },
+ {
+  "name": "Meta",
+  "domain": "www.metaam.com.br",
+  "home": [
+   "200",
+   "https://metaasset.com.br/",
+   39516
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://metaasset.com.br/cartas-mensais/",
+    "Conteúdo"
+   ],
+   [
+    "https://metaasset.com.br/documentos-e-manuais/",
+    "Documentos e Manuais"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://metaasset.com.br/cartas-mensais/",
+    "text": "Conteúdo",
+    "code": "200",
+    "eff": "https://metaasset.com.br/cartas-mensais/",
+    "len": 59217,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 69,
+    "pdf_sample": [
+     "https://metaasset.com.br/wp-content/uploads/2021/07/Carta-Mensal-Abril-2021.pdf",
+     "https://metaasset.com.br/wp-content/uploads/2021/07/Carta-Mensal-Fevereiro-2021.pdf",
+     "https://metaasset.com.br/wp-content/uploads/2026/10/Carta-Mensal-Setembro-2026-1.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://metaasset.com.br/documentos-e-manuais/",
+    "text": "Documentos e Manuais",
+    "code": "200",
+    "eff": "https://metaasset.com.br/documentos-e-manuais/",
+    "len": 44228,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 11,
+    "pdf_sample": [
+     "https://metaasset.com.br/wp-content/uploads/2021/07/Manual-de-Compliance-Junho-2021.pdf",
+     "https://metaasset.com.br/wp-content/uploads/2023/08/2023.08.01-Politica-PLDFT.pdf",
+     "https://metaasset.com.br/wp-content/uploads/2026/09/META-11-SMALL-CAP-FIA-REGULAMENTO-2024.12.16-1.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://metaasset.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Alpha Key",
+  "domain": "www.alphakey.com.br",
+  "home": [
+   "200",
+   "https://alphakey.com.br/",
+   91640
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://alphakey.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Pandhora",
+  "domain": "pandhora.com",
+  "home": [
+   "200",
+   "https://www.pandhora.com/",
+   59624
+  ],
+  "plat": [],
+  "cands": [
+   [
+    "https://www.pandhora.com/cartas-mensais",
+    "Cartas Mensais      Políticas, Códigos e Manuais           F"
+   ],
+   [
+    "javascript:void(0);",
+    "Documentos"
+   ],
+   [
+    "https://www.pandhora.com/blog-pandhora",
+    "Ver todos os conteúdos"
+   ],
+   [
+    "https://www.pandhora.com/Download.aspx?Arquivo=PIUTIjv9tzQDq2hQ+9AwkA==",
+    "Política de Privacidade"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://www.pandhora.com/cartas-mensais",
+    "text": "Cartas Mensais      Políticas, Códigos e Manuais           F",
+    "code": "200",
+    "eff": "https://www.pandhora.com/cartas-mensais",
+    "len": 79848,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "javascript:void(0);",
+    "text": "Documentos",
+    "code": "000",
+    "eff": "javascript:void(0);",
+    "len": 0,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": []
+   }
+  ],
+  "robots": [
+   "404",
+   ""
+  ]
+ },
+ {
+  "name": "Tarpon",
+  "domain": "www.tarpon.com.br",
+  "home": [
+   "200",
+   "https://tarpon.com.br/",
+   22459
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "200",
+   "User-agent: *\r\nDisallow: /wp-admin/\r\n\r\nSitemap: https://tarpon.com.br/sitemap_index.xml"
+  ]
+ },
+ {
+  "name": "M Square",
+  "domain": "www.msquare.com.br",
+  "home": [
+   "200",
+   "https://www.msquare.com/",
+   37987
+  ],
+  "plat": [
+   "wordpress",
+   "elementor"
+  ],
+  "cands": [],
+  "home_pdfs": [
+   "https://www.msquare.com/\\/\\/msquare.com\\/wp-content\\/uploads\\/2022\\/06\\/politica-de-privacidade-e-seguranca-cibernetica.pdf"
+  ],
+  "pages": [],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow: /wp-json/\nDisallow: /?rest_route=\n\nSitemap: http://www.msquare.com/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "Journey",
+  "domain": "www.journeycapital.com.br",
+  "home": [
+   "200",
+   "https://journeycapital.com.br/",
+   166076
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://journeycapital.com.br/publicacoes/relatorios/",
+    "Relatórios"
+   ],
+   [
+    "https://valor.globo.com/financas/noticia/2024/07/15/journey-capital-cinde-atividade-de-gestao-de-carteiras.ghtml",
+    "Leia mais"
+   ],
+   [
+    "https://journeycapital.com.br/publicacoes/",
+    "Publicações"
+   ],
+   [
+    "https://neofeed.com.br/blog/home/a-cvm-entre-os-tubaroes-e-as-sardinhas",
+    "Leia mais"
+   ]
+  ],
+  "home_pdfs": [
+   "https://www.bcb.gov.br/content/controleinflacao/focustop5/T20250610-Institui%C3%A7%C3%B5es%20Top%205%20-%20Maio%20de%202025.pdf"
+  ],
+  "pages": [
+   {
+    "url": "https://journeycapital.com.br/publicacoes/relatorios/",
+    "text": "Relatórios",
+    "code": "200",
+    "eff": "https://journeycapital.com.br/publicacoes/relatorios/",
+    "len": 155727,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 12,
+    "pdf_sample": [
+     "https://journeycapital.com.br/wp-content/uploads/2026/01/Carta_Mensal_DEZ-25_Asset.pdf",
+     "https://journeycapital.com.br/wp-content/uploads/2026/02/Carta_Mensal_FEV-26-Asset.pdf",
+     "https://journeycapital.com.br/wp-content/uploads/2026/10/Endurance-Plus-1.pdf"
+    ],
+    "iframes": [],
+    "apis": []
+   },
+   {
+    "url": "https://valor.globo.com/financas/noticia/2024/07/15/journey-capital-cinde-atividade-de-gestao-de-carteiras.ghtml",
+    "text": "Leia mais",
+    "code": "200",
+    "eff": "https://valor.globo.com/financas/noticia/2024/07/15/journey-capital-cinde-atividade-de-gestao-de-carteiras.ghtml",
+    "len": 1423554,
+    "plat": [],
+    "npdf": 0,
+    "pdf_sample": [],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "# START YOAST BLOCK\n# ---------------------------\nUser-agent: *\nDisallow:\n\nSitemap: https://journeycapital.com.br/sitemap_index.xml\n# ---------------------------\n# END YOAST BLOCK"
+  ]
+ },
+ {
+  "name": "3R",
+  "domain": "www.3r-invest.com.br",
+  "home": [
+   "200",
+   "https://3r-invest.com.br/",
+   256058
+  ],
+  "plat": [
+   "wordpress"
+  ],
+  "cands": [
+   [
+    "https://3r-invest.com.br/carta-do-gestor/",
+    "Carta do Gestor"
+   ],
+   [
+    "https://3r-invest.com.br/carta-do-gestor",
+    "Carta do Gestor"
+   ]
+  ],
+  "home_pdfs": [],
+  "pages": [
+   {
+    "url": "https://3r-invest.com.br/carta-do-gestor/",
+    "text": "Carta do Gestor",
+    "code": "200",
+    "eff": "https://3r-invest.com.br/carta-do-gestor/",
+    "len": 256352,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 89,
+    "pdf_sample": [
+     "https://3r-invest.com.br/arquivos/cartas-do-gestor/2019/3R_Genus_Hedge_FIM-Carta_do_Gestor-Agosto_2019.pdf",
+     "https://3r-invest.com.br/arquivos/cartas-do-gestor/2019/3R_Genus_Hedge_FIM-Carta_do_Gestor-Dezembro_2019.pdf",
+     "https://3r-invest.com.br/arquivos/cartas-do-gestor/2025/3R_Genus_Hedge_FIM-Carta_do_Gestor-Março_2025.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   },
+   {
+    "url": "https://3r-invest.com.br/carta-do-gestor",
+    "text": "Carta do Gestor",
+    "code": "200",
+    "eff": "https://3r-invest.com.br/carta-do-gestor/",
+    "len": 256343,
+    "plat": [
+     "wordpress"
+    ],
+    "npdf": 89,
+    "pdf_sample": [
+     "https://3r-invest.com.br/arquivos/cartas-do-gestor/2019/3R_Genus_Hedge_FIM-Carta_do_Gestor-Agosto_2019.pdf",
+     "https://3r-invest.com.br/arquivos/cartas-do-gestor/2019/3R_Genus_Hedge_FIM-Carta_do_Gestor-Dezembro_2019.pdf",
+     "https://3r-invest.com.br/arquivos/cartas-do-gestor/2025/3R_Genus_Hedge_FIM-Carta_do_Gestor-Março_2025.pdf"
+    ],
+    "iframes": [],
+    "apis": [
+     "api"
+    ]
+   }
+  ],
+  "robots": [
+   "200",
+   "User-agent: *\nDisallow: /wp-admin/\nAllow: /wp-admin/admin-ajax.php\n\nSitemap: https://3r-invest.com.br/wp-sitemap.xml\n"
+  ]
+ },
+ {
+  "name": "Itavera",
+  "domain": "www.itaverde.com.br",
+  "home": [
+   "000",
+   "https://www.itaverde.com.br/",
+   0
+  ],
+  "plat": [],
+  "cands": [],
+  "home_pdfs": [],
+  "pages": [],
+  "robots": [
+   "000",
+   ""
+  ]
+ }
+]
