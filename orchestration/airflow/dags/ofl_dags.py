@@ -79,9 +79,12 @@ _POD_ENV = [k8s.V1EnvVar(name="OFL_PUSHGATEWAY_URL", value=PUSHGATEWAY_URL)] if 
 # Per-task pod sizing. Request is tiny (256Mi) because the node sits ~95-99% on
 # memory *requests* but only ~66% real RAM; the 3Gi limit lets Spark burst into
 # the free RAM while staying schedulable. (Same fix applied to the retired Kedro DAG.)
+# The limit was 3Gi until 2026-10: b3_cotahist peaks at ~3.9 GiB of anonymous memory
+# (two full annual archives in one frame), so the kernel OOM-killed it on every try.
+# 5Gi covers it; the other 50 series stay around 150 MiB, so this only moves the cap.
 _RESOURCES = k8s.V1ResourceRequirements(
     requests={"cpu": "250m", "memory": "256Mi"},
-    limits={"cpu": "1500m", "memory": "3Gi"},
+    limits={"cpu": "1500m", "memory": os.getenv("OFL_INGEST_MEMORY_LIMIT", "5Gi")},
 )
 # The silver lane runs a Spark JVM that MERGEs each fact's full bronze every run;
 # the largest (fact_derivatives_quote) needs a ~4g driver heap (see
@@ -134,6 +137,9 @@ def _pod(
         on_failure_callback=ofl_failure_alert,
         get_logs=True,
         is_delete_operator_pod=True,
+        # Provider default is 120 s; a busy node can take longer just to start the pod,
+        # and each miss burns a retry.
+        startup_timeout_seconds=int(os.getenv("OFL_POD_STARTUP_TIMEOUT", "600")),
         **kwargs,
     )
 
