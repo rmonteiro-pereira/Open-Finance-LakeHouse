@@ -84,8 +84,9 @@ today and re-derives itself the moment a series is added:
 
 ```
 ofl_ingest_<handler>   (x10 — one DAG per source handler, the unit that actually fails together)
-   └── one static task per series ──emit──▶ Asset(lakehouse://bronze/<series>)   (x51)
-                                                    │  any bronze asset
+   ├── one static task per series ──emit──▶ Asset(lakehouse://bronze/<series>)   (x51)
+   └── ingest_done (all series ended) ──emit──▶ Asset(lakehouse://ingest/<handler>) (x10)
+                                                    │  all sources finished
                                                     ▼
                           ofl_silver  (Spark MERGE) ──emit──▶ Asset(silver/fact_observation)
                                                     │

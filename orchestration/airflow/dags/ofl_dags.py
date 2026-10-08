@@ -5,9 +5,12 @@ from ``sources/registry.yml`` at parse time, so the counts below are whatever th
 registry currently yields — today 10 handlers / 51 active series:
 
     ofl_ingest_<source>  (x10, one per HANDLER with >=1 active series)
-        └─ one static task per series  --emit--> Asset(bronze/<series>)   (51 assets)
+        ├─ one static task per series  --emit--> Asset(bronze/<series>)   (51 assets)
+        └─ ingest_done (runs when every series task has ended, pass or fail)
+                                       --emit--> Asset(ingest/<source>)   (10 assets)
                                                       |
-    ofl_silver  (schedule = ANY bronze asset)  --emit--> Asset(silver/fact_observation)
+    ofl_silver  (schedule = ALL ingest/<source> assets)
+                                       --emit--> Asset(silver/fact_observation)
                                                       |
     ofl_gold    (schedule = silver asset)      --emit--> Asset(gold/marts)
 
@@ -22,6 +25,12 @@ Granularity (committee decision, see ofl-pipeline-observability memory):
     mapping: a KubernetesPodOperator can't emit per-map-index Asset events.)
   * silver/gold stay shared singletons, scheduled by Asset events with
     max_active_runs=1 + idempotent MERGE, so partial/bursty bronze is safe.
+  * silver runs ONCE per ingest wave: it waits for every source DAG to finish
+    (``ingest_done`` fires on ``all_done``, so a failing series still does not
+    hold silver back). Until 2026-10 it ran on ANY bronze asset, which on a small
+    node meant 3-4 full Spark MERGEs per night competing with the ingests for CPU.
+    ``OFL_SILVER_TRIGGER=any`` restores that. After re-running a single source by
+    hand, trigger ``ofl_silver`` by hand too.
 
 Node memory is governed by Airflow POOLS, not granularity: all ingest pods share
 ``ofl_ingest`` (2 slots) and Spark runs alone in ``ofl_spark`` (1 slot). These
@@ -35,6 +44,7 @@ import os
 import pendulum
 from airflow import DAG
 from airflow.providers.cncf.kubernetes.operators.pod import KubernetesPodOperator
+from airflow.providers.standard.operators.empty import EmptyOperator
 from kubernetes.client import models as k8s
 
 try:  # Airflow 3 conditional asset expressions
@@ -62,6 +72,10 @@ ANBIMA_SECRET = os.getenv("OFL_ANBIMA_SECRET", "anbima-creds")
 # Concurrency pools — the load-bearing memory guardrail on the single node.
 INGEST_POOL = os.getenv("OFL_INGEST_POOL", "ofl_ingest")  # slots=2
 SPARK_POOL = os.getenv("OFL_SPARK_POOL", "ofl_spark")  # slots=1, Spark never co-runs with ingest
+
+# "cycle": silver runs once, after every source DAG has finished. "any": silver runs
+# on any bronze refresh (the pre-2026-10 behaviour).
+SILVER_TRIGGER = os.getenv("OFL_SILVER_TRIGGER", "cycle")
 
 # Pushgateway for per-series metrics — surfaced to pods so the ingest CLI and the
 # failure callback push to the same gateway.
@@ -101,6 +115,11 @@ _DEFAULTS = {"retries": 2, "retry_delay": pendulum.duration(minutes=2)}
 def asset_bronze(series_key: str) -> Asset:
     """Per-series bronze asset — a failed series withholds only its own."""
     return Asset(f"lakehouse://bronze/{series_key}")
+
+
+def asset_ingest_done(handler: str) -> Asset:
+    """Per-source marker: every series task of that source has ended (pass or fail)."""
+    return Asset(f"lakehouse://ingest/{handler}")
 
 
 ASSET_SILVER = Asset("lakehouse://silver/fact_observation")
@@ -146,6 +165,7 @@ def _pod(
 
 registry = load_registry()
 _ALL_BRONZE = [asset_bronze(s.key) for s in registry.active()]
+_ALL_INGEST_DONE = []
 
 # --- one ingestion DAG per SOURCE/handler ------------------------------------
 for handler in registry.handlers():
@@ -166,20 +186,33 @@ for handler in registry.handlers():
         # One independent task per series — no inter-task deps, so a failure or DQ
         # rejection on one series leaves the others untouched and emits only its
         # own bronze asset. Concurrency is bounded globally by the shared pool.
-        for s in series:
+        tasks = [
             _pod(f"ingest_{s.key}", ["ingest", "--series", s.key], outlets=[asset_bronze(s.key)])
+            for s in series
+        ]
+        # Marks the source as finished for this wave whatever the series outcomes were.
+        done_asset = asset_ingest_done(handler)
+        _ALL_INGEST_DONE.append(done_asset)
+        tasks >> EmptyOperator(task_id="ingest_done", trigger_rule="all_done", outlets=[done_asset])
+        # ingest_done always succeeds, so without this second leaf a run with failed
+        # series would be reported as a success. No outlets: the scheduler resolves it
+        # without starting a worker process.
+        tasks >> EmptyOperator(task_id="ingest_status")
 
     globals()[dag_id] = dag
 
-# --- silver: triggered on ANY bronze series refresh (no all-series barrier) ---
-_silver_schedule = AssetAny(*_ALL_BRONZE) if AssetAny is not None else _ALL_BRONZE
+# --- silver: once per ingest wave (all sources finished), or on ANY bronze refresh ---
+if SILVER_TRIGGER == "any":
+    _silver_schedule = AssetAny(*_ALL_BRONZE) if AssetAny is not None else _ALL_BRONZE
+else:
+    _silver_schedule = _ALL_INGEST_DONE  # a list means "all of them"
 with DAG(
     dag_id="ofl_silver",
     schedule=_silver_schedule,
     start_date=pendulum.datetime(2026, 1, 1, tz="America/Sao_Paulo"),
     catchup=False,
     default_args=_DEFAULTS,
-    max_active_runs=1,  # coalesce an asset-event burst into one idempotent MERGE
+    max_active_runs=1,
     tags=["ofl", "silver"],
 ) as silver_dag:
     _pod(
