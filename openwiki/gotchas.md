@@ -8,8 +8,13 @@
   to run on *any* bronze asset, three or four full merges a night). Consequence: after
   re-running one source by hand, trigger `ofl_silver` by hand as well, or set
   `OFL_SILVER_TRIGGER=any`. Each run still re-merges all of bronze (about 30 minutes).
-- **`b3_cotahist` hard-codes `years: [2024, 2025]`.** It re-downloads both annual
-  archives every day and never fetches 2026.
+- **`b3_cotahist` uses `years_back: 2`**: this year and the two before it, resolved at
+  run time. It re-downloads all three annual archives every day (about 80 MB each).
+- **The IBGE handler reads the table API** (`/api/v3/agregados/{agregado}/...`). The old
+  `/api/v1/indicadores/{id}` route answers 503 after 60 s. Pick monthly tables only:
+  quarterly ones key periods as `YYYYQQ` and would be read as months.
+- **`pyproject.toml` needs `LICENSE` at build time.** Both Dockerfiles copy it; drop that
+  and the image build fails. The `images` workflow builds both images on every PR.
 - **Image builds are not lock-pinned.** They `uv pip install "."`, so versions float
   inside the `pyproject.toml` ranges; `delta-spark` can resolve to 3.3.x against the
   baked 3.2.1 jar.

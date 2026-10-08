@@ -1,10 +1,10 @@
 ---
 workstream: OFL
 repo: this repo (Open-Finance-LakeHouse, public)
-branch: docs/openwiki
+branch: main
 phase: OFL-deploy
-status: running
-updated: 2026-10-08T02:24Z
+status: done
+updated: 2026-10-08T12:30Z
 ---
 
 > Written from a read of `main` at `d61ea70` and from deploying it on a new
@@ -17,13 +17,15 @@ updated: 2026-10-08T02:24Z
 |---|---|---|---|
 | Runtime requirements mapped | **done** | `d61ea70` | Images, env vars, secrets, pools, RBAC, endpoints: see `architecture.md`. |
 | Runs on Ceph RGW | **verified** | cluster run, 2026-10-07 | Ingest and silver completed against Ceph S3 with no code change. |
-| First full daily cycle on the new cluster | **running** | Airflow `dag_run` table | 30 of 51 ingests succeeded and one silver run completed at last check; gold not yet seen to finish. |
-| Image publishing in CI | not started | — | Images are built on the node and imported by hand. |
+| Full pipeline on the new cluster | **verified** | Airflow `dag_run`, 2026-10-08 | Ingest, silver and gold all succeeded (gold three times). Bucket after six silver runs: 124 MB, 463 objects. Still failing: `anbima` (no credentials). |
+| Silver once per ingest wave | **done**, not yet seen on a scheduled wave | #44 | `ingest_done` markers; `OFL_SILVER_TRIGGER=any` restores the old trigger. |
+| `ibge` repaired | **done** | #45 | Upstream route was down; now table 6381, variable 4099, 174 months. |
+| `b3_cotahist` rolling years | **done** | #48 | Also filters per file, so the memory peak is one annual archive. |
+| Image build in CI | **partly** | #47, #49 | Builds both images on PRs and main. Push to GHCR is off until the package grants this repo access and `PUSH_IMAGES=true` is set. |
 
 ## Handoff
 
-- **Unverified:** a completed gold run on the new cluster; why `ibge` fails there;
-  whether 4 ingest slots are safe for the BACEN API (30 of 51 series share it).
-- **Worth doing here:** make `ofl_silver` run once after the ingests instead of per
-  asset batch; add timeouts; make `b3_cotahist` years follow the calendar; pin image
-  builds to `uv.lock`; a CI job that builds and pushes both images.
+- **Unverified:** the new silver trigger on a real 03:00 UTC wave; whether 4 ingest
+  slots are safe for the BACEN API (30 of 51 series share it).
+- **Worth doing here:** task timeouts; pin image builds to `uv.lock`; vacuum old Delta
+  versions (each silver run leaves one behind, about 20 MB).
