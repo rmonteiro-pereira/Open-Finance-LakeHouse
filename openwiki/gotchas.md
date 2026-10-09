@@ -39,6 +39,6 @@
   DAG change; `git push origin main:deploy` does. Do that outside the daily cycle (a reload
   makes every asset inactive for a few minutes and tasks starting then fail without retry).
   Code that runs inside the pods ships with the image, which is a separate step.
-- **Tasks have an execution timeout**: 30 minutes for ingest and gold, 120 for Spark
+- **Tasks have an execution timeout**: 45 minutes for ingest and gold, 120 for Spark
   (`OFL_TASK_TIMEOUT_MIN`, `OFL_SPARK_TIMEOUT_MIN`).
 

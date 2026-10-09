@@ -111,7 +111,7 @@ _SPARK_RESOURCES = k8s.V1ResourceRequirements(
 
 # No task may run forever: a series stuck on a dead endpoint once held its source DAG (and so
 # silver) for 47 minutes with nothing to stop it. Ingest and gold get one limit, Spark another.
-_TASK_TIMEOUT = pendulum.duration(minutes=int(os.getenv("OFL_TASK_TIMEOUT_MIN", "30")))
+_TASK_TIMEOUT = pendulum.duration(minutes=int(os.getenv("OFL_TASK_TIMEOUT_MIN", "45")))
 _SPARK_TIMEOUT = pendulum.duration(minutes=int(os.getenv("OFL_SPARK_TIMEOUT_MIN", "120")))
 _DEFAULTS = {
     "retries": 2,
