@@ -1,0 +1,181 @@
+# Managers whose letters the documents lane archives, and how each one publishes.
+#
+# Source of this list: docs/research/fund-letters-sources.md, table A (sites opened and
+# checked on 2026-10-08). Only the two generic mechanisms are here; managers that need
+# their own adapter (Verde's JSON, Legacy's ajax, HTML-only letters) come later, and sites
+# behind bot challenges are not collected at all.
+#
+#   wp_media    WordPress media library over its public REST API (every PDF on the site;
+#               a name/title filter keeps the letters).
+#   page_links  PDF links on pages that are a letters listing.
+managers:
+  - id: kapitalo
+    name: "Kapitalo"
+    collectors:
+      - {kind: wp_media, base: "https://www.kapitalo.com.br"}
+  - id: dynamo
+    name: "Dynamo"
+    collectors:
+      - {kind: wp_media, base: "https://www.dynamo.com.br"}
+  - id: squadra
+    name: "Squadra"
+    collectors:
+      - {kind: wp_media, base: "https://www.squadrainvest.com.br"}
+  - id: ip-capital
+    name: "IP Capital"
+    collectors:
+      - {kind: wp_media, base: "https://ip-capitalpartners.com"}
+  - id: legacy
+    name: "Legacy"
+    collectors:
+      - {kind: wp_media, base: "https://www.legacycapital.com.br"}
+  - id: adam
+    name: "Adam"
+    collectors:
+      - {kind: wp_media, base: "https://adamcapital.com.br"}
+  - id: bahia
+    name: "Bahia"
+    collectors:
+      - {kind: wp_media, base: "https://www.bahiaasset.com.br"}
+  - id: vista
+    name: "Vista"
+    collectors:
+      - {kind: wp_media, base: "https://vistacapital.com.br"}
+  - id: bogari
+    name: "Bogari"
+    collectors:
+      - {kind: wp_media, base: "https://bogaricapital.com.br"}
+  - id: jgp
+    name: "JGP"
+    collectors:
+      - {kind: wp_media, base: "https://www.jgp.com.br"}
+  - id: ace
+    name: "Ace"
+    collectors:
+      - {kind: wp_media, base: "https://acecapital.com.br"}
+  - id: organon
+    name: "Organon"
+    collectors:
+      - {kind: wp_media, base: "https://organoncapital.com.br"}
+  - id: leblon
+    name: "Leblon"
+    collectors:
+      - {kind: wp_media, base: "https://leblonequities.com.br"}
+  - id: navi
+    name: "Navi"
+    collectors:
+      - {kind: wp_media, base: "https://www.navi.com.br"}
+  - id: charles-river
+    name: "Charles River"
+    collectors:
+      - {kind: wp_media, base: "https://charlesriver.com.br"}
+  - id: hix
+    name: "HIX"
+    collectors:
+      - {kind: wp_media, base: "https://hixcapital.com.br"}
+  - id: stk
+    name: "STK"
+    collectors:
+      - {kind: wp_media, base: "https://stkcapital.com.br"}
+  - id: vokin
+    name: "Vokin"
+    collectors:
+      - {kind: wp_media, base: "https://www.vokin.com.br"}
+  - id: santa-fe
+    name: "Santa Fé"
+    collectors:
+      - {kind: wp_media, base: "https://santafe.com.br"}
+  - id: meta
+    name: "Meta Asset"
+    collectors:
+      - {kind: wp_media, base: "https://metaasset.com.br"}
+  - id: journey
+    name: "Journey"
+    collectors:
+      - {kind: wp_media, base: "https://journeycapital.com.br"}
+  - id: exploritas
+    name: "Exploritas"
+    collectors:
+      - {kind: wp_media, base: "https://www.exploritas.com.br"}
+  - id: artica
+    name: "Ártica"
+    collectors:
+      - {kind: wp_media, base: "https://artica.capital"}
+  - id: nest
+    name: "Nest"
+    collectors:
+      - {kind: wp_media, base: "https://nestam.com.br"}
+  - id: "atmos"
+    name: "Atmos"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://www.atmoscapital.com.br/cartas.php"
+  - id: "genoa"
+    name: "Genoa"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://www.genoacapital.com.br/relatorios.html"
+  - id: "alaska"
+    name: "Alaska"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://www.alaska-asset.com.br/cartas/"
+  - id: "brasil-capital"
+    name: "Brasil Capital"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://brasilcapital.com/cartas-de-gestao/"
+  - id: "occam"
+    name: "Occam"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://occambrasil.com.br/cartas-mensais/"
+          - "https://occambrasil.com.br/cartas-tematicas/"
+  - id: "az-quest"
+    name: "AZ Quest"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://azquest.com.br/comunicacao-gestor.php"
+  - id: "studio"
+    name: "Studio"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://studioinvestimentos.com.br/cartas-anuais/"
+          - "https://studioinvestimentos.com.br/relatorios-de-desempenho/"
+  - id: "sparta"
+    name: "Sparta"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://www.sparta.com.br/cartas-mensais/"
+  - id: "3r"
+    name: "3R"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://3r-invest.com.br/carta-do-gestor/"
+  - id: "augme"
+    name: "Augme"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://www.augme.com.br/cartas-gestao"
+  - id: "santander-am"
+    name: "Santander AM"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://www.santanderassetmanagement.com.br/conteudos/carta-mensal"
+  - id: "galapagos"
+    name: "Galapagos"
+    collectors:
+      - kind: page_links
+        urls:
+          - "https://galapagoscapital.com/conteudo"
