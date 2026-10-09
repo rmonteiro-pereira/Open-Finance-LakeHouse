@@ -77,6 +77,10 @@ SPARK_POOL = os.getenv("OFL_SPARK_POOL", "ofl_spark")  # slots=1, Spark never co
 # on any bronze refresh (the pre-2026-10 behaviour).
 SILVER_TRIGGER = os.getenv("OFL_SILVER_TRIGGER", "cycle")
 
+# Name of the Secret holding OFL_PUBLISH_* (the public snapshot's bucket). Unset means the
+# deployment publishes nothing and `ofl_gold` has no publish task.
+PUBLISH_SECRET = os.getenv("OFL_PUBLISH_SECRET", "")
+
 # Pushgateway for per-series metrics — surfaced to pods so the ingest CLI and the
 # failure callback push to the same gateway.
 PUSHGATEWAY_URL = os.getenv("OFL_PUSHGATEWAY_URL", "")
@@ -141,6 +145,7 @@ def _pod(
     image: str = SLIM_IMAGE,
     pool: str = INGEST_POOL,
     resources: "k8s.V1ResourceRequirements" = _RESOURCES,
+    env_from: list | None = None,
     **kwargs,
 ) -> KubernetesPodOperator:
     return KubernetesPodOperator(
@@ -150,7 +155,7 @@ def _pod(
         image=image,
         cmds=["ofl"],
         arguments=args,
-        env_from=_ENV_FROM,
+        env_from=_ENV_FROM + (env_from or []),
         env_vars=_POD_ENV,
         image_pull_secrets=_PULL,
         container_resources=resources,
@@ -243,7 +248,15 @@ with DAG(
     max_active_runs=1,
     tags=["ofl", "gold"],
 ) as gold_dag:
-    _pod("build_gold_marts", ["gold"], outlets=[ASSET_GOLD])
+    _gold = _pod("build_gold_marts", ["gold"], outlets=[ASSET_GOLD])
+    if PUBLISH_SECRET:
+        # Reads gold, writes only to the public bucket. Its failure does not withhold the
+        # gold asset: the marts are built either way and the last snapshot stays published.
+        _gold >> _pod(
+            "publish_snapshot",
+            ["publish"],
+            env_from=[k8s.V1EnvFromSource(secret_ref=k8s.V1SecretEnvSource(name=PUBLISH_SECRET))],
+        )
 
 # --- manual full-rebuild button (idempotent) ----------------------------------
 with DAG(

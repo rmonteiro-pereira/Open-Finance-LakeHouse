@@ -15,6 +15,9 @@ from pydantic import BaseModel, Field
 
 _DEFAULT_REGISTRY = "sources/registry.yml"
 
+#: Redistribution tiers, least to most restrictive. See ``ofl.publish``.
+REDISTRIBUTION_TIERS = ("open", "derived", "private")
+
 
 class Series(BaseModel):
     """One registered data series (or grouped multi-symbol/​multi-bond source)."""
@@ -41,6 +44,9 @@ class Series(BaseModel):
     # `frequency` (daily/monthly/...). Irregular release-calendar series
     # (divida_pib, reservas_internacionais, anbima, focus_*) should set this.
     freshness_sla: str | None = None
+    # open | derived | private: what the public snapshot may carry. Resolved from the
+    # handler default; a source nobody classified is private.
+    redistribution: str | None = None
     extra: dict[str, Any] = Field(default_factory=dict)
 
     @property
@@ -108,4 +114,8 @@ def load_registry(path: str | None = None) -> Registry:
     for s in series.values():
         if s.start_date is None:
             s.start_date = defaults.get(s.handler, {}).get("start_date")
+        if s.redistribution is None:
+            s.redistribution = defaults.get(s.handler, {}).get("redistribution", "private")
+        if s.redistribution not in REDISTRIBUTION_TIERS:
+            raise ValueError(f"{s.key}: unknown redistribution tier {s.redistribution!r}")
     return Registry(version=raw["version"], defaults=defaults, series=series)
