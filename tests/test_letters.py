@@ -141,3 +141,12 @@ def test_seed_list_loads():
     managers = load_managers()
     assert len(managers) >= 30
     assert all(m.collectors for m in managers)
+
+
+def test_source_lists_follow_the_registry_folder_in_the_image(tmp_path, monkeypatch):
+    from ofl.documents.sources import sources_dir
+
+    monkeypatch.setenv("OFL_REGISTRY", str(tmp_path / "registry.yml"))
+    assert sources_dir() == tmp_path
+    monkeypatch.delenv("OFL_REGISTRY")
+    assert (sources_dir() / "letters.yml").exists()
