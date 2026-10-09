@@ -37,5 +37,6 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      # `next typegen` writes the route types (LayoutProps and friends) a build would.
       - name: Type-check
-        run: bunx tsc --noEmit
+        run: bunx next typegen && bunx tsc --noEmit
