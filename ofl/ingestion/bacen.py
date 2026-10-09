@@ -75,7 +75,8 @@ def fetch_sgs(
 
     SGS caps daily series at ~10y per request, so we walk backwards in windows.
     Once we have data and hit an empty window we've passed inception and stop —
-    no blind shrinking back to 1900. Transient errors retry the same window.
+    no blind shrinking back to 1900. Transient errors retry the same window; a window
+    that keeps failing fails the fetch.
 
     ``since`` floors the walk (bounded backfill / incremental loads); ``None``
     fetches full history.
@@ -114,8 +115,12 @@ def fetch_sgs(
                 retries += 1
                 time.sleep(min(2 * retries, 6))
                 continue
-            retries = 0
-            end = start - timedelta(days=1)
+            # Give up on the whole series. Skipping the window and walking on used to turn one
+            # dead endpoint into 12 more windows of timeouts (a 47-minute task on 2026-10-09)
+            # and, when it did recover later, into a silent hole of a decade in the data.
+            raise RuntimeError(
+                f"SGS series {series_id}: window {start}..{end} failed {max_retries + 1} times"
+            )
 
     if not frames:
         return pl.DataFrame(schema={"date": pl.Date, "value": pl.Float64})

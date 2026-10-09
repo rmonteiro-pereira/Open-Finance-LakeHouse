@@ -98,3 +98,19 @@ def test_walk_returns_empty_frame_when_no_data(monkeypatch):
     out = fetch_sgs(1, end=date(2024, 6, 30), since=date(2023, 1, 1))
     assert out.height == 0
     assert out.schema == pl.Schema({"date": pl.Date, "value": pl.Float64})
+
+
+def test_a_window_that_keeps_failing_fails_the_fetch(monkeypatch):
+    import pytest
+
+    calls = []
+
+    def _always_error(series_id, start, end):
+        calls.append((start, end))
+        return "error", None
+
+    monkeypatch.setattr(bacen, "_get_window", _always_error)
+    monkeypatch.setattr(bacen.time, "sleep", lambda _s: None)
+    with pytest.raises(RuntimeError, match="SGS series 1705"):
+        bacen.fetch_sgs(1705, end=date(2026, 10, 9))
+    assert len(calls) == 3  # one window, tried three times; no walk through older decades

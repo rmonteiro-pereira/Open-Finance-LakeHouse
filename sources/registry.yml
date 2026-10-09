@@ -137,7 +137,7 @@ series:
   ipca_15:
     domain: inflation
     handler: bacen_sgs
-    sgs_id: 1705
+    sgs_id: 7478               # was 1705, which answers nothing (timeout for every caller)
     name: "IPCA-15 (CPI preview, monthly %)"
     category: price_index
     unit: percent
