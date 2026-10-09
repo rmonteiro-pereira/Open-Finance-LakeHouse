@@ -2,13 +2,26 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Literal
 
 import yaml
 from pydantic import BaseModel, Field
 
-DEFAULT_PATH = Path(__file__).resolve().parents[2] / "sources" / "letters.yml"
+
+
+def sources_dir() -> Path:
+    """Folder holding the source lists.
+
+    In a checkout it is ``sources/`` at the repo root. In the image the package is
+    installed into site-packages while the lists stay in ``/app/sources``, which is where
+    ``OFL_REGISTRY`` points; so that variable's folder wins when it is set.
+    """
+    registry = os.getenv("OFL_REGISTRY")
+    if registry:
+        return Path(registry).resolve().parent
+    return Path(__file__).resolve().parents[2] / "sources"
 
 
 class Collector(BaseModel):
@@ -32,7 +45,7 @@ class Manager(BaseModel):
 
 
 def load_managers(path: Path | None = None) -> list[Manager]:
-    data = yaml.safe_load((path or DEFAULT_PATH).read_text(encoding="utf-8"))
+    data = yaml.safe_load((path or sources_dir() / "letters.yml").read_text(encoding="utf-8"))
     managers = [Manager(**m) for m in data["managers"]]
     ids = [m.id for m in managers]
     if len(ids) != len(set(ids)):

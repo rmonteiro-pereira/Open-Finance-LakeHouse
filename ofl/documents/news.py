@@ -29,11 +29,11 @@ from pydantic import BaseModel
 from ofl.documents import store
 from ofl.documents.feeds import parse_feed, to_text
 from ofl.documents.http import PoliteClient, RobotsDisallowed
+from ofl.documents.sources import sources_dir
 from ofl.platform.logging import get_logger
 
 log = get_logger(__name__)
 
-DEFAULT_PATH = Path(__file__).resolve().parents[2] / "sources" / "news.yml"
 SUMMARY_CHARS = 300
 STATE_KEEP = 5000
 
@@ -47,7 +47,7 @@ class NewsSource(BaseModel):
 
 
 def load_sources(path: Path | None = None) -> list[NewsSource]:
-    data = yaml.safe_load((path or DEFAULT_PATH).read_text(encoding="utf-8"))
+    data = yaml.safe_load((path or sources_dir() / "news.yml").read_text(encoding="utf-8"))
     sources = [NewsSource(**s) for s in data["sources"]]
     ids = [s.id for s in sources]
     if len(ids) != len(set(ids)):
