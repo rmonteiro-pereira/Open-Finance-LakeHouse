@@ -1,0 +1,43 @@
+# News sources for the documents lane, and how much of each item is kept.
+#
+# Source of this list: docs/research/news-sources.md (feeds fetched on 2026-10-08).
+# Tiers are explained in ofl/documents/news.py. Reuters is absent on purpose: its robots
+# file disallows everything and it forbids automated collection outright.
+sources:
+  # --- official: public bodies -------------------------------------------------------
+  - {id: bcb-noticias, name: "BCB notícias", tier: official, url: "https://www.bcb.gov.br/api/feed/sitebcb/sitefeeds/noticias"}
+  - {id: bcb-notas-imprensa, name: "BCB notas à imprensa", tier: official, url: "https://www.bcb.gov.br/api/feed/sitebcb/sitefeeds/notasImprensa"}
+  - {id: bcb-copom-comunicados, name: "BCB comunicados do Copom", tier: official, url: "https://www.bcb.gov.br/api/feed/sitebcb/sitefeeds/comunicadoscopom"}
+  - {id: bcb-copom-atas, name: "BCB atas do Copom", tier: official, url: "https://www.bcb.gov.br/api/feed/sitebcb/sitefeeds/atascopom"}
+  - {id: bcb-focus, name: "BCB Focus", tier: official, url: "https://www.bcb.gov.br/api/feed/sitebcb/sitefeeds/focus"}
+  - {id: ibge, name: "Agência IBGE", tier: official, url: "https://agenciadenoticias.ibge.gov.br/agencia-rss"}
+  - {id: ipea, name: "IPEA", tier: official, url: "https://www.ipea.gov.br/portal/categorias/45-todas-as-noticias/noticias?format=feed&type=rss"}
+  - {id: cvm, name: "CVM notícias", tier: official, url: "https://www.gov.br/cvm/pt-br/@@search_rss?portal_type:list=News%20Item&sort_on=Date&sort_order=reverse"}
+  - {id: fazenda, name: "Ministério da Fazenda", tier: official, url: "https://www.gov.br/fazenda/pt-br/@@search_rss?portal_type:list=News%20Item&sort_on=Date&sort_order=reverse"}
+  - {id: agencia-brasil-economia, name: "Agência Brasil Economia", tier: official, url: "https://agenciabrasil.ebc.com.br/rss/economia/feed.xml"}
+
+  # --- full text offered in the outlet's own feed, no clause against automation found ---
+  - {id: infomoney, name: "InfoMoney", tier: feed_fulltext, url: "https://www.infomoney.com.br/feed/"}
+  - {id: moneytimes, name: "Money Times", tier: feed_fulltext, url: "https://www.moneytimes.com.br/feed/"}
+  - {id: seudinheiro, name: "Seu Dinheiro", tier: feed_fulltext, url: "https://www.seudinheiro.com/feed/"}
+  - {id: poder360, name: "Poder360", tier: feed_fulltext, url: "https://www.poder360.com.br/feed/"}
+  - {id: cnn-brasil, name: "CNN Brasil", tier: feed_fulltext, url: "https://www.cnnbrasil.com.br/feed/"}
+  - {id: bloomberg-linea, name: "Bloomberg Línea Brasil", tier: feed_fulltext, url: "https://www.bloomberglinea.com.br/arc/outboundfeeds/rss/?outputType=xml"}
+  - {id: g1-economia, name: "G1 Economia", tier: feed_fulltext, url: "https://g1.globo.com/rss/g1/economia/"}
+
+  # --- terms forbid automated collection or AI use: headline, link, short summary only ---
+  - {id: valor, name: "Valor Econômico", tier: headline_only, url: "https://valor.globo.com/rss/valor/"}
+  - {id: valor-investe, name: "Valor Investe", tier: headline_only, url: "https://pox.globo.com/rss/valorinveste/"}
+  - {id: pipeline, name: "Pipeline (Valor)", tier: headline_only, url: "https://pipelinevalor.globo.com/rss/pipelinevalor/"}
+  - {id: oglobo-economia, name: "O Globo Economia", tier: headline_only, url: "https://oglobo.globo.com/rss/oglobo/economia/"}
+  - {id: estadao-economia, name: "Estadão Economia", tier: headline_only, url: "https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/economia/"}
+  - {id: estadao-einvestidor, name: "Estadão E-Investidor", tier: headline_only, url: "https://www.estadao.com.br/arc/outboundfeeds/feeds/rss/sections/einvestidor/"}
+  - {id: folha-mercado, name: "Folha Mercado", tier: headline_only, url: "https://feeds.folha.uol.com.br/mercado/rss091.xml"}
+  # Off: the feed is not well-formed XML (ISO-8859-1 with stray bytes); needs a tolerant parser.
+  - {id: uol-economia, name: "UOL Economia", tier: headline_only, url: "https://rss.uol.com.br/feed/economia.xml", enabled: false}
+  - {id: exame, name: "Exame", tier: headline_only, url: "https://exame.com/feed/"}
+  - {id: brazil-journal, name: "Brazil Journal", tier: headline_only, url: "https://braziljournal.com/feed/"}
+  - {id: neofeed, name: "NeoFeed", tier: headline_only, url: "https://neofeed.com.br/feed/"}
+  # robots.txt blocks AI crawlers by name: kept to headlines, not full text.
+  - {id: suno, name: "Suno Notícias", tier: headline_only, url: "https://www.suno.com.br/noticias/feed/"}
+  - {id: investnews, name: "InvestNews", tier: headline_only, url: "https://investnews.com.br/feed/"}

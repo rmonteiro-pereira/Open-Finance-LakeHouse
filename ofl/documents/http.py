@@ -9,7 +9,7 @@ from urllib.robotparser import RobotFileParser
 import requests
 
 USER_AGENT = (
-    "ofl-letters-archive/0.1 (personal research archive; "
+    "ofl-documents-archive/0.1 (personal research archive; "
     "+https://github.com/rmonteiro-pereira/Open-Finance-LakeHouse)"
 )
 

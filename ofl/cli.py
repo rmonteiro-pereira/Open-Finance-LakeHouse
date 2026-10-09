@@ -194,6 +194,27 @@ def _letters(args: argparse.Namespace) -> int:
     return 1 if failed == len(managers) else 0
 
 
+def _news(args: argparse.Namespace) -> int:
+    from ofl.documents import news, store
+    from ofl.documents.http import PoliteClient
+
+    sources = [s for s in news.load_sources() if s.enabled]
+    if args.source:
+        sources = [s for s in sources if s.id in set(args.source)]
+        if not sources:
+            log.error("news_unknown_source", asked=args.source)
+            return 2
+    backend = store.default_backend()
+    client = PoliteClient(min_interval=args.interval)
+    totals = {"sources": len(sources), "new": 0, "failed": 0}
+    for source in sources:
+        counts = news.collect_source(source, backend=backend, client=client)
+        totals["new"] += counts.get("new", 0)
+        totals["failed"] += counts.get("failed", 0)
+    log.info("news_run", **totals)
+    return 1 if totals["failed"] == len(sources) else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     configure_logging()
     parser = argparse.ArgumentParser(prog="ofl", description="Open-Finance LakeHouse")
@@ -257,6 +278,12 @@ def main(argv: list[str] | None = None) -> int:
     let.add_argument("--interval", type=float, default=3.0, help="seconds between requests to a host")
     let.add_argument("--dry-run", action="store_true", help="list and classify, download nothing")
     let.set_defaults(func=_letters)
+
+    nws = sub.add_parser("news", help="archive news feeds (documents lane)")
+    nws.add_argument("action", choices=["collect"])
+    nws.add_argument("--source", action="append", help="source id (repeatable); default: all enabled")
+    nws.add_argument("--interval", type=float, default=2.0, help="seconds between requests to a host")
+    nws.set_defaults(func=_news)
 
     args = parser.parse_args(argv)
     from ofl.platform.lineage import emit_run

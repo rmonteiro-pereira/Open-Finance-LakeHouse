@@ -416,3 +416,13 @@ archive holds. The collector identifies itself, obeys `robots.txt` and waits bet
 requests; sites behind bot challenges are not collected. The files go to a private bucket
 (`DOCUMENTS_BUCKET`, default `documents`) and are not redistributed: most letters carry a
 notice against it. Background: `docs/research/fund-letters-sources.md`.
+
+## Documents lane: news
+
+Same archive, second source: `sources/news.yml` lists feeds from public bodies (BCB, IBGE,
+IPEA, CVM, Fazenda, Agência Brasil) and from news outlets, each with a tier that decides
+how much is kept. Public bodies and outlets that publish full text in their own feed
+without a clause against automated collection are kept whole. Outlets whose terms forbid
+automated collection or AI use are kept as headline, link, date and a 300-character
+summary; the body is dropped even when the feed carries it. Reuters is not collected.
+`ofl news collect` adds only items not seen before. Background: `docs/research/news-sources.md`.
