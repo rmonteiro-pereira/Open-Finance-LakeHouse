@@ -134,12 +134,28 @@ def test_nothing_publishable_leaves_the_previous_snapshot_latest(con, tmp_path, 
     assert not (tmp_path / "snapshots/r2").exists()
 
 
-def test_no_target_is_an_error_not_a_guess(tmp_path, monkeypatch):
-    from ofl.publish import default_target
+def test_target_is_a_folder_or_a_bucket_on_the_lakehouse_store(tmp_path, monkeypatch):
+    from ofl.publish import S3Target, default_target
 
-    for name in ("OFL_PUBLISH_DIR", "OFL_PUBLISH_BUCKET", "OFL_PUBLISH_ENDPOINT"):
+    for name in (
+        "OFL_PUBLISH_DIR",
+        "OFL_PUBLISH_BUCKET",
+        "OFL_PUBLISH_ENDPOINT",
+        "OFL_PUBLISH_ACCESS_KEY",
+    ):
         monkeypatch.delenv(name, raising=False)
     with pytest.raises(PublishError, match="OFL_PUBLISH_BUCKET"):
         default_target()
+
+    # Only the bucket named: same store and credentials as the lakehouse.
+    monkeypatch.setenv("OFL_PUBLISH_BUCKET", "ofl-public")
+    target = default_target()
+    assert isinstance(target, S3Target)
+    assert target.bucket == "ofl-public"
+    assert target.s3.meta.endpoint_url == "http://localhost:9000"
+
+    monkeypatch.setenv("OFL_PUBLISH_ENDPOINT", "https://elsewhere.example")
+    assert default_target().s3.meta.endpoint_url == "https://elsewhere.example"
+
     monkeypatch.setenv("OFL_PUBLISH_DIR", str(tmp_path))
     assert isinstance(default_target(), LocalTarget)
