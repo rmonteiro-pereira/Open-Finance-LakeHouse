@@ -35,3 +35,10 @@
   dev and its DAG mount does not match `orchestration/airflow/dags`.
 - **ANBIMA** needs `ANBIMA_CLIENT_ID` and `ANBIMA_CLIENT_SECRET` in an optional
   Secret (`anbima-creds`); without it only those 4 tasks fail.
+- **Airflow reads the DAGs from the `deploy` branch, not `main`.** Merging does not publish a
+  DAG change; `git push origin main:deploy` does. Do that outside the daily cycle (a reload
+  makes every asset inactive for a few minutes and tasks starting then fail without retry).
+  Code that runs inside the pods ships with the image, which is a separate step.
+- **Tasks have an execution timeout**: 45 minutes for ingest and gold, 120 for Spark
+  (`OFL_TASK_TIMEOUT_MIN`, `OFL_SPARK_TIMEOUT_MIN`).
+
