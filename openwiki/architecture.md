@@ -25,6 +25,13 @@
   `MINIO_PASSWORD`, `LAKEHOUSE_BUCKET`, `AWS_REGION`, `OFL_REGISTRY`,
   `OFL_SPARK_DRIVER_MEMORY`. Pods get them from one Secret (default name
   `minio-creds`) via `envFrom`.
+- **Public snapshot** (`ofl/publish.py`, `ofl publish`): the cluster accepts no inbound
+  traffic, so the pipeline pushes outward. One Parquet per gold mart, the open series,
+  `catalog.json` and a `manifest.json` with checksums go to an S3-compatible bucket under
+  `snapshots/<run_id>/`; `latest.json` moves last. What may leave is decided by
+  `redistribution` in the registry (`open`, `derived`, `private`; a mart takes the most
+  restrictive tier of its inputs in `MART_INPUTS`). `ofl_gold` gets a `publish_snapshot`
+  task only when Airflow has `OFL_PUBLISH_SECRET` (the Secret holding `OFL_PUBLISH_*`).
 - **No catalog service.** Delta tables on S3 are the catalog. Postgres and Redis are
   needed only by Airflow. OpenLineage and the Pushgateway are optional, env-gated.
 

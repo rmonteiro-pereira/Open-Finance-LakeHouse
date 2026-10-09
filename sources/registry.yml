@@ -19,6 +19,8 @@
 #   max_value  : optional sanity bound used by quality contracts
 #   start_date : optional ISO floor for the backfill walk (per-series override of
 #                a handler default; pre-floor history is simply not ingested)
+#   redistribution : open | derived | private (per-series override of the handler
+#                default under `defaults:`); decides what `ofl publish` exports
 # =============================================================================
 version: 1
 
@@ -36,6 +38,24 @@ defaults:
     # to the modern series and trip the quality contracts. Floor every SGS walk
     # here by default; a series may override with its own `start_date`.
     start_date: "1994-07-01"
+    redistribution: open
+
+  # What `ofl publish` may put in the public snapshot, per source (a series may
+  # override with its own `redistribution`). A source with no entry is `private`.
+  #   open    : open government data; published and offered for download
+  #   derived : published as derived marts with attribution, never as raw files
+  #   private : never leaves the lakehouse
+  bacen_focus: { redistribution: open }
+  ibge: { redistribution: open }
+  ipea: { redistribution: open }
+  tesouro_direto: { redistribution: open }
+  b3_arquivos: { redistribution: derived }
+  b3_cotahist: { redistribution: derived }
+  # Yahoo's terms forbid redistribution; `b3` is the Ibovespa level fetched from Yahoo.
+  yahoo: { redistribution: private }
+  b3: { redistribution: private }
+  # Sandbox API: the values are fictitious.
+  anbima: { redistribution: private }
 
 series:
   # ---------------------------------------------------------------- rates ----

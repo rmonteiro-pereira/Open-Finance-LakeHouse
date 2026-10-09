@@ -4,6 +4,7 @@ Examples:
     ofl ingest --series selic
     ofl ingest --domain rates
     ofl ingest                 # all active series
+    ofl publish                # public snapshot of gold, to OFL_PUBLISH_*
     ofl registry               # list the registry
 """
 
@@ -52,6 +53,23 @@ def _gold(args: argparse.Namespace) -> int:
 
     result = run_gold(write=not args.dry_run)
     log.info("gold_done", marts=result)
+    return 0
+
+
+def _publish(args: argparse.Namespace) -> int:
+    from ofl.publish import PublishError, run_publish
+
+    try:
+        manifest = run_publish(run_id=args.run_id, keep=args.keep)
+    except PublishError as exc:
+        log.error("publish_failed", error=str(exc))
+        return 1
+    log.info(
+        "publish_snapshot",
+        run_id=manifest["run_id"],
+        marts=[m["name"] for m in manifest["marts"]],
+        skipped={s["name"]: s["reason"] for s in manifest["skipped"]},
+    )
     return 0
 
 
@@ -231,6 +249,11 @@ def main(argv: list[str] | None = None) -> int:
     gold = sub.add_parser("gold", help="build DuckDB gold marts from silver")
     gold.add_argument("--dry-run", action="store_true", help="compute marts without writing")
     gold.set_defaults(func=_gold)
+
+    pub = sub.add_parser("publish", help="push a public snapshot of gold (licence-filtered)")
+    pub.add_argument("--run-id", help="snapshot id (default: UTC timestamp)")
+    pub.add_argument("--keep", type=int, default=30, help="snapshots to keep in the target")
+    pub.set_defaults(func=_publish)
 
     prod = sub.add_parser("stream-produce", help="capture the live trade feed to _landing")
     prod.add_argument("--symbols", help="comma-separated, e.g. btcusdt,ethusdt")
