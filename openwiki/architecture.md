@@ -32,6 +32,9 @@
   `redistribution` in the registry (`open`, `derived`, `private`; a mart takes the most
   restrictive tier of its inputs in `MART_INPUTS`). `ofl_gold` gets a `publish_snapshot`
   task only when Airflow has `OFL_PUBLISH_SECRET` (the Secret holding `OFL_PUBLISH_*`).
+- **Public site** (`web/`): Next.js, one page so far. Its only input is `SNAPSHOT_URL`;
+  it fetches `latest.json`, the manifest and the Parquet files (hyparquet, server side)
+  and caches the result for ten minutes. It has no path to the cluster.
 - **No catalog service.** Delta tables on S3 are the catalog. Postgres and Redis are
   needed only by Airflow. OpenLineage and the Pushgateway are optional, env-gated.
 

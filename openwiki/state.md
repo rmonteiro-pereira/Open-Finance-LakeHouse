@@ -22,13 +22,15 @@ updated: 2026-10-08T12:30Z
 | `ibge` repaired | **done** | #45 | Upstream route was down; now table 6381, variable 4099, 174 months. |
 | `b3_cotahist` rolling years | **done** | #48 | Also filters per file, so the memory peak is one annual archive. |
 | Image build in CI | **partly** | #47, #49 | Builds both images on PRs and main. Push to GHCR is off until the package grants this repo access and `PUSH_IMAGES=true` is set. |
-| Public snapshot (`ofl publish`) | **done**, never run against the real lakehouse | this PR | Unit-tested on in-memory tables and a local target only. No bucket or Secret exists yet, so the DAG task is off. `mart_yield_curve` and `mart_equity_daily` resolve to `private` and are not published (see `MART_INPUTS`). |
+| Public snapshot (`ofl publish`) | **done**, run once by hand | #56 | Run in a throwaway pod against the real lakehouse on 2026-10-09 with a local folder as target: 8 marts, under 1 MB, 26 s. Never run against a bucket, and no Secret exists yet, so the DAG task is off. `mart_yield_curve` and `mart_equity_daily` resolve to `private` and are not published (see `MART_INPUTS`). |
 
 ## Handoff
 
 - **Unverified:** the new silver trigger on a real 03:00 UTC wave; whether 4 ingest
   slots are safe for the BACEN API (30 of 51 series share it).
-- **Web dashboard (branch `feat/web-dashboard`):** public face is a site that reads the
-  snapshot; admin face stays on the private network. Neither is built yet.
+- **Web dashboard:** the public face is `web/` (Next.js), which reads only the snapshot
+  written by `ofl publish`. Built and looked at (desktop light and dark, phone) against a
+  snapshot taken from the real lakehouse on 2026-10-09; not deployed anywhere, because no
+  public bucket exists yet. The admin face (private network) is not built.
 - **Worth doing here:** task timeouts; pin image builds to `uv.lock`; vacuum old Delta
   versions (each silver run leaves one behind, about 20 MB).
