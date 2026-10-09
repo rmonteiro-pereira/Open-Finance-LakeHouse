@@ -1,7 +1,7 @@
 # web: the public face of the lakehouse
 
 A Next.js site that shows what the pipeline produced. It never talks to the cluster:
-it reads the snapshot that `ofl publish` pushes to an object store after each gold run
+it reads the snapshot that `ofl publish` writes to a public bucket on the lakehouse's own store after each gold run
 (`latest.json`, then the manifest, then the Parquet files it lists). When the cluster is
 down or busy, the site keeps serving the last snapshot and says how old it is.
 
@@ -9,7 +9,7 @@ down or busy, the site keeps serving the last snapshot and says how old it is.
 
 ```bash
 bun install
-SNAPSHOT_URL=https://<public bucket URL> bun run dev
+SNAPSHOT_URL=https://<where the deployment serves the bucket> bun run dev
 ```
 
 `SNAPSHOT_URL` is the only setting. For a local snapshot, run `ofl publish` with

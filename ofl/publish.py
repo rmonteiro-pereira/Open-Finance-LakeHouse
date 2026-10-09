@@ -24,9 +24,11 @@ that feed it (``MART_INPUTS``): ``private`` marts are never written, ``derived``
 are written for charts but flagged ``download: false``, ``open`` marts are offered for
 download. Raw observations are exported for ``open`` series only.
 
-The target is an S3-compatible bucket (``OFL_PUBLISH_BUCKET``, ``OFL_PUBLISH_ENDPOINT``,
-``OFL_PUBLISH_ACCESS_KEY``, ``OFL_PUBLISH_SECRET_KEY``, optional ``OFL_PUBLISH_PREFIX``)
-or, for tests and dry runs, a local folder (``OFL_PUBLISH_DIR``).
+The target is a bucket (``OFL_PUBLISH_BUCKET``, optional ``OFL_PUBLISH_PREFIX``). By default
+it lives on the lakehouse's own object store, served read-only by the deployment; set
+``OFL_PUBLISH_ENDPOINT``, ``OFL_PUBLISH_ACCESS_KEY`` and ``OFL_PUBLISH_SECRET_KEY`` to push
+to another S3-compatible store instead. ``OFL_PUBLISH_DIR`` selects a local folder (tests
+and dry runs).
 """
 
 from __future__ import annotations
@@ -119,7 +121,7 @@ class LocalTarget:
 
 
 class S3Target:
-    """Any S3-compatible bucket. Deliberately not the lakehouse's own credentials."""
+    """A bucket on any S3-compatible store."""
 
     def __init__(
         self, bucket: str, *, endpoint: str, access_key: str, secret_key: str, prefix: str = ""
@@ -175,27 +177,22 @@ class S3Target:
 
 
 def default_target() -> Target:
-    """``OFL_PUBLISH_DIR`` selects a local folder; otherwise the ``OFL_PUBLISH_*`` bucket."""
+    """``OFL_PUBLISH_DIR`` selects a local folder; otherwise the ``OFL_PUBLISH_BUCKET`` bucket."""
     local = os.getenv("OFL_PUBLISH_DIR")
     if local:
         return LocalTarget(local)
-    missing = [
-        name
-        for name in (
-            "OFL_PUBLISH_BUCKET",
-            "OFL_PUBLISH_ENDPOINT",
-            "OFL_PUBLISH_ACCESS_KEY",
-            "OFL_PUBLISH_SECRET_KEY",
-        )
-        if not os.getenv(name)
-    ]
-    if missing:
-        raise PublishError(f"no publish target: set OFL_PUBLISH_DIR or {', '.join(missing)}")
+    bucket = os.getenv("OFL_PUBLISH_BUCKET")
+    if not bucket:
+        raise PublishError("no publish target: set OFL_PUBLISH_DIR or OFL_PUBLISH_BUCKET")
+    # With only the bucket named, the target is a bucket on the lakehouse's own store.
+    from ofl.config import get_settings
+
+    lake = get_settings()
     return S3Target(
-        os.environ["OFL_PUBLISH_BUCKET"],
-        endpoint=os.environ["OFL_PUBLISH_ENDPOINT"],
-        access_key=os.environ["OFL_PUBLISH_ACCESS_KEY"],
-        secret_key=os.environ["OFL_PUBLISH_SECRET_KEY"],
+        bucket,
+        endpoint=os.getenv("OFL_PUBLISH_ENDPOINT") or lake.minio_endpoint,
+        access_key=os.getenv("OFL_PUBLISH_ACCESS_KEY") or lake.minio_user,
+        secret_key=os.getenv("OFL_PUBLISH_SECRET_KEY") or lake.minio_password,
         prefix=os.getenv("OFL_PUBLISH_PREFIX", ""),
     )
 
