@@ -109,7 +109,15 @@ _SPARK_RESOURCES = k8s.V1ResourceRequirements(
     limits={"cpu": "2000m", "memory": "6Gi"},
 )
 
-_DEFAULTS = {"retries": 2, "retry_delay": pendulum.duration(minutes=2)}
+# No task may run forever: a series stuck on a dead endpoint once held its source DAG (and so
+# silver) for 47 minutes with nothing to stop it. Ingest and gold get one limit, Spark another.
+_TASK_TIMEOUT = pendulum.duration(minutes=int(os.getenv("OFL_TASK_TIMEOUT_MIN", "30")))
+_SPARK_TIMEOUT = pendulum.duration(minutes=int(os.getenv("OFL_SPARK_TIMEOUT_MIN", "120")))
+_DEFAULTS = {
+    "retries": 2,
+    "retry_delay": pendulum.duration(minutes=2),
+    "execution_timeout": _TASK_TIMEOUT,
+}
 
 
 def asset_bronze(series_key: str) -> Asset:
@@ -222,6 +230,7 @@ with DAG(
         pool=SPARK_POOL,
         resources=_SPARK_RESOURCES,
         outlets=[ASSET_SILVER],
+        execution_timeout=_SPARK_TIMEOUT,
     )
 
 # --- gold: triggered when silver refreshes ------------------------------------
@@ -245,7 +254,14 @@ with DAG(
     default_args=_DEFAULTS,
     tags=["ofl", "backfill", "manual"],
 ) as backfill_dag:
-    ingest_all = _pod("ingest_all", ["ingest"])
-    silver = _pod("silver", ["silver"], image=SPARK_IMAGE, pool=SPARK_POOL, resources=_SPARK_RESOURCES)
+    ingest_all = _pod("ingest_all", ["ingest"], execution_timeout=_SPARK_TIMEOUT)
+    silver = _pod(
+        "silver",
+        ["silver"],
+        image=SPARK_IMAGE,
+        pool=SPARK_POOL,
+        resources=_SPARK_RESOURCES,
+        execution_timeout=_SPARK_TIMEOUT,
+    )
     gold = _pod("gold", ["gold"])
     ingest_all >> silver >> gold
