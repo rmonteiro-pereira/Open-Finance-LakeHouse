@@ -404,3 +404,15 @@ The code in this repository is released under the **MIT License** — see [`LICE
 All data comes from public APIs and files published by BACEN, IBGE, IPEA, Tesouro Nacional, ANBIMA,
 B3 and Yahoo Finance — each remains subject to its own terms of use, which the MIT license on this
 code does not extend to. Nothing here is investment advice.
+
+## Documents lane: manager letters
+
+Separate from the series pipeline: an archive of the letters and management reports that
+Brazilian asset managers publish on their own sites. `sources/letters.yml` lists the
+managers and how each one publishes; `ofl letters collect` lists what is there, keeps what
+looks like a letter, and stores each PDF once (keyed by content hash) with a manifest per
+manager, so a second run only fetches what is new. `ofl letters coverage` reports what the
+archive holds. The collector identifies itself, obeys `robots.txt` and waits between
+requests; sites behind bot challenges are not collected. The files go to a private bucket
+(`DOCUMENTS_BUCKET`, default `documents`) and are not redistributed: most letters carry a
+notice against it. Background: `docs/research/fund-letters-sources.md`.

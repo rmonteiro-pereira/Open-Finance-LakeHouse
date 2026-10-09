@@ -156,6 +156,44 @@ def _registry(_args: argparse.Namespace) -> int:
     return 0
 
 
+def _letters(args: argparse.Namespace) -> int:
+    from ofl.documents import letters, store
+    from ofl.documents.http import PoliteClient
+    from ofl.documents.sources import load_managers
+
+    managers = load_managers()
+    if args.manager:
+        managers = [m for m in managers if m.id in set(args.manager)]
+        if not managers:
+            log.error("letters_unknown_manager", asked=args.manager)
+            return 2
+    backend = store.default_backend()
+    if args.action == "coverage":
+        rows = letters.coverage(managers, backend)
+        for row in rows:
+            log.info("letters_coverage", **row)
+        with_letters = sum(1 for r in rows if r["letters"])
+        log.info(
+            "letters_coverage_total",
+            managers=len(rows),
+            managers_with_letters=with_letters,
+            letters=sum(r["letters"] for r in rows),
+            bytes=sum(r["bytes"] for r in rows),
+        )
+        return 0
+    client = PoliteClient(min_interval=args.interval)
+    failed = 0
+    for manager in managers:
+        try:
+            letters.collect_manager(
+                manager, backend=backend, client=client, limit=args.limit, dry_run=args.dry_run
+            )
+        except Exception:  # one manager's site must not stop the others
+            failed += 1
+            log.exception("letters_manager_failed", manager=manager.id)
+    return 1 if failed == len(managers) else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     configure_logging()
     parser = argparse.ArgumentParser(prog="ofl", description="Open-Finance LakeHouse")
@@ -211,6 +249,14 @@ def main(argv: list[str] | None = None) -> int:
 
     reg = sub.add_parser("registry", help="list the source registry")
     reg.set_defaults(func=_registry)
+
+    let = sub.add_parser("letters", help="archive manager letters (documents lane)")
+    let.add_argument("action", choices=["collect", "coverage"])
+    let.add_argument("--manager", action="append", help="manager id (repeatable); default: all")
+    let.add_argument("--limit", type=int, help="most downloads per manager in this run")
+    let.add_argument("--interval", type=float, default=3.0, help="seconds between requests to a host")
+    let.add_argument("--dry-run", action="store_true", help="list and classify, download nothing")
+    let.set_defaults(func=_letters)
 
     args = parser.parse_args(argv)
     from ofl.platform.lineage import emit_run
