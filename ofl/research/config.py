@@ -21,6 +21,7 @@ class ResearchSettings(BaseSettings):
     minimum_free_bytes: int = Field(1024**3, ge=0)
     objects_bucket: str = ""  # private S3 originals; empty selects local development
     embedding_model: str = "BAAI/bge-m3"
+    embedding_url: str = ""  # private Ollama endpoint; empty uses local SentenceTransformer
     embedding_revision: str = ""  # pin a model commit before embedding a corpus
     embedding_dimensions: int = Field(1024, ge=1, le=2000)
     approximate_search: bool = False  # enable only after a filtered-recall pilot

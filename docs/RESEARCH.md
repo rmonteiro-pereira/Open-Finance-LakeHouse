@@ -258,3 +258,10 @@ configure gateway roles and Secrets, and run the same flows through the real gat
 Use commit-tagged images and deploy through the private infrastructure repository.
 Do not change public bucket policies or publish private text, previews or embeddings.
 Do not vacuum Delta versions referenced by retained serving releases.
+
+The production deployment can reuse a private Ollama service instead of installing
+PyTorch in each API and worker. Set `OFL_RESEARCH_EMBEDDING_URL`, the exact model
+name (including tag), and `OFL_RESEARCH_EMBEDDING_REVISION` to its full manifest
+digest. The adapter checks that digest on every call and disables truncation.
+Ollama vectors remain in a separate model/revision namespace from Hugging Face
+vectors, even when both models are called BGE-M3.

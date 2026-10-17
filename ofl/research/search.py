@@ -35,6 +35,34 @@ def _model(name, revision):
 
 
 def embed(settings, texts):
+    if settings.embedding_url:
+        import requests
+
+        base = settings.embedding_url.rstrip("/")
+        # The model tag is mutable. Refuse a changed digest rather than mixing spaces.
+        response = requests.get(f"{base}/api/tags", timeout=15)
+        response.raise_for_status()
+        models = response.json()["models"]
+        matching = [m for m in models if m["name"] == settings.embedding_model]
+        if not matching or matching[0]["digest"] != settings.embedding_revision:
+            raise ValueError("Ollama embedding model digest does not match pinned revision")
+        response = requests.post(
+            f"{base}/api/embed",
+            json={
+                "model": settings.embedding_model,
+                "input": texts,
+                "truncate": False,
+                "keep_alive": -1,
+            },
+            timeout=120,
+        )
+        response.raise_for_status()
+        vectors = response.json()["embeddings"]
+        if len(vectors) != len(texts):
+            raise ValueError("embedding response count does not match input")
+        for vector in vectors:
+            vector_literal(vector, settings.embedding_dimensions)
+        return vectors
     model = _model(settings.embedding_model, settings.embedding_revision)
     for text in texts:
         if len(model.tokenizer.encode(text)) > model.max_seq_length:
