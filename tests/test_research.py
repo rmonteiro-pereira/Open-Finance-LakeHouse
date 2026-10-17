@@ -79,21 +79,24 @@ def write_input(folder, rows, name="COTAHIST_A2024.TXT", **kwargs):
 
 def test_market_identity_and_exact_values(tmp_path):
     rows = [
-        record(market=m, bdi="70" if m == "050" else "71" if m == "060" else "02")
+        record(
+            market=m,
+            bdi="70" if m == "050" else "71" if m == "060" else "93" if m == "021" else "02",
+        )
         for m in cotahist.MARKETS
     ]
     path = write_input(tmp_path, rows)
     result = cotahist.stage(path, tmp_path / "stage", "hash", batch_rows=2, input_name=path.name)
     assert result["counts"] == {
-        "records": 10,
-        "accepted": 8,
+        "records": 11,
+        "accepted": 9,
         "excluded_futures": 2,
         "quarantined": 0,
     }
     import pyarrow.parquet as pq
 
     quotes = pq.ParquetDataset(tmp_path / "stage").read().to_pylist()
-    assert len({row["record_id"] for row in quotes}) == 8
+    assert len({row["record_id"] for row in quotes}) == 9
     assert quotes[0]["close"] == Decimal("38.80")
     assert quotes[0]["exercise_points"] == Decimal(".123456")
     assert quotes[0]["expiry"] is None
