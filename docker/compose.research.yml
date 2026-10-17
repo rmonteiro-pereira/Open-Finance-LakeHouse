@@ -1,0 +1,40 @@
+# Development only. No source-site collection. All ports bind loopback.
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: ofl_research
+      POSTGRES_USER: research
+      POSTGRES_PASSWORD: ${OFL_RESEARCH_DEV_PASSWORD:?Set a local development password}
+    ports: ["127.0.0.1:55439:5432"]
+    volumes: ["research-db:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U research -d ofl_research"]
+      interval: 5s
+      retries: 20
+  migrate:
+    build: {context: .., dockerfile: docker/Dockerfile.research}
+    command: ["migrate"]
+    environment: &environment
+      OFL_RESEARCH_DATABASE_URL: postgresql://research:${OFL_RESEARCH_DEV_PASSWORD}@postgres/ofl_research
+      OFL_RESEARCH_ROOT: /data
+      OFL_RESEARCH_GATEWAY_TOKEN: ${OFL_RESEARCH_GATEWAY_TOKEN:?Set a gateway secret}
+      OFL_RESEARCH_ROLES: ${OFL_RESEARCH_ROLES:?Set identity-role JSON}
+      OFL_RESEARCH_ORIGIN: ${OFL_RESEARCH_ORIGIN:-http://localhost:3000}
+    volumes: ["research-files:/data"]
+    depends_on: {postgres: {condition: service_healthy}}
+  api:
+    build: {context: .., dockerfile: docker/Dockerfile.research}
+    ports: ["127.0.0.1:8081:8081"]
+    environment: *environment
+    volumes: ["research-files:/data"]
+    depends_on: {migrate: {condition: service_completed_successfully}}
+  worker:
+    build: {context: .., dockerfile: docker/Dockerfile.research}
+    command: ["worker"]
+    environment: *environment
+    volumes: ["research-files:/data"]
+    depends_on: {migrate: {condition: service_completed_successfully}}
+volumes:
+  research-db:
+  research-files:

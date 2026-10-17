@@ -1,0 +1,15 @@
+FROM docker.io/oven/bun:1.4.0 AS build
+WORKDIR /app
+COPY web/package.json web/bun.lock ./
+RUN bun install --frozen-lockfile
+COPY web/research ./research
+RUN bun --bun run research:build
+
+FROM docker.io/library/node:24-slim
+WORKDIR /app
+COPY --from=build /app/research/.next/standalone ./
+COPY --from=build /app/research/.next/static ./research/.next/static
+USER node
+ENV HOSTNAME=0.0.0.0 PORT=3000
+EXPOSE 3000
+CMD ["node", "research/server.js"]

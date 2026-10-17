@@ -1,0 +1,44 @@
+name: private research
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: research_test
+          POSTGRES_PASSWORD: integration-only
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
+    env:
+      OFL_RESEARCH_TEST_DATABASE_URL: postgresql://postgres:integration-only@localhost:5432/research_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.11"
+      - run: uv sync --locked --extra dev --extra research --extra research-ocr --extra research-pilot
+      - run: sudo apt-get update && sudo apt-get install -y poppler-utils tesseract-ocr tesseract-ocr-por tesseract-ocr-eng
+      - run: uv run pytest -q
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - run: bun install --frozen-lockfile
+        working-directory: web
+      - name: Build public app against a synthetic snapshot
+        run: |
+          uv run python ../tools/build_web_fixture.py /tmp/ofl-web-fixture
+          uv run python -m http.server 8765 --bind 127.0.0.1 --directory /tmp/ofl-web-fixture >/tmp/ofl-web-fixture.log 2>&1 &
+          snapshot_pid=$!
+          trap 'kill "$snapshot_pid"' EXIT
+          SNAPSHOT_URL=http://127.0.0.1:8765 bun run build
+        working-directory: web
+      - run: bun run research:build
+        working-directory: web
