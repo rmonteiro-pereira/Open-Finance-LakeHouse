@@ -1,5 +1,8 @@
 # Open-Finance LakeHouse
 
+Private file-first B3/MUB3 research, including all-market COTAHIST, archive OCR,
+table review, private dashboard and hybrid-search pilot: [research guide](docs/RESEARCH.md).
+
 [![tests](https://github.com/rmonteiro-pereira/Open-Finance-LakeHouse/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/rmonteiro-pereira/Open-Finance-LakeHouse/actions/workflows/tests.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 

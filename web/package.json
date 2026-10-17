@@ -6,9 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "research:dev": "next dev research",
+    "research:build": "next build research",
+    "research:start": "next start research"
   },
   "dependencies": {
+    "@noble/hashes": "^2.4.0",
     "d3-array": "^3.2.4",
     "d3-scale": "^4.0.2",
     "d3-shape": "^3.2.0",

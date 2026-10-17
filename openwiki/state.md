@@ -26,6 +26,18 @@ updated: 2026-10-08T12:30Z
 
 ## Handoff
 
+- **Private research implementation (2026-10-16):** isolated file-first lane in
+  `ofl/research`, separate Next app in `web/research`, PostgreSQL schema/jobs/reviews,
+  exact pgvector baseline and a qualified local Qdrant pilot. See
+  `docs/RESEARCH.md` and `docs/research/DECISIONS.md`. COTAHIST preserves all fields
+  and non-futures markets. Existing equity/futures tasks are not migrated.
+  Verified locally against disposable PostgreSQL/pgvector, synthetic COTAHIST,
+  real OCR execution on a synthetic scanned PDF, and browser flows. The pinned
+  multilingual model retrieves a synthetic OCR passage by paraphrase. This is
+  **not** real-source coverage, a retrieval-quality benchmark or a production
+  deployment. Real input inventory, compatibility cutover, private gateway rollout,
+  capacity measurements and final backend selection remain unverified.
+
 - **Unverified:** the new silver trigger on a real 03:00 UTC wave; whether 4 ingest
   slots are safe for the BACEN API (30 of 51 series share it).
 - **Web dashboard:** the public face is `web/` (Next.js), which reads only the snapshot

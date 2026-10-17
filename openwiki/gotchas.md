@@ -1,6 +1,12 @@
 # Open-Finance-LakeHouse — gotchas
 
 ## Digest
+- **Research is private and separate.** Build `web/research` independently; never
+  add its proxy routes to the public snapshot app. Its verified identity header is
+  safe only behind the trusted gateway with direct access blocked. Use a dedicated
+  research PostgreSQL database. Do not vacuum Delta versions referenced by research
+  serving releases. The local Qdrant pilot is exact/in-process and does not establish
+  a production backend winner. See `docs/RESEARCH.md`.
 - **Never commit or push to `main`, never force-push, never merge a PR.** Branch,
   then PR. Other checkouts of this repo may hold the owner's uncommitted work: only
   `git add` the exact paths you wrote.

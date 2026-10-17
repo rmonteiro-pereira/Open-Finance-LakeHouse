@@ -308,6 +308,9 @@ def main(argv: list[str] | None = None) -> int:
     nws.add_argument("--interval", type=float, default=2.0, help="seconds between requests to a host")
     nws.set_defaults(func=_news)
 
+    from ofl.research.cli import configure as configure_research
+
+    configure_research(sub)
     args = parser.parse_args(argv)
     from ofl.platform.lineage import emit_run
 

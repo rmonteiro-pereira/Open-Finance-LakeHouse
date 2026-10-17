@@ -1,0 +1,19 @@
+FROM ghcr.io/astral-sh/uv:0.11.11 AS uv
+FROM docker.io/library/python:3.12-slim
+COPY --from=uv /uv /usr/local/bin/uv
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    poppler-utils tesseract-ocr tesseract-ocr-por tesseract-ocr-eng libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY pyproject.toml uv.lock README.md LICENSE ./
+COPY ofl ./ofl
+ARG INCLUDE_EMBEDDINGS=0
+RUN --mount=type=cache,target=/root/.cache/uv \
+    if [ "$INCLUDE_EMBEDDINGS" = "1" ]; then \
+      uv sync --locked --no-dev --extra research --extra research-ocr --extra research-search; \
+    else uv sync --locked --no-dev --extra research --extra research-ocr; fi
+RUN useradd --uid 10001 --create-home research && mkdir /data && chown research /data
+USER 10001
+ENV PATH="/app/.venv/bin:$PATH" OFL_RESEARCH_ROOT=/data
+ENTRYPOINT ["ofl", "research"]
+CMD ["serve", "--host", "0.0.0.0"]

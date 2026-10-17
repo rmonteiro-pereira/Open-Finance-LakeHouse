@@ -1,0 +1,9 @@
+**
+!web/
+!web/package.json
+!web/bun.lock
+!web/research/
+!web/research/**
+web/research/.next/
+web/research/node_modules/
+web/research/.env*
