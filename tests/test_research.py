@@ -132,6 +132,16 @@ def test_zip_path_and_expansion_limits(tmp_path):
         cotahist.stage(path, tmp_path / "stage", "hash")
 
 
+def test_observed_market_021_keeps_its_code_without_inferred_classification(tmp_path):
+    path = write_input(tmp_path, [record(market="021", bdi="93")])
+    result = cotahist.stage(path, tmp_path / "stage", "hash")
+    assert result["counts"]["accepted"] == 1
+    assert cotahist.MARKETS["021"] == "unclassified_021"
+    invalid = write_input(tmp_path / "invalid", [record(market="021", bdi="02")])
+    with pytest.raises(ValueError, match="unrecognized BDI"):
+        cotahist.stage(invalid, tmp_path / "invalid-stage", "hash")
+
+
 @pytest.fixture
 def research(tmp_path):
     url = os.getenv("OFL_RESEARCH_TEST_DATABASE_URL")
@@ -177,11 +187,13 @@ def import_and_run(db, store, path, source="b3_cotahist", metadata=None):
     return result
 
 
-def test_import_replay_precedence_and_correction(research, tmp_path):
+@pytest.mark.parametrize("publication_days", [1, 31])
+def test_import_replay_precedence_and_correction(research, tmp_path, publication_days):
     from ofl.research.imports import register
     from ofl.research.query import quote_query
 
     db, store = research
+    db.settings.publication_days = publication_days
     annual = write_input(
         tmp_path / "annual", [record(), record(market="020"), record(day="20240306")]
     )
@@ -240,6 +252,9 @@ def test_conflicting_duplicate_never_publishes(research, tmp_path):
         db.rows("SELECT state FROM jobs WHERE id=%s", (result["job_id"],))[0]["state"] == "failed"
     )
     assert not db.rows("SELECT * FROM pointers")
+    assert not store.path("silver/fact_b3_quote").exists()
+    error = db.rows("SELECT error FROM jobs WHERE id=%s", (result["job_id"],))[0]["error"]
+    assert "source lines 2 and 3" in error
 
 
 def test_catalog_search_and_revisions(research, tmp_path):
@@ -343,6 +358,15 @@ def test_private_api_roles_upload_replay_and_exact_decimals(research):
         "Origin": "http://localhost:3000",
         "Idempotency-Key": "upload-one",
     }
+    assert client.get("/api/v1/me", headers=headers).json()["pipeline_enabled"] is False
+    assert (
+        client.post(
+            "/api/v1/jobs",
+            headers=headers,
+            json={"action": "pipeline", "dag": "ofl_silver"},
+        ).status_code
+        == 503
+    )
     assert (
         client.post(
             "/api/v1/jobs",

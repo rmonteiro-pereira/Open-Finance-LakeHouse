@@ -251,6 +251,7 @@ export default function Workspace() {
   const [imports, setImports] = useState<Row[]>([]);
   const [supersedes, setSupersedes] = useState<Record<string, string>>({});
   const [coverage, setCoverage] = useState<Row | null>(null);
+  const [pipelineEnabled, setPipelineEnabled] = useState(false);
   const [uploadSource, setUploadSource] = useState("b3_cotahist");
   const [observations, setObservations] = useState<Row[]>([]);
   async function work(task: () => Promise<void>) {
@@ -279,14 +280,16 @@ export default function Workspace() {
     setRelease(data.release);
   }
   async function loadOps() {
-    const [j, i, c] = await Promise.all([
+    const [j, i, c, capabilities] = await Promise.all([
       api<Row[]>("jobs"),
       api<Row[]>("imports"),
       api<Row>("coverage"),
+      api<{ pipeline_enabled: boolean }>("me"),
     ]);
     setJobs(j);
     setImports(i);
     setCoverage(c);
+    setPipelineEnabled(capabilities.pipeline_enabled);
   }
   async function selectCandidate(c: Candidate) {
     const detail = await api<{
@@ -422,6 +425,7 @@ export default function Workspace() {
                     {[
                       ["010", "À vista"],
                       ["020", "Fracionário"],
+                      ["021", "Código 021 (não classificado)"],
                       ["030", "Termo"],
                       ["070", "Opções de compra"],
                       ["080", "Opções de venda"],
@@ -1088,7 +1092,7 @@ export default function Workspace() {
                 ].map((dag) => (
                   <button
                     key={dag}
-                    disabled={busy}
+                    disabled={busy || !pipelineEnabled}
                     onClick={() =>
                       work(async () => {
                         const job = await api<{ job_id: string }>("jobs", {
@@ -1104,6 +1108,11 @@ export default function Workspace() {
                   </button>
                 ))}
               </div>
+              {!pipelineEnabled && (
+                <p className="muted">
+                  A execução dos pipelines externos ainda não está conectada.
+                </p>
+              )}
               <Grid
                 rows={imports}
                 columns={["name", "source", "state", "size", "counts", "error"]}

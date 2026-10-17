@@ -153,6 +153,7 @@ def create_app(settings=None):
                 "identity": user[0],
                 "role": user[1],
                 "semantic_enabled": bool(settings.embedding_revision),
+                "pipeline_enabled": bool(settings.airflow_url and settings.airflow_token),
             }
         )
 
@@ -308,6 +309,8 @@ def create_app(settings=None):
 
         if body.action == "pipeline" and body.dag not in ALLOWED_DAGS:
             raise ValueError("DAG not allowlisted")
+        if body.action == "pipeline" and not (settings.airflow_url and settings.airflow_token):
+            raise HTTPException(503, "Airflow action integration is not configured")
         return response(
             idempotent(
                 request,
