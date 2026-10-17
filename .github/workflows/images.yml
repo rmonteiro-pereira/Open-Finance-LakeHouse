@@ -63,7 +63,7 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name == 'push' && vars.PUSH_IMAGES == 'true' }}
           tags: |
-            ghcr.io/rmonteiro-pereira/open-finance-lakehouse:${{ matrix.lane }}-${{ github.ref_name }}
-            ghcr.io/rmonteiro-pereira/open-finance-lakehouse:${{ matrix.lane }}-${{ github.sha }}
+            ghcr.io/rmonteiro-pereira/ofl-runtime:${{ matrix.lane }}-${{ github.ref_name }}
+            ghcr.io/rmonteiro-pereira/ofl-runtime:${{ matrix.lane }}-${{ github.sha }}
           cache-from: type=gha,scope=${{ matrix.lane }}
           cache-to: type=gha,scope=${{ matrix.lane }},mode=max
