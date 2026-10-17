@@ -26,6 +26,7 @@ def record(
     currency="R$",
     factor=1,
     distribution="100",
+    exercise_price=0,
 ):
     raw = bytearray(b" " * 245)
     raw[:2], raw[2:10] = b"01", day.encode()
@@ -45,7 +46,8 @@ def record(
     for key, (start, length) in cotahist.TEXT_FIELDS.items():
         raw[start : start + length] = values[key].ljust(length).encode("latin-1")
     for key, (start, length) in cotahist.MONEY_FIELDS.items():
-        raw[start : start + length] = str(close).zfill(length).encode()
+        value = exercise_price if key == "exercise_price" else close
+        raw[start : start + length] = str(value).zfill(length).encode()
     for key, (start, length) in cotahist.INTEGER_FIELDS.items():
         raw[start : start + length] = (
             str(factor if key == "quotation_factor" else 123).zfill(length).encode()
@@ -100,6 +102,9 @@ def test_market_identity_and_exact_values(tmp_path):
     assert quotes[0]["close"] == Decimal("38.80")
     assert quotes[0]["exercise_points"] == Decimal(".123456")
     assert quotes[0]["expiry"] is None
+    first_option = cotahist.parse_record(record(market="070", exercise_price=1000), "hash", 1)
+    second_option = cotahist.parse_record(record(market="070", exercise_price=2000), "hash", 2)
+    assert first_option["record_id"] != second_option["record_id"]
 
 
 @pytest.mark.parametrize(
