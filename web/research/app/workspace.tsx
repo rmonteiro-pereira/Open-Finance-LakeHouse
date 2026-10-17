@@ -535,7 +535,10 @@ export default function Workspace() {
               <Grid
                 rows={observations}
                 columns={[
+                  "date_text",
                   "date",
+                  "date_end",
+                  "date_precision",
                   "subject",
                   "market",
                   "metric",
