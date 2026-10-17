@@ -190,9 +190,9 @@ def default_target() -> Target:
     lake = get_settings()
     return S3Target(
         bucket,
-        endpoint=os.getenv("OFL_PUBLISH_ENDPOINT") or lake.minio_endpoint,
-        access_key=os.getenv("OFL_PUBLISH_ACCESS_KEY") or lake.minio_user,
-        secret_key=os.getenv("OFL_PUBLISH_SECRET_KEY") or lake.minio_password,
+        endpoint=os.getenv("OFL_PUBLISH_ENDPOINT") or lake.s3_endpoint,
+        access_key=os.getenv("OFL_PUBLISH_ACCESS_KEY") or lake.s3_access_key_id,
+        secret_key=os.getenv("OFL_PUBLISH_SECRET_KEY") or lake.s3_secret_access_key,
         prefix=os.getenv("OFL_PUBLISH_PREFIX", ""),
     )
 
@@ -407,12 +407,12 @@ def run_publish(*, run_id: str | None = None, keep: int = 30) -> dict:
     """Publish from the live lakehouse (reads only) to the configured target."""
     import duckdb
 
-    from ofl.transform.gold.runner import configure_minio
+    from ofl.transform.gold.runner import configure_s3
 
     target = default_target()
     con = duckdb.connect()
     try:
-        configure_minio(con)
+        configure_s3(con)
         return publish(con, target, run_id=run_id, keep=keep)
     finally:
         con.close()

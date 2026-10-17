@@ -1,6 +1,6 @@
 # Gold export — lakehouse marts as a portable DuckDB file
 
-`tools/export_gold_duckdb.py` copies the **gold marts** out of MinIO into a single
+`tools/export_gold_duckdb.py` copies the **gold marts** out of Ceph RGW into a single
 local DuckDB database plus one parquet file per mart. It is a **read-only** consumer
 of the lakehouse: it does not build the marts, and it never writes to the bucket.
 
@@ -73,7 +73,7 @@ The parquet siblings exist for consumers that would rather not speak DuckDB
 ## 4. How to run it
 
 Configuration comes from the environment / `.env`, same as the rest of the project
-(see `ofl/config.py`): `MINIO_ENDPOINT`, `MINIO_USER`, `MINIO_PASSWORD`,
+(see `ofl/config.py`): `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`,
 `AWS_REGION`, `LAKEHOUSE_BUCKET`. Nothing is hardcoded in the script.
 
 ```bash
@@ -95,32 +95,32 @@ missing); `0` otherwise.
 
 ### Running from outside the cluster
 
-MinIO is not reachable at a plain `localhost` by default. Either use the ingress or
+Ceph RGW is not reachable at a plain `localhost` by default. Either use the ingress or
 port-forward, and take the credentials from the k8s secret (never hardcode them):
 
 ```bash
-# option A — via the MinIO API ingress
-export MINIO_ENDPOINT=https://<minio-api-host>
+# option A — via the Ceph RGW API ingress
+export S3_ENDPOINT=https://<rgw-api-host>
 
 # option B — port-forward (read-only, no cluster mutation)
-kubectl port-forward svc/minio -n minio 9000:9000 &
-export MINIO_ENDPOINT=http://localhost:9000
+kubectl port-forward svc/rook-ceph-rgw-homelab -n rook-ceph 9000:80 &
+export S3_ENDPOINT=http://localhost:9000
 
-export MINIO_USER=$(kubectl get secret minio-secrets -n minio -o jsonpath='{.data.root-user}' | base64 -d)
-export MINIO_PASSWORD=$(kubectl get secret minio-secrets -n minio -o jsonpath='{.data.root-password}' | base64 -d)
+export S3_ACCESS_KEY_ID=$(kubectl get secret ofl-s3-creds -n ofl -o jsonpath='{.data.S3_ACCESS_KEY_ID}' | base64 -d)
+export S3_SECRET_ACCESS_KEY=$(kubectl get secret ofl-s3-creds -n ofl -o jsonpath='{.data.S3_SECRET_ACCESS_KEY}' | base64 -d)
 
 python tools/export_gold_duckdb.py
 ```
 
-If a checkout's `.env` still points at an older MinIO hostname, the environment
+If a checkout's `.env` still points at an older Ceph RGW hostname, the environment
 variable above wins — `.env` is the fallback, not the override.
 
 ### Troubleshooting
 
 | Symptom | Cause |
 |---|---|
-| Every mart reports `missing` with `SignatureDoesNotMatch` (403) | The credentials are stale, not the path. MinIO answers a wrong secret key with a signature error rather than `AccessDenied`. Re-export `MINIO_PASSWORD` from `minio-secrets` as above. |
-| Every mart reports `missing` with a connection error | `MINIO_ENDPOINT` is unreachable. The API ingress serves **https** and 308-redirects plain http, which S3 request signing does not survive — use `https://<minio-api-host>`. |
+| Every mart reports `missing` with `SignatureDoesNotMatch` (403) | The credentials are stale, not the path. Ceph RGW answers a wrong secret key with a signature error rather than `AccessDenied`. Re-export `S3_SECRET_ACCESS_KEY` from `ofl-s3-creds` as above. |
+| Every mart reports `missing` with a connection error | `S3_ENDPOINT` is unreachable. The API ingress serves **https** and 308-redirects plain http, which S3 request signing does not survive — use `https://<rgw-api-host>`. |
 | A single mart reports `missing` | That mart was never materialized under `gold/`. Run the gold transformation (`ofl gold`) first; the export never invents rows. |
 
 ---
@@ -135,7 +135,7 @@ con.execute("SHOW TABLES").fetchall()
 con.execute("SELECT mart, status, rows FROM _export_manifest ORDER BY mart").fetchall()
 ```
 
-A healthy export, measured on 2026-07-29 against `https://<minio-api-host>`
+A healthy export, measured on 2026-07-29 against `https://<rgw-api-host>`
 (8/8 marts `ok`):
 
 | mart | rows |

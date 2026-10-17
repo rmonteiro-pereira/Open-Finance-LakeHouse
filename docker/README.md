@@ -12,7 +12,7 @@ external egress**) can run every step **offline**.
 - **Slim** runs Polars ingest and the DuckDB gold marts — no JVM, so it stays
   small. The DuckDB `httpfs`/`delta` extensions are **pre-baked** into
   `/opt/duckdb-ext` and loaded offline via `DUCKDB_EXTENSION_DIRECTORY`
-  (`ofl/transform/gold/runner.configure_minio`).
+  (`ofl/transform/gold/runner.configure_s3`).
 - **Spark** runs the silver conform/MERGE. The Delta + `hadoop-aws` jars are
   **baked into `pyspark/jars`** so `OFL_SPARK_JARS_PACKAGED=1` skips Ivy
   resolution (which would need network).
@@ -33,13 +33,13 @@ docker run --rm ghcr.io/rmonteiro-pereira/open-finance-lakehouse:slim registry
 
 # gold against a reachable MinIO
 docker run --rm \
-  -e MINIO_ENDPOINT=http://host.docker.internal:9000 \
-  -e MINIO_USER=... -e MINIO_PASSWORD=... -e LAKEHOUSE_BUCKET=lakehouse \
+  -e S3_ENDPOINT=http://host.docker.internal:9000 \
+  -e S3_ACCESS_KEY_ID=... -e S3_SECRET_ACCESS_KEY=... -e LAKEHOUSE_BUCKET=lakehouse \
   ghcr.io/rmonteiro-pereira/open-finance-lakehouse:slim gold --dry-run
 ```
 
 ## Runtime configuration (env)
-`MINIO_ENDPOINT`, `MINIO_USER`, `MINIO_PASSWORD`, `LAKEHOUSE_BUCKET`,
+`S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `LAKEHOUSE_BUCKET`,
 `AWS_REGION`, `OFL_REGISTRY` (defaults to the baked `/app/sources/registry.yml`),
 `OFL_SPARK_JARS_PACKAGED` (slim: unset; spark: `1`),
 `DUCKDB_EXTENSION_DIRECTORY` (slim: baked to `/opt/duckdb-ext`).

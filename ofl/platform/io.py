@@ -1,4 +1,4 @@
-"""Lakehouse path + object-store helpers (MinIO / S3 via delta-rs).
+"""Lakehouse path + object-store helpers (S3-compatible storage / S3 via delta-rs).
 
 Layout: ``s3://{bucket}/{layer}/{...}`` where layer is raw|bronze|silver|gold.
 ``deltalake`` (delta-rs) and Polars both consume ``delta_storage_options()``.
@@ -32,7 +32,7 @@ def gold_uri(table: str) -> str:
 
 
 def to_spark_path(uri: str) -> str:
-    """Spark/Hadoop addresses MinIO via the ``s3a://`` scheme; delta-rs uses ``s3://``."""
+    """Spark/Hadoop addresses S3-compatible storage via the ``s3a://`` scheme; delta-rs uses ``s3://``."""
     return uri.replace("s3://", "s3a://", 1)
 
 
@@ -67,15 +67,15 @@ def to_local_uri(path: Path | str) -> str:
 
 
 def delta_storage_options() -> dict[str, str]:
-    """Storage options for delta-rs / Polars against MinIO."""
+    """Storage options for delta-rs / Polars against S3-compatible storage."""
     s = get_settings()
     return {
-        "AWS_ENDPOINT_URL": s.minio_endpoint,
-        "AWS_ACCESS_KEY_ID": s.minio_user,
-        "AWS_SECRET_ACCESS_KEY": s.minio_password,
+        "AWS_ENDPOINT_URL": s.s3_endpoint,
+        "AWS_ACCESS_KEY_ID": s.s3_access_key_id,
+        "AWS_SECRET_ACCESS_KEY": s.s3_secret_access_key,
         "AWS_REGION": s.aws_region,
         "AWS_ALLOW_HTTP": "true",
-        # MinIO is a single-writer here; safe-rename guard is unnecessary and
+        # S3-compatible storage is a single-writer here; safe-rename guard is unnecessary and
         # blocks writes without an external lock provider.
         "AWS_S3_ALLOW_UNSAFE_RENAME": "true",
     }

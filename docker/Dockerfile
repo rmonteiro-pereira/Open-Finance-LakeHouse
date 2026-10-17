@@ -4,7 +4,7 @@
 # Cluster pods have no external egress, so DuckDB's `httpfs`/`delta` extensions
 # are PRE-BAKED into /opt/duckdb-ext at build time. At runtime the gold runner
 # reads DUCKDB_EXTENSION_DIRECTORY and LOADs them offline — no network needed.
-# See ofl/transform/gold/runner.configure_minio.
+# See ofl/transform/gold/runner.configure_s3.
 ARG PYTHON_VERSION=3.11
 
 # ----------------------------------------------------------------------------

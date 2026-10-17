@@ -1,4 +1,4 @@
-"""DuckDB gold runner: read silver Delta from MinIO, run SQL marts, write gold Delta.
+"""DuckDB gold runner: read silver Delta from S3-compatible storage, run SQL marts, write gold Delta.
 
 DuckDB's ``delta`` extension reads Delta; writes go back through delta-rs
 (``deltalake.write_deltalake``) since the DuckDB Delta writer is read-only.
@@ -107,7 +107,7 @@ def run_checks(con: "duckdb.DuckDBPyConnection", model: str) -> None:
         log.info("gold_check_passed", model=model, check=check)
 
 
-def configure_minio(con: "duckdb.DuckDBPyConnection") -> None:
+def configure_s3(con: "duckdb.DuckDBPyConnection") -> None:
     s = get_settings()
     # In the cluster image the `httpfs`/`delta` extensions are pre-baked into an
     # offline directory (pods have no egress). Point DuckDB at it so INSTALL is a
@@ -119,20 +119,20 @@ def configure_minio(con: "duckdb.DuckDBPyConnection") -> None:
     if ext_dir:
         con.execute(f"SET extension_directory='{ext_dir}'")
     con.execute("INSTALL httpfs; LOAD httpfs; INSTALL delta; LOAD delta;")
-    endpoint = s.minio_endpoint.split("://", 1)[-1]
-    use_ssl = "true" if s.minio_endpoint.startswith("https") else "false"
+    endpoint = s.s3_endpoint.split("://", 1)[-1]
+    use_ssl = "true" if s.s3_endpoint.startswith("https") else "false"
     # The `delta` extension (delta_scan) is backed by delta-kernel-rs / object_store
     # and reads credentials from DuckDB's *secret manager* — it ignores the legacy
     # `SET s3_*` session variables. Without an explicit S3 secret it falls through to
     # the AWS default credential chain and hangs on the EC2 instance-metadata endpoint
     # (169.254.169.254) inside the cluster. Register the secret so delta_scan binds to
-    # MinIO with static creds. (`SET s3_*` is kept for plain httpfs read_parquet paths.)
+    # S3-compatible storage with static creds. (`SET s3_*` is kept for plain httpfs read_parquet paths.)
     con.execute(
         f"""
-        CREATE OR REPLACE SECRET minio (
+        CREATE OR REPLACE SECRET lakehouse_s3 (
             TYPE S3,
-            KEY_ID '{s.minio_user}',
-            SECRET '{s.minio_password}',
+            KEY_ID '{s.s3_access_key_id}',
+            SECRET '{s.s3_secret_access_key}',
             ENDPOINT '{endpoint}',
             URL_STYLE 'path',
             USE_SSL {use_ssl},
@@ -142,8 +142,8 @@ def configure_minio(con: "duckdb.DuckDBPyConnection") -> None:
     )
     con.execute("SET s3_url_style='path'")
     con.execute(f"SET s3_endpoint='{endpoint}'")
-    con.execute(f"SET s3_access_key_id='{s.minio_user}'")
-    con.execute(f"SET s3_secret_access_key='{s.minio_password}'")
+    con.execute(f"SET s3_access_key_id='{s.s3_access_key_id}'")
+    con.execute(f"SET s3_secret_access_key='{s.s3_secret_access_key}'")
     con.execute(f"SET s3_use_ssl={use_ssl}")
 
 
@@ -207,6 +207,6 @@ def run_gold(write: bool = True) -> dict[str, int]:
     import duckdb
 
     con = duckdb.connect()
-    configure_minio(con)
+    configure_s3(con)
     register_silver(con)
     return execute_models(con, write=write, skip_on_error=True)
