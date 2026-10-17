@@ -588,3 +588,46 @@ def test_real_ocr_and_ruled_table_extraction(research, tmp_path, suffix):
     assert candidate["cells"][1][2] == "38,80"
     assert candidate["evidence"]["cell_boxes"][1][2]
     assert not db.rows("SELECT * FROM observations")
+
+
+def test_private_ollama_embeddings_validate_revision_and_response(monkeypatch):
+    from ofl.research.search import embed
+
+    settings = ResearchSettings(
+        embedding_url="http://model.invalid",
+        embedding_model="bge:latest",
+        embedding_revision="sha256:pinned",
+        embedding_dimensions=3,
+    )
+    result = {"embeddings": [[1.0, 0.0, 0.0]]}
+
+    class Response:
+        def __init__(self, data):
+            self.data = data
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return self.data
+
+    monkeypatch.setattr(
+        "requests.get",
+        lambda *a, **kw: Response({"models": [{"name": "bge:latest", "digest": "sha256:pinned"}]}),
+    )
+
+    def post(*args, **kwargs):
+        assert kwargs["json"]["truncate"] is False
+        return Response(result)
+
+    monkeypatch.setattr("requests.post", post)
+    assert embed(settings, ["mercado de ações"]) == [[1.0, 0.0, 0.0]]
+    result["embeddings"] = []
+    with pytest.raises(ValueError, match="count"):
+        embed(settings, ["ações"])
+    result["embeddings"] = [[float("nan"), 0, 0]]
+    with pytest.raises(ValueError, match="finite"):
+        embed(settings, ["ações"])
+    settings.embedding_revision = "changed"
+    with pytest.raises(ValueError, match="digest"):
+        embed(settings, ["ações"])
