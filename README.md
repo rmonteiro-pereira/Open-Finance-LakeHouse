@@ -229,7 +229,7 @@ Configuration is environment-driven — no secrets in code:
 
 | Variable | Purpose |
 |---|---|
-| `MINIO_ENDPOINT` / `MINIO_USER` / `MINIO_PASSWORD` | Object store connection. Defaults are MinIO's *published* factory credentials so a scratch localhost stack needs no setup — `Settings` raises if they would be sent anywhere but loopback |
+| `S3_ENDPOINT` / `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | Object store connection. Defaults are MinIO's *published* factory credentials so a scratch localhost stack needs no setup — `Settings` raises if they would be sent anywhere but loopback |
 | `LAKEHOUSE_BUCKET` / `AWS_REGION` | Bucket and nominal region |
 | `OFL_REGISTRY` | Registry path override (defaults to `sources/registry.yml`) |
 | `OFL_SPARK_DRIVER_MEMORY` / `OFL_SPARK_JARS_PACKAGED` | Silver-lane Spark tuning |

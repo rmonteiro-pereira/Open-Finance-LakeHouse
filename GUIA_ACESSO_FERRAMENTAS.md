@@ -108,7 +108,7 @@ kubectl get ingress -A -o wide
 **Configuração Delta Lake / S3:**
 - S3 Endpoint: `http://minio.minio.svc.cluster.local:9000`
 - Access Key / Secret Key: **injetados via Secret `minio-secrets`** (namespace `minio`) nas
-  variáveis `MINIO_USER` / `MINIO_PASSWORD` do pod — nunca escritos em código ou em docs.
+  variáveis `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` do pod — nunca escritos em código ou em docs.
   Ver [Como ler as credenciais do MinIO](#6-minio--armazenamento-s3-compatible).
 - Formato de dados: Delta Lake (versionamento de dados)
 
@@ -166,8 +166,8 @@ kubectl port-forward -n openmetadata svc/openmetadata 8080:8080
 **Configuração de Repositório:**
 ```yaml
 S3 Endpoint: http://minio.minio.svc.cluster.local:9000
-Access Key: ${MINIO_USER}        # do Secret minio-secrets
-Secret Key: ${MINIO_PASSWORD}    # do Secret minio-secrets
+Access Key: ${S3_ACCESS_KEY_ID}        # do Secret minio-secrets
+Secret Key: ${S3_SECRET_ACCESS_KEY}    # do Secret minio-secrets
 Path Style: true
 ```
 
@@ -204,9 +204,9 @@ import os
 from minio import Minio
 
 client = Minio(
-    os.environ["MINIO_ENDPOINT"],          # ex.: minio-api.<BASE_DOMAIN>
-    access_key=os.environ["MINIO_USER"],
-    secret_key=os.environ["MINIO_PASSWORD"],
+    os.environ["S3_ENDPOINT"],          # ex.: minio-api.<BASE_DOMAIN>
+    access_key=os.environ["S3_ACCESS_KEY_ID"],
+    secret_key=os.environ["S3_SECRET_ACCESS_KEY"],
     # HTTP por padrão porque nenhum Ingress declara `spec.tls` hoje; assim que
     # cert-manager estiver no lugar, defina MINIO_SECURE=true.
     secure=os.getenv("MINIO_SECURE", "false").lower() == "true",

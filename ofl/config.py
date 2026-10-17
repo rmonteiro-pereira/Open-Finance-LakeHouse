@@ -1,6 +1,6 @@
 """Runtime configuration, sourced from the environment (12-factor).
 
-Replaces Kedro's ``conf/base`` + ``conf/local``. No secrets in code: MinIO
+Replaces Kedro's ``conf/base`` + ``conf/local``. No secrets in code: S3
 credentials and endpoints come from env vars / sealed secrets only.
 """
 
@@ -15,7 +15,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # MinIO's own published out-of-the-box root credentials. They are a *placeholder*
 # so that `docker run minio` and a scratch localhost stack work with no setup — not
 # a credential for any deployment of this project. Anything that is not loopback
-# must supply MINIO_USER / MINIO_PASSWORD from a real secret; see the validator
+# must supply S3_ACCESS_KEY_ID / S3_SECRET_ACCESS_KEY from a real secret; see the validator
 # below, which refuses to start otherwise.
 _VENDOR_DEFAULT_CREDENTIAL = "minioadmin"
 _LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1", "0.0.0.0"})
@@ -26,9 +26,9 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    minio_endpoint: str = Field("http://localhost:9000", alias="MINIO_ENDPOINT")
-    minio_user: str = Field(_VENDOR_DEFAULT_CREDENTIAL, alias="MINIO_USER")
-    minio_password: str = Field(_VENDOR_DEFAULT_CREDENTIAL, alias="MINIO_PASSWORD")
+    s3_endpoint: str = Field("http://localhost:9000", alias="S3_ENDPOINT")
+    s3_access_key_id: str = Field(_VENDOR_DEFAULT_CREDENTIAL, alias="S3_ACCESS_KEY_ID")
+    s3_secret_access_key: str = Field(_VENDOR_DEFAULT_CREDENTIAL, alias="S3_SECRET_ACCESS_KEY")
     aws_region: str = Field("us-east-1", alias="AWS_REGION")
 
     bucket: str = Field("lakehouse", alias="LAKEHOUSE_BUCKET")
@@ -67,13 +67,13 @@ class Settings(BaseSettings):
         the second case is a finding, not a configuration. Either way, refusing at
         construction time is better than a 403 three lanes downstream.
         """
-        host = (urlparse(self.minio_endpoint).hostname or "").lower()
-        uses_defaults = _VENDOR_DEFAULT_CREDENTIAL in {self.minio_user, self.minio_password}
+        host = (urlparse(self.s3_endpoint).hostname or "").lower()
+        uses_defaults = _VENDOR_DEFAULT_CREDENTIAL in {self.s3_access_key_id, self.s3_secret_access_key}
         if uses_defaults and host not in _LOOPBACK_HOSTS:
             raise ValueError(
-                f"MINIO_ENDPOINT points at {host!r}, but MINIO_USER/MINIO_PASSWORD are "
+                f"S3_ENDPOINT points at {host!r}, but S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY are "
                 "still MinIO's published factory defaults. Set both from a real secret "
-                "(sealed secret / OpenBao / env), or point MINIO_ENDPOINT at localhost "
+                "(sealed secret / OpenBao / env), or point S3_ENDPOINT at localhost "
                 "for a scratch stack."
             )
         return self

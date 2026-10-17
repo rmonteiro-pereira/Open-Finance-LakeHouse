@@ -14,7 +14,7 @@
   has **no Kubernetes manifests, Helm values or image-publishing CI**.
 - **Storage:** one bucket, `lakehouse`, prefixes `bronze/`, `silver/`, `gold/`. Any
   S3-compatible store works (no MinIO-only calls); it ran on MinIO and now runs on
-  Ceph RGW. The env vars are still named `MINIO_*`.
+  Ceph RGW. Connection settings use provider-neutral `S3_*` names.
 - **Open:** no CI builds or publishes the two images; `ibge` ingest fails in the
   current deployment (cause not investigated); the 4 `anbima` series need API
   credentials; `ofl_silver` re-runs on every batch of bronze assets.

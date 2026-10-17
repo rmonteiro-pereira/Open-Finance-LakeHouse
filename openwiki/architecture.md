@@ -21,15 +21,15 @@
 - **Two images**, built from the repo root: `docker/Dockerfile` (`:slim`, ingest and
   gold) and `docker/Dockerfile.spark` (`:spark`, silver, JRE 17 plus baked jars).
   Entrypoint is the `ofl` CLI: `ofl ingest --series <key>`, `ofl silver`, `ofl gold`.
-- **Config is env-only** (`ofl/config.py`): `MINIO_ENDPOINT`, `MINIO_USER`,
-  `MINIO_PASSWORD`, `LAKEHOUSE_BUCKET`, `AWS_REGION`, `OFL_REGISTRY`,
+- **Config is env-only** (`ofl/config.py`): `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`,
+  `S3_SECRET_ACCESS_KEY`, `LAKEHOUSE_BUCKET`, `AWS_REGION`, `OFL_REGISTRY`,
   `OFL_SPARK_DRIVER_MEMORY`. Pods get them from one Secret (default name
-  `minio-creds`) via `envFrom`.
+  `ofl-s3-creds`) via `envFrom`.
 - **No catalog service.** Delta tables on S3 are the catalog. Postgres and Redis are
   needed only by Airflow. OpenLineage and the Pushgateway are optional, env-gated.
 
 ## What the deployment must provide
-- The Secret must contain **`MINIO_ENDPOINT`**: the DAG does not inject it and the
+- The Secret must contain **`S3_ENDPOINT`**: the DAG does not inject it and the
   default is `http://localhost:9000`.
 - Credentials equal to `minioadmin` are rejected for any non-loopback endpoint.
 - The bucket is **never created by this code**. Create `lakehouse` first.

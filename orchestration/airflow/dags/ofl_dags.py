@@ -65,7 +65,7 @@ _REPO = os.getenv("OFL_IMAGE_REPO", "ghcr.io/rmonteiro-pereira/open-finance-lake
 SLIM_IMAGE = os.getenv("OFL_SLIM_IMAGE", f"{_REPO}:slim")
 SPARK_IMAGE = os.getenv("OFL_SPARK_IMAGE", f"{_REPO}:spark")
 NAMESPACE = os.getenv("OFL_NAMESPACE", "default")
-MINIO_SECRET = os.getenv("OFL_MINIO_SECRET", "minio-creds")
+S3_SECRET = os.getenv("OFL_S3_SECRET", "ofl-s3-creds")
 PULL_SECRET = os.getenv("OFL_PULL_SECRET", "ghcr-pull")
 ANBIMA_SECRET = os.getenv("OFL_ANBIMA_SECRET", "anbima-creds")
 
@@ -82,7 +82,7 @@ SILVER_TRIGGER = os.getenv("OFL_SILVER_TRIGGER", "cycle")
 PUSHGATEWAY_URL = os.getenv("OFL_PUSHGATEWAY_URL", "")
 
 _ENV_FROM = [
-    k8s.V1EnvFromSource(secret_ref=k8s.V1SecretEnvSource(name=MINIO_SECRET)),
+    k8s.V1EnvFromSource(secret_ref=k8s.V1SecretEnvSource(name=S3_SECRET)),
     # ANBIMA Feed creds (ANBIMA_CLIENT_ID/SECRET) — optional so pods (and clusters
     # without the secret) still start; only the anbima ingest task needs them.
     k8s.V1EnvFromSource(secret_ref=k8s.V1SecretEnvSource(name=ANBIMA_SECRET, optional=True)),

@@ -1,4 +1,4 @@
-"""Export the gold marts from MinIO into a portable local DuckDB file (+ parquet siblings).
+"""Export the gold marts from S3-compatible storage into a portable local DuckDB file (+ parquet siblings).
 
 READ-ONLY GUARANTEE
 -------------------
@@ -27,8 +27,8 @@ outside the repository, since the artifact is never committed.
 Re-runnable: each mart is written with ``CREATE OR REPLACE TABLE`` and its parquet
 sibling is overwritten, so running it twice yields the same result as running it once.
 
-Configuration is the repo's existing one (``ofl.config.Settings``): ``MINIO_ENDPOINT``,
-``MINIO_USER``, ``MINIO_PASSWORD``, ``AWS_REGION``, ``LAKEHOUSE_BUCKET`` — read from the
+Configuration is the repo's existing one (``ofl.config.Settings``): ``S3_ENDPOINT``,
+``S3_ACCESS_KEY_ID``, ``S3_SECRET_ACCESS_KEY``, ``AWS_REGION``, ``LAKEHOUSE_BUCKET`` — read from the
 environment or ``.env``. No endpoints or secrets are hardcoded here, and none are printed.
 """
 
@@ -42,7 +42,7 @@ from typing import TYPE_CHECKING
 from ofl.config import get_settings
 from ofl.platform.io import gold_uri
 from ofl.platform.logging import get_logger
-from ofl.transform.gold.runner import MODELS, configure_minio
+from ofl.transform.gold.runner import MODELS, configure_s3
 
 if TYPE_CHECKING:
     import duckdb
@@ -109,7 +109,7 @@ def export(
     db_path = out_dir / DB_NAME
     con = duckdb.connect(str(db_path))
     try:
-        configure_minio(con)  # same MinIO wiring the gold runner uses — read paths only
+        configure_s3(con)  # same S3-compatible storage wiring the gold runner uses — read paths only
         results = {name: _export_mart(con, name, out_dir, parquet=parquet) for name in marts}
         _write_manifest(con, results)
     finally:
@@ -121,7 +121,7 @@ def export(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="export_gold_duckdb",
-        description="Export gold marts from MinIO (read-only) to a local DuckDB file + parquet.",
+        description="Export gold marts from S3-compatible storage (read-only) to a local DuckDB file + parquet.",
     )
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR, help="artifact directory")
     parser.add_argument("--marts", nargs="+", default=MODELS, help="subset of marts to export")
@@ -136,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
     settings = get_settings()
     out_dir = args.out_dir.resolve()
     # Host only — never the credentials.
-    print(f"source : s3://{settings.bucket}/gold  @ {settings.minio_endpoint} (read-only)")
+    print(f"source : s3://{settings.bucket}/gold  @ {settings.s3_endpoint} (read-only)")
     print(f"target : {out_dir / DB_NAME}")
 
     results = export(args.marts, out_dir, parquet=not args.no_parquet)

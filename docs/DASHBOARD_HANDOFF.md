@@ -4,11 +4,11 @@
 Open-Finance-LakeHouse. This is everything you need to **connect, query, and know
 what's in the data** — without reading the pipeline source.
 
-> TL;DR — The data is **Delta tables in MinIO** (S3-compatible), bucket
+> TL;DR — The data is **Delta tables in Ceph RGW** (S3-compatible), bucket
 > **`lakehouse`**. The dashboard should read the **`gold/` marts** (ready-to-plot)
 > and the **`silver/` star schema** (for custom cuts). Query them with **DuckDB**
 > (`delta_scan`) or **Polars** (`read_delta`). Credentials come from the k8s
-> secret `minio-creds` — they are **not** in this doc.
+> secret `ofl-s3-creds` — they are **not** in this doc.
 
 ---
 
@@ -18,7 +18,7 @@ Medallion lakehouse, engine-per-lane: **Polars** extracts public financial/macro
 APIs → **bronze** (one Delta table per series); **Spark** conforms bronze →
 **silver** star schema (idempotent Delta MERGE); **DuckDB** builds **gold** marts
 from silver. Everything is driven by a metadata registry (`sources/registry.yml`,
-51 series). All three layers are **Delta Lake** tables in MinIO. A dashboard only
+51 series). All three layers are **Delta Lake** tables in Ceph RGW. A dashboard only
 needs the **silver** and **gold** layers.
 
 ```
@@ -32,23 +32,23 @@ public APIs ──Polars──▶ bronze/ ──Spark MERGE──▶ silver/ (st
 
 | Thing | Value |
 |---|---|
-| Object store | MinIO (S3-compatible) |
-| **In-cluster endpoint** | `http://minio.minio.svc.cluster.local:9000` |
+| Object store | Ceph RGW (S3-compatible) |
+| **In-cluster endpoint** | `http://rook-ceph-rgw-homelab.rook-ceph.svc:80` |
 | Bucket | `lakehouse` |
 | Table format | Delta Lake (delta-rs / Spark-written) |
-| Region | `us-east-1` (nominal; MinIO ignores it) |
-| URL style | **path** (required for MinIO) |
+| Region | `us-east-1` (nominal; Ceph RGW ignores it) |
+| URL style | **path** (required for Ceph RGW) |
 | TLS | none in-cluster (`USE_SSL false`) |
-| **Credentials** | k8s secret **`minio-creds`** (namespace `default`), keys `MINIO_USER` / `MINIO_PASSWORD` |
+| **Credentials** | k8s secret **`ofl-s3-creds`** (namespace `ofl`), keys `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` |
 
 **Getting credentials (do NOT hardcode):**
 - If the dashboard runs **in-cluster** (recommended), mount the secret:
-  `envFrom: [{ secretRef: { name: minio-creds } }]` → gives `MINIO_USER` /
-  `MINIO_PASSWORD` as env. Also set `MINIO_ENDPOINT=http://minio.minio.svc.cluster.local:9000`.
-- If running **outside the cluster**, you must expose MinIO (NodePort / ingress /
-  `kubectl port-forward svc/minio -n minio 9000:9000`) and read the creds with
-  `kubectl get secret minio-creds -n default -o jsonpath='{.data.MINIO_USER}' | base64 -d`
-  (likewise `MINIO_PASSWORD`). The creds also live in OpenBao if a shared path is set.
+  `envFrom: [{ secretRef: { name: ofl-s3-creds } }]` → gives `S3_ACCESS_KEY_ID` /
+  `S3_SECRET_ACCESS_KEY` as env. Also set `S3_ENDPOINT=http://rook-ceph-rgw-homelab.rook-ceph.svc:80`.
+- If running **outside the cluster**, you must expose Ceph RGW (NodePort / ingress /
+  `kubectl port-forward svc/rook-ceph-rgw-homelab -n rook-ceph 9000:80`) and read the creds with
+  `kubectl get secret ofl-s3-creds -n ofl -o jsonpath='{.data.S3_ACCESS_KEY_ID}' | base64 -d`
+  (likewise `S3_SECRET_ACCESS_KEY`). The creds also live in OpenBao if a shared path is set.
 
 ### DuckDB — the one gotcha that matters
 
@@ -63,11 +63,11 @@ import os, duckdb
 con = duckdb.connect()
 con.execute("INSTALL httpfs; LOAD httpfs; INSTALL delta; LOAD delta;")
 con.execute(f"""
-    CREATE OR REPLACE SECRET minio (
+    CREATE OR REPLACE SECRET lakehouse_s3 (
         TYPE S3,
-        KEY_ID  '{os.environ["MINIO_USER"]}',
-        SECRET  '{os.environ["MINIO_PASSWORD"]}',
-        ENDPOINT 'minio.minio.svc.cluster.local:9000',   -- host:port, NO scheme
+        KEY_ID  '{os.environ["S3_ACCESS_KEY_ID"]}',
+        SECRET  '{os.environ["S3_SECRET_ACCESS_KEY"]}',
+        ENDPOINT 'rook-ceph-rgw-homelab.rook-ceph.svc:80',   -- host:port, NO scheme
         URL_STYLE 'path',
         USE_SSL  false,
         REGION   'us-east-1'
@@ -81,17 +81,17 @@ df = con.execute(
 
 > Shortcut: the `ofl` package already encapsulates this. If you `pip install` it
 > (or run inside the `ghcr.io/rmonteiro-pereira/open-finance-lakehouse:slim`
-> image), call `from ofl.transform.gold.runner import configure_minio; configure_minio(con)`
-> and skip the boilerplate. It reads `MINIO_ENDPOINT/MINIO_USER/MINIO_PASSWORD` from env.
+> image), call `from ofl.transform.gold.runner import configure_s3; configure_s3(con)`
+> and skip the boilerplate. It reads `S3_ENDPOINT/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY` from env.
 
 ### Polars (alternative)
 
 ```python
 import polars as pl
 opts = {
-    "AWS_ENDPOINT_URL": "http://minio.minio.svc.cluster.local:9000",
-    "AWS_ACCESS_KEY_ID": MINIO_USER,
-    "AWS_SECRET_ACCESS_KEY": MINIO_PASSWORD,
+    "AWS_ENDPOINT_URL": "http://rook-ceph-rgw-homelab.rook-ceph.svc:80",
+    "AWS_ACCESS_KEY_ID": S3_ACCESS_KEY_ID,
+    "AWS_SECRET_ACCESS_KEY": S3_SECRET_ACCESS_KEY,
     "AWS_REGION": "us-east-1",
     "AWS_ALLOW_HTTP": "true",
 }
@@ -239,4 +239,4 @@ The pipeline runs on the cluster via **Airflow 3 DAGs** (`ofl_ingest_<handler>` 
 `ofl_silver` → `ofl_gold`, data-aware Assets). Marts refresh automatically when
 upstream bronze updates. A dashboard just re-reads the Delta tables — no coupling
 to the pipeline. To force a rebuild manually: run the `:slim`/`:spark` images with
-`ofl ingest` / `ofl silver` / `ofl gold` (env: `MINIO_*` + the bucket default `lakehouse`).
+`ofl ingest` / `ofl silver` / `ofl gold` (env: `S3_*` + the bucket default `lakehouse`).

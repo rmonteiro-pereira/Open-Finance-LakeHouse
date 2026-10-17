@@ -18,8 +18,8 @@ from ofl.config import Settings
 
 
 def test_defaults_are_allowed_against_loopback() -> None:
-    s = Settings(MINIO_ENDPOINT="http://localhost:9000")
-    assert s.minio_user and s.minio_password
+    s = Settings(S3_ENDPOINT="http://localhost:9000")
+    assert s.s3_access_key_id and s.s3_secret_access_key
 
 
 @pytest.mark.parametrize(
@@ -31,7 +31,7 @@ def test_defaults_are_allowed_against_loopback() -> None:
     ],
 )
 def test_other_loopback_forms_are_allowed(endpoint: str) -> None:
-    assert Settings(MINIO_ENDPOINT=endpoint).minio_endpoint == endpoint
+    assert Settings(S3_ENDPOINT=endpoint).s3_endpoint == endpoint
 
 
 @pytest.mark.parametrize(
@@ -43,24 +43,24 @@ def test_other_loopback_forms_are_allowed(endpoint: str) -> None:
 )
 def test_factory_defaults_are_refused_off_loopback(endpoint: str) -> None:
     with pytest.raises(ValueError, match="factory defaults"):
-        Settings(MINIO_ENDPOINT=endpoint)
+        Settings(S3_ENDPOINT=endpoint)
 
 
 def test_real_credentials_are_accepted_off_loopback() -> None:
     s = Settings(
-        MINIO_ENDPOINT="https://minio-api.example.invalid",
-        MINIO_USER="a-real-user",
-        MINIO_PASSWORD="a-real-password",
+        S3_ENDPOINT="https://minio-api.example.invalid",
+        S3_ACCESS_KEY_ID="a-real-user",
+        S3_SECRET_ACCESS_KEY="a-real-password",
     )
-    assert s.minio_user == "a-real-user"
+    assert s.s3_access_key_id == "a-real-user"
 
 
 def test_half_configured_credentials_are_still_refused() -> None:
     """A real user with the default password is not "configured"."""
     with pytest.raises(ValueError, match="factory defaults"):
         Settings(
-            MINIO_ENDPOINT="https://minio-api.example.invalid",
-            MINIO_USER="a-real-user",
+            S3_ENDPOINT="https://minio-api.example.invalid",
+            S3_ACCESS_KEY_ID="a-real-user",
         )
 
 

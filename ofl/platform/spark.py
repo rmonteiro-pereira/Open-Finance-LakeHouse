@@ -1,4 +1,4 @@
-"""Spark session factory — Delta + S3A (MinIO) configured from env.
+"""Spark session factory — Delta + S3A (S3-compatible storage) configured from env.
 
 Used only by the silver lane (bronze -> silver conform/MERGE). Extras: install
 with ``pip install -e .[spark]``. On the cluster image the Delta/S3A jars are
@@ -32,9 +32,9 @@ def build_spark_session(
             "spark.sql.catalog.spark_catalog",
             "org.apache.spark.sql.delta.catalog.DeltaCatalog",
         )
-        .config("spark.hadoop.fs.s3a.endpoint", s.minio_endpoint)
-        .config("spark.hadoop.fs.s3a.access.key", s.minio_user)
-        .config("spark.hadoop.fs.s3a.secret.key", s.minio_password)
+        .config("spark.hadoop.fs.s3a.endpoint", s.s3_endpoint)
+        .config("spark.hadoop.fs.s3a.access.key", s.s3_access_key_id)
+        .config("spark.hadoop.fs.s3a.secret.key", s.s3_secret_access_key)
         .config("spark.hadoop.fs.s3a.path.style.access", "true")
         .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
         .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")

@@ -4,7 +4,7 @@ ANBIMA's pricing APIs require **registered developer credentials** (no free
 anonymous access). Register at developers.anbima.com.br, then store the
 credentials in OpenBao at ``secret/claude/anbima`` (fields ``client_id`` /
 ``client_secret``) and inject them as env (``ANBIMA_CLIENT_ID`` /
-``ANBIMA_CLIENT_SECRET``) — the same pattern as the MinIO creds.
+``ANBIMA_CLIENT_SECRET``) — the same pattern as the S3-compatible storage creds.
 
 Flow: Basic-auth -> bearer ``access_token`` (1h) -> secondary-market TPF prices.
 Until credentials exist, this series stays ``status: planned`` in the registry.
