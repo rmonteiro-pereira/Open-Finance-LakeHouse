@@ -17,13 +17,16 @@ import pyarrow.parquet as pq
 
 from .db import digest
 
-VERSION = "cotahist-v1"
+VERSION = "cotahist-v2"
 MARKETS = {
     "010": "cash",
     "012": "call_exercise",
     "013": "put_exercise",
     "017": "auction",
     "020": "fractional",
+    # Observed as TPMERC=021/CODBDI=93 in official 2026 daily files. The
+    # published layout does not name it: preserve its code without guessing a label.
+    "021": "unclassified_021",
     "030": "forward",
     "050": "future_retained",
     "060": "future_continuous",
@@ -69,6 +72,9 @@ IDENTITY = [
     "expiry_raw",
     "correction_indicator",
     "currency",
+    "quotation_factor",
+    "exercise_price_scaled",
+    "exercise_points_scaled",
 ]
 SCHEMA = pa.schema(
     [
@@ -193,6 +199,8 @@ def stage(
                 raise ValueError(f"line {line_no}: conflicting futures classification")
             if row["tpmerc"] not in MARKETS:
                 raise ValueError(f"line {line_no}: unknown market {row['tpmerc']}")
+            if row["tpmerc"] == "021" and row["codbdi"] != "93":
+                raise ValueError(f"line {line_no}: unrecognized BDI for market 021")
             dates.add(row["date"].isoformat())
             if market_future:
                 counts["excluded_futures"] += 1
@@ -239,6 +247,26 @@ def stage(
         valid = lambda d: d == day
     if any(not valid(d) for d in dates):
         raise ValueError("trading date outside declared coverage")
+    # Validate the complete staged file before any Delta writes. Older official
+    # archives can contain contradictory rows even when header/trailer checks pass.
+    import tempfile
+
+    import duckdb
+
+    with tempfile.TemporaryDirectory(dir=output) as scratch, duckdb.connect() as query:
+        query.execute("SET memory_limit='512MB'")
+        query.execute("SET threads=2")
+        query.execute("SET temp_directory=?", (scratch,))
+        query.read_parquet(str(output / "*.parquet")).create_view("staged")
+        conflict = query.execute("""SELECT record_id,min(date),min(symbol),min(tpmerc),
+            min(source_line),max(source_line) FROM staged GROUP BY record_id
+            HAVING count(DISTINCT row_hash)>1 ORDER BY min(source_line) LIMIT 1""").fetchone()
+        if conflict:
+            identity, day, symbol, market, first, last = conflict
+            raise ValueError(
+                f"conflicting quote identity {identity} ({day}, {symbol}, market {market}; "
+                f"source lines {first} and {last})"
+            )
     return {
         "counts": counts,
         "generated": generated,

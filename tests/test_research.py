@@ -26,6 +26,7 @@ def record(
     currency="R$",
     factor=1,
     distribution="100",
+    exercise_price=0,
 ):
     raw = bytearray(b" " * 245)
     raw[:2], raw[2:10] = b"01", day.encode()
@@ -45,7 +46,8 @@ def record(
     for key, (start, length) in cotahist.TEXT_FIELDS.items():
         raw[start : start + length] = values[key].ljust(length).encode("latin-1")
     for key, (start, length) in cotahist.MONEY_FIELDS.items():
-        raw[start : start + length] = str(close).zfill(length).encode()
+        value = exercise_price if key == "exercise_price" else close
+        raw[start : start + length] = str(value).zfill(length).encode()
     for key, (start, length) in cotahist.INTEGER_FIELDS.items():
         raw[start : start + length] = (
             str(factor if key == "quotation_factor" else 123).zfill(length).encode()
@@ -79,24 +81,30 @@ def write_input(folder, rows, name="COTAHIST_A2024.TXT", **kwargs):
 
 def test_market_identity_and_exact_values(tmp_path):
     rows = [
-        record(market=m, bdi="70" if m == "050" else "71" if m == "060" else "02")
+        record(
+            market=m,
+            bdi="70" if m == "050" else "71" if m == "060" else "93" if m == "021" else "02",
+        )
         for m in cotahist.MARKETS
     ]
     path = write_input(tmp_path, rows)
     result = cotahist.stage(path, tmp_path / "stage", "hash", batch_rows=2, input_name=path.name)
     assert result["counts"] == {
-        "records": 10,
-        "accepted": 8,
+        "records": 11,
+        "accepted": 9,
         "excluded_futures": 2,
         "quarantined": 0,
     }
     import pyarrow.parquet as pq
 
     quotes = pq.ParquetDataset(tmp_path / "stage").read().to_pylist()
-    assert len({row["record_id"] for row in quotes}) == 8
+    assert len({row["record_id"] for row in quotes}) == 9
     assert quotes[0]["close"] == Decimal("38.80")
     assert quotes[0]["exercise_points"] == Decimal(".123456")
     assert quotes[0]["expiry"] is None
+    first_option = cotahist.parse_record(record(market="070", exercise_price=1000), "hash", 1)
+    second_option = cotahist.parse_record(record(market="070", exercise_price=2000), "hash", 2)
+    assert first_option["record_id"] != second_option["record_id"]
 
 
 @pytest.mark.parametrize(
@@ -130,6 +138,16 @@ def test_zip_path_and_expansion_limits(tmp_path):
         archive.writestr("../escape.TXT", file_bytes([record()]))
     with pytest.raises(ValueError, match="unsafe"):
         cotahist.stage(path, tmp_path / "stage", "hash")
+
+
+def test_observed_market_021_keeps_its_code_without_inferred_classification(tmp_path):
+    path = write_input(tmp_path, [record(market="021", bdi="93")])
+    result = cotahist.stage(path, tmp_path / "stage", "hash")
+    assert result["counts"]["accepted"] == 1
+    assert cotahist.MARKETS["021"] == "unclassified_021"
+    invalid = write_input(tmp_path / "invalid", [record(market="021", bdi="02")])
+    with pytest.raises(ValueError, match="unrecognized BDI"):
+        cotahist.stage(invalid, tmp_path / "invalid-stage", "hash")
 
 
 @pytest.fixture
@@ -177,11 +195,13 @@ def import_and_run(db, store, path, source="b3_cotahist", metadata=None):
     return result
 
 
-def test_import_replay_precedence_and_correction(research, tmp_path):
+@pytest.mark.parametrize("publication_days", [1, 31])
+def test_import_replay_precedence_and_correction(research, tmp_path, publication_days):
     from ofl.research.imports import register
     from ofl.research.query import quote_query
 
     db, store = research
+    db.settings.publication_days = publication_days
     annual = write_input(
         tmp_path / "annual", [record(), record(market="020"), record(day="20240306")]
     )
@@ -240,6 +260,9 @@ def test_conflicting_duplicate_never_publishes(research, tmp_path):
         db.rows("SELECT state FROM jobs WHERE id=%s", (result["job_id"],))[0]["state"] == "failed"
     )
     assert not db.rows("SELECT * FROM pointers")
+    assert not store.path("silver/fact_b3_quote").exists()
+    error = db.rows("SELECT error FROM jobs WHERE id=%s", (result["job_id"],))[0]["error"]
+    assert "source lines 2 and 3" in error
 
 
 def test_catalog_search_and_revisions(research, tmp_path):
@@ -343,6 +366,15 @@ def test_private_api_roles_upload_replay_and_exact_decimals(research):
         "Origin": "http://localhost:3000",
         "Idempotency-Key": "upload-one",
     }
+    assert client.get("/api/v1/me", headers=headers).json()["pipeline_enabled"] is False
+    assert (
+        client.post(
+            "/api/v1/jobs",
+            headers=headers,
+            json={"action": "pipeline", "dag": "ofl_silver"},
+        ).status_code
+        == 503
+    )
     assert (
         client.post(
             "/api/v1/jobs",
