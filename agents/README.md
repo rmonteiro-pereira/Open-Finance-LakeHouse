@@ -46,6 +46,7 @@ Supply server-side settings through the private infrastructure secret store:
 | `OFL_AGENT_MODEL_BASE_URL` | Approved text-generation endpoint supporting chat/tools |
 | `OFL_AGENT_MODEL_API_KEY` | Generation endpoint credential |
 | `OFL_AGENT_MODEL_NAME` | Explicit model; no implicit paid default |
+| `OFL_AGENT_NO_THINK` | `1` adds the Qwen `/no_think` instruction for CPU deployments; default off |
 | `OFL_AGENT_HOST` / `OFL_AGENT_PORT` | Defaults `127.0.0.1:8082` |
 
 Run `bun start`. Missing configuration refuses startup. Existing BGE-M3 embeddings
