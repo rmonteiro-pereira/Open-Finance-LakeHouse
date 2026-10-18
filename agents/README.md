@@ -128,3 +128,34 @@ model inference. Empty coverage and unusable generated interpretations are repor
 explicitly. The final output separates exact source excerpts from model drafts.
 Numeric/data/quality tools retain their read-only contracts. Conversation sources
 can be handed directly to an owned dossier without copying internal identifiers.
+
+## Reusable Inkwell boundary — 0.1.1
+
+OFL consumes typed `agent.replyStep` decisions and detached evidence from actual
+current-turn tool execution. It no longer parses `Tool result:` conversation text
+to coordinate document collection. `agent.offer` enforces routing at execution.
+Optional interpretation uses the named `interpretation` role via `ctx.call`,
+including its ledger, budget and deadline. The native Ollama adapter is imported
+from Inkwell; no copied provider implementation remains here.
+
+Fresh source access and SHA-256 of the full passage text are checked with the
+Inkwell excerpt verifier. A revision change between initial reading and verification
+rejects the excerpt. Strict `composeDraft` binds displayed quotations to source
+facts. This verifies source copying, not source truth or interpretation quality.
+
+The OpenWiki state was repaired to restore the full project history from #65,
+which had been accidentally replaced with agent README prose in later changes.
+
+Approved release metadata lives in `inkwell-packages.json`: private source commit,
+archive SHA-256 and content-addressed vendor filename. The installer checks each
+archive before copying it, and the Bun lockfile pins the approved bytes. An
+archive with the same release name but different bytes is refused.
+
+Follow-up verification: Inkwell 847 tests including real PostgreSQL, packaged
+consumer checks (TypeScript and Python) and OFL 21 agent tests with PostgreSQL.
+These are implementation checks; the live deployment check is recorded separately.
+
+Physical model calls emit Inkwell call-ledger records to private structured logs:
+role, outcome, latency, model/provider and reported usage. Records contain no
+prompt, response, source text or user identity. Source-only workflows create no
+model-call record. Model usage is not a measurement of financial task quality.

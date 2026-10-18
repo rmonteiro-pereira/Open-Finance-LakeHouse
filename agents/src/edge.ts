@@ -1,10 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
-import { actor, actorId, createChat, type ConversationStore, type ModelPort, type TranscriptPort } from "@inkwell/core";
+import { actor, actorId, createChat, type ConversationStore, type ModelPort, type TranscriptPort, type CallLedger } from "@inkwell/core";
 import { createChatServer } from "@inkwell/server";
 import { CATALOG, SPECIALISTS, oflAgent, type Specialist } from "./agents";
 import type { ResearchSource } from "./source";
-import { evidencePlanner } from "./planner";
+import {guidedDocuments} from "./guided";
+import { evidencePlanner, researchOffer } from "./planner";
 export interface EdgeConfig {
+  ledger?:CallLedger;
   gatewayToken: string; origin: string; model: ModelPort; modelName: string;
   guidedDocuments?:boolean; noThinking?: boolean; modelTimeoutMs?:number; turnTimeoutMs?:number; modelMaxTokens?:number;
   source(identity: string): ResearchSource;
@@ -41,11 +43,14 @@ export function createOflEdge(config: EdgeConfig) {
     if (!server) {
       // Bound memory without evicting active streamed turns or weakening durable ownership.
       if (servers.size >= 256) return json({detail: "Agent session capacity reached"}, 503);
-      const chat = createChat({agent: oflAgent(kind, source), model: evidencePlanner(config.model, kind, async (id, signal) => {const value = await source.read(`passages/${id}`, {}, signal) as {passage?:{text?:string}}; return value.passage?.text;}, config.noThinking ? "\n/no_think" : "", config.guidedDocuments),
-        roles: {research: {model: config.modelName, maxTokens: config.modelMaxTokens??2048, timeoutMs: config.modelTimeoutMs??60_000}},
-        conversations: config.conversations(kind), transcript: config.transcript?.(kind),
-        // Bounded search/context/extractive synthesis; source values remain exact tables.
-        policy: {maxModelSteps: 6, maxToolCallsPerTurn: 12, policyVersion: "ofl/grounded-excerpts/2"},
+      const resolvePassage=async (id:string,signal?:AbortSignal)=>{const value=await source.read(`passages/${id}`,{},signal) as {passage?:{text?:string}};return value.passage?.text;};
+      const definition=oflAgent(kind,source);
+      definition.offer=(ctx,specs)=>researchOffer(kind,ctx.userProse,specs);
+      if(config.guidedDocuments)definition.replyStep=(ctx,step)=>guidedDocuments(ctx,step,ctx.userProse,resolvePassage);
+      const chat = createChat({agent:definition, model:evidencePlanner(config.model,kind,resolvePassage,config.noThinking?"\n/no_think":""),
+        roles:{research:{model:config.modelName,maxTokens:config.modelMaxTokens??2048,timeoutMs:config.modelTimeoutMs??60_000},interpretation:{model:config.modelName,maxTokens:128,timeoutMs:45_000}},
+        ledger:config.ledger,conversations:config.conversations(kind),transcript:config.transcript?.(kind),
+        policy:{maxModelSteps:6,maxToolCallsPerTurn:12,policyVersion:"ofl/typed-source-workflow/3"},
       });
       server = createChatServer({chat, prefix: `/api/agents/${kind}`, authenticate: async () => actor(identity)});
       servers.set(key, server);

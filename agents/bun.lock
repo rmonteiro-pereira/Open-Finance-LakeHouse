@@ -5,10 +5,10 @@
     "": {
       "name": "ofl-research-agents",
       "dependencies": {
-        "@inkwell/core": "file:vendor/inkwell-core-0.1.0.tgz",
-        "@inkwell/protocol": "file:vendor/inkwell-protocol-0.1.0.tgz",
-        "@inkwell/server": "file:vendor/inkwell-server-0.1.0.tgz",
-        "@inkwell/store-postgres": "file:vendor/inkwell-store-postgres-0.1.0.tgz",
+        "@inkwell/core": "file:vendor/inkwell-core-0.1.1-fc48ca126123.tgz",
+        "@inkwell/protocol": "file:vendor/inkwell-protocol-0.1.1-059fc8d11612.tgz",
+        "@inkwell/server": "file:vendor/inkwell-server-0.1.1-f7cfda97fed2.tgz",
+        "@inkwell/store-postgres": "file:vendor/inkwell-store-postgres-0.1.1-d14745fb8289.tgz",
         "zod": "^4.0.0",
       },
       "devDependencies": {
@@ -18,17 +18,17 @@
     },
   },
   "overrides": {
-    "@inkwell/core": "file:vendor/inkwell-core-0.1.0.tgz",
-    "@inkwell/protocol": "file:vendor/inkwell-protocol-0.1.0.tgz",
+    "@inkwell/core": "file:vendor/inkwell-core-0.1.1-fc48ca126123.tgz",
+    "@inkwell/protocol": "file:vendor/inkwell-protocol-0.1.1-059fc8d11612.tgz",
   },
   "packages": {
-    "@inkwell/core": ["@inkwell/core@vendor/inkwell-core-0.1.0.tgz", { "dependencies": { "@inkwell/protocol": "0.1.0", "zod": "^4.0.0" } }, "sha512-GTGFXu23T2civL7TWsMqyWHi3TmKwfd8QDbmW4VUdFNmp8NsNu8L3RX0vKvuOsG67njlMbKbmqYGpJepXusBRg=="],
+    "@inkwell/core": ["@inkwell/core@vendor/inkwell-core-0.1.1-fc48ca126123.tgz", { "dependencies": { "@inkwell/protocol": "0.1.1", "zod": "^4.0.0" } }, "sha512-8+1BU0VvTB3MJMeDasVTkZHzSQi4ZVZCj47GfR/qnUW9oU1IWLKCWJXgteVvUOWIvnZtxnCLWbegJiTsjPTMYA=="],
 
-    "@inkwell/protocol": ["@inkwell/protocol@vendor/inkwell-protocol-0.1.0.tgz", { "dependencies": { "zod": "^4.0.0" } }, "sha512-i+810WnwbMOgNeN6SY0A2Ys5AAH6jsg/hm++AVtQKGVbJbIljLeQqn3LOhvbv8QIjgJdFPqsA/ZBuE1lNlAZZA=="],
+    "@inkwell/protocol": ["@inkwell/protocol@vendor/inkwell-protocol-0.1.1-059fc8d11612.tgz", { "dependencies": { "zod": "^4.0.0" } }, "sha512-PUY/Xj192xr5H8fiIolRGNNrw68ty5sjjW9cTdEQYjd4qTHU2BD7mK9wjmucQQvzVC7LRhslnPXXdGrd3r4cLg=="],
 
-    "@inkwell/server": ["@inkwell/server@vendor/inkwell-server-0.1.0.tgz", { "dependencies": { "@inkwell/core": "0.1.0", "@inkwell/protocol": "0.1.0", "zod": "^4.0.0" } }, "sha512-fZuc9A30ffZabq1fYNettp60k9EkLwd6Mmt5/YzJcE87U82szXC9VbUSKbLpAf46is46DiyYh6ejDFzlflasdA=="],
+    "@inkwell/server": ["@inkwell/server@vendor/inkwell-server-0.1.1-f7cfda97fed2.tgz", { "dependencies": { "@inkwell/core": "0.1.1", "@inkwell/protocol": "0.1.1", "zod": "^4.0.0" } }, "sha512-BFbKvHsVegiSd0uHPpGqPS+pohAoD6WFfmlrTp8yWOnwecgWFxXuFkPOvdMqgkZOd59Z6U7u8WR+K32+bgTs1w=="],
 
-    "@inkwell/store-postgres": ["@inkwell/store-postgres@vendor/inkwell-store-postgres-0.1.0.tgz", { "dependencies": { "@inkwell/core": "0.1.0", "@inkwell/protocol": "0.1.0" } }, "sha512-4idiYJPUvMpEa8Hqro/8xSDERNu5ikNwZPRqAZQ+9yTdDoxdLSF7K+dPoNLztDqld76bDHMf3z0B1SFYPYf5aw=="],
+    "@inkwell/store-postgres": ["@inkwell/store-postgres@vendor/inkwell-store-postgres-0.1.1-d14745fb8289.tgz", { "dependencies": { "@inkwell/core": "0.1.1", "@inkwell/protocol": "0.1.1" } }, "sha512-4QQDL4LUnCwxaGpOKeqHg8vImienaXaXKHDnncEtEFAPDzsYZi/mAivpxXi7bVS/Q3A9/2afbTdmEAeDPeg3VA=="],
 
     "@types/bun": ["@types/bun@1.4.3", "", { "dependencies": { "bun-types": "1.4.3" } }, "sha512-N67Pqy8JXbAY/j0tNraS3V5mubGvc6rrrNDmDCtZLlFzccbUJPDb0tvgUBC5q4m8ybkP93Jcn1QB+RYQ6PvBhw=="],
 
