@@ -183,3 +183,8 @@ with no reasoning output. The compatibility/text-instruction path had exhausted
 its output budget without final content. Added native protocol support, bounded
 output/cancellation and explicit per-call/turn/proxy budgets; full-edge validation
 is separate from native smoke checks. Fifteen local Inkwell tests/typecheck pass.
+
+Research-to-dossier handoff now transfers the executed question and selected
+passage IDs directly; users need not copy internal identifiers. Research/dossier
+components retain state across tab switches. Agent UI supports cancellation and
+rejects reversed date scopes before spending a model call.

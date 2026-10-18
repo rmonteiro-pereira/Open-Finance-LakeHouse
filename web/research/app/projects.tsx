@@ -7,9 +7,9 @@ export async function writeResearch(path:string, body:unknown) {
   const result=await fetch(`/api/research/${path}`,{method:"POST",headers:{"Content-Type":"application/json","Idempotency-Key":crypto.randomUUID()},body:JSON.stringify(body)});
   const data=await result.json();if(!result.ok)throw Error(typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail));return data;
 }
-export default function Projects({kind="investigation"}:{kind?:string}) {
+export default function Projects({kind="investigation",initial}:{kind?:string;initial?:{question:string;references:string[]}}) {
   const [items,setItems]=useState<Saved[]>([]);const [id,setId]=useState("");const [revision,setRevision]=useState(0);
-  const [title,setTitle]=useState("");const [question,setQuestion]=useState("");const [references,setReferences]=useState("");
+  const [title,setTitle]=useState(initial?.question.slice(0,100)??"");const [question,setQuestion]=useState(initial?.question??"");const [references,setReferences]=useState(initial?.references.join(", ")??"");
   const [findings,setFindings]=useState<{kind:string;text:string;references:string[]}[]>([]);const [finding,setFinding]=useState("");const [findingKind,setFindingKind]=useState("interpretation");const [limitations,setLimitations]=useState("");
   const [message,setMessage]=useState("");const [busy,setBusy]=useState(false);const [history,setHistory]=useState<Row[]>([]);const [inspection,setInspection]=useState(false);const [artifact,setArtifact]=useState<Row|null>(null);
   const [schedule,setSchedule]=useState(60);
@@ -30,7 +30,7 @@ export default function Projects({kind="investigation"}:{kind?:string}) {
       {kind!=="watchlist"&&<label>{kind==="check"?"Termos da busca":"Pergunta da pesquisa"}<textarea value={question} maxLength={2000} onChange={e=>setQuestion(e.target.value)}/></label>}
       {kind==="check"&&<label>Tipo<select value={checkType} onChange={e=>setCheckType(e.target.value)}><option value="search">Busca por tema</option><option value="coverage">Cobertura e lacunas registradas</option></select></label>}
       {kind==="watchlist"&&<label>Instrumentos — uma linha por instrumento: ISIN, mercado, moeda, distribuição, ticker opcional<textarea rows={6} value={watch} onChange={e=>setWatch(e.target.value)} placeholder="BRPETRACNPR6,010,R$,100,PETR4"/></label>}
-      {kind==="investigation"&&<><label>Referências das passagens, separadas por vírgula<input value={references} onChange={e=>setReferences(e.target.value)}/></label><p className="muted">Na Pesquisa, adicione trechos à seleção e copie as referências para este dossiê. O servidor captura texto e origem; observações precisam ser citações literais.</p>
+      {kind==="investigation"&&<><label>Referências das passagens, separadas por vírgula<input value={references} onChange={e=>setReferences(e.target.value)}/></label><p className="muted">Na Pesquisa, selecione trechos e use “Criar dossiê com esta seleção”. As referências são preenchidas automaticamente. O servidor captura texto e origem; observações precisam ser citações literais.</p>
         <label>Tipo de achado<select value={findingKind} onChange={e=>setFindingKind(e.target.value)}><option value="interpretation">Interpretação — hipótese do autor</option><option value="observation">Observação — trecho literal da fonte</option><option value="counterpoint">Contraponto</option><option value="limitation">Limitação</option></select></label><label>Achado<textarea value={finding} maxLength={4000} onChange={e=>setFinding(e.target.value)}/></label><button disabled={!finding.trim()} onClick={()=>{setFindings([...findings,{kind:findingKind,text:finding,references:references.split(",").map(s=>s.trim()).filter(Boolean)}]);setFinding("");}}>Adicionar achado</button>
         {findings.map((f,i)=><article className="finding" key={i}><strong>{f.kind}</strong><p>{f.text}</p><small>{f.references.join(", ")}</small><button onClick={()=>setFindings(findings.filter((_,j)=>j!==i))}>Remover achado {i+1}</button></article>)}
         <label>Limitações e próximos testes<textarea value={limitations} onChange={e=>setLimitations(e.target.value)}/></label></>}

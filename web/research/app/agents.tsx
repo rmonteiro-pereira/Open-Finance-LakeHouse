@@ -56,6 +56,7 @@ export default function Agents() {
   }
   async function send() {
     if (!question.trim() || busy) return;
+    if(scopeFrom && scopeTo && scopeFrom>scopeTo){setError("A data inicial deve ser anterior à data final.");return;}
     await run(async () => {
       const controller = new AbortController(); request.current = controller;
       let id = conversationId;
@@ -93,7 +94,7 @@ export default function Agents() {
       <div className="filters"><label>Especialista<select value={specialist} disabled={busy} onChange={e => selectSpecialist(e.target.value)}>{specialists.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
       <label>Investigação salva<select value={conversationId} disabled={busy} onChange={e => e.target.value ? void open(e.target.value) : (setConversationId(""), setMessages([]))}><option value="">Nova investigação</option>{conversations.map(c => {const id = c.conversationId ?? c.id ?? ""; return <option key={id} value={id}>{c.title ?? id}</option>;})}</select></label>
       <button disabled={!messages.length} onClick={download}>Exportar evidências JSON</button><button disabled={!messages.length} onClick={downloadMarkdown}>Exportar relatório</button></div>
-      <p className="muted">Mercado: informe ativo, código do mercado e período. Acervo: datas se referem ao catálogo. Qualidade: consultas não aprovam nem reprocessam dados.</p>
+      <p className="muted">Para pesquisar um tema, comece pela pergunta. Cotações exigem ativo, mercado e período; datas dos documentos são de publicação. Hipóteses interpretativas precisam de revisão.</p>
     </section>
     {messages.length > 0 && <section className="card"><h3>Consultar outro especialista</h3><p>A pergunta e as referências serão copiadas para uma nova investigação. O histórico original permanece salvo.</p>{specialists.filter(s => s.id !== specialist).map(s => <button key={s.id} disabled={busy} onClick={() => handoff(s.id)}>{s.title}</button>)}</section>}
     {error && <p role="alert" className="status error">{error}</p>}{status && <p role="status">{status}</p>}
