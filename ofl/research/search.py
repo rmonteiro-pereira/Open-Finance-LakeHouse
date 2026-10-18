@@ -87,23 +87,26 @@ def embed_pending(db, limit=1000, heartbeat=lambda _: None):
         (settings.embedding_model, settings.embedding_revision, limit),
     )
     # CPU-backed remote models can exceed the request deadline on eight long
-    # passages. Persist each result independently so retries retain progress.
-    batch_size = 1 if settings.embedding_url else 8
+    # passages. Keep that safe default; measured GPU workers can opt into bounded batches.
+    # Each committed batch survives retries, with progress after every commit.
+    batch_size = settings.embedding_batch_size if settings.embedding_url else 8
     for start in range(0, len(rows), batch_size):
         batch = rows[start : start + batch_size]
         vectors = embed(settings, [row["text"] for row in batch])
         with db.connect() as con:
-            for row, vector in zip(batch, vectors, strict=True):
-                con.execute(
-                    """INSERT INTO embeddings(passage_id,model,revision,embedding)
-                    VALUES (%s,%s,%s,%s::vector) ON CONFLICT DO NOTHING""",
+            con.cursor().executemany(
+                """INSERT INTO embeddings(passage_id,model,revision,embedding)
+                VALUES (%s,%s,%s,%s::vector) ON CONFLICT DO NOTHING""",
+                [
                     (
                         row["id"],
                         settings.embedding_model,
                         settings.embedding_revision,
                         vector_literal(vector, settings.embedding_dimensions),
-                    ),
-                )
+                    )
+                    for row, vector in zip(batch, vectors, strict=True)
+                ],
+            )
         heartbeat({"embedded": min(start + batch_size, len(rows)), "total": len(rows)})
     return len(rows)
 

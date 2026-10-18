@@ -267,3 +267,37 @@ Research CI passed all 255 tests including optional OCR/vector-pilot dependencie
 The minimal unit lane initially could not collect the new integration module
 without FastAPI; align its dependency guard with the other research suites. The
 research lane continues to execute these tests against PostgreSQL.
+
+## Deployed retrieval capacity acceptance — 2026-10-18
+
+Public implementation PR #71 is merged. The private GitOps rollout applied the
+pinned application images and separate default, embedding and checks workers;
+all seven deployments became ready. A temporary owned saved check completed in
+4.03 seconds while a real 64-passage indexing job remained running and had
+persisted a new vector. The temporary check and its revisions were removed.
+
+A browser exercised the deployed application through an SSH loopback tunnel with
+a configured test identity at the trusted application boundary: dashboard/search
+coverage, mobile layout and zero client errors passed. This does not retest
+Tailscale authentication. The local Tailscale client had no active network state;
+direct DNS/route attempts failed. Observed coverage was 358 of 9,491 active
+passages (3.8%); these are changing point-in-time counts, not relevance scores.
+
+Research CI passed 255 tests; the agent suite passed 22 with PostgreSQL and
+typechecking. All main image builds passed. Request-local synthesis experiments
+were rejected: one structured-response attempt timed out after 45.07 seconds;
+a compact response took 40.61 seconds and failed draft validation. Production
+model selection and configuration remain unchanged. Detailed acceptance evidence
+is in docs/product/evidence/retrieval-capacity-acceptance.json. Useful supported
+synthesis and independent user task outcomes remain open gates.
+
+
+GPU follow-up: use the available local RTX 4090 with the exact pinned BGE-M3
+manifest/weights, verified by digest and 100% GPU residency. Observed synthetic
+indexing times for twenty documents: CPU 423.48 s, GPU batch-one 67.32 s including
+first model load, GPU batch-eight warm 7.62 s. Database location, inference
+versions and load differ; this is operational evidence rather than a controlled
+hardware benchmark. Aggregate retrieval metrics agreed across all three runs;
+vector/hybrid failed the absent-topic case. Add configurable bounded remote
+batches (default one, GPU opt-in up to 32) and pipelined inserts, with a real
+PostgreSQL interruption/retry test. Local suite: 253 passed, three optional skips.

@@ -251,3 +251,35 @@ def test_public_synthetic_fixture_cleans_only_its_temporary_schema(research, mon
     assert not db.rows(
         "SELECT nspname FROM pg_namespace WHERE nspname LIKE %s", ("ofl_retrieval_eval_%",)
     )
+
+
+def test_remote_embedding_batches_keep_committed_progress_on_retry(research, monkeypatch):
+    from ofl.research.search import embed_pending
+
+    db, _ = research
+    db.settings.embedding_url = "http://measured-gpu.invalid"
+    db.settings.embedding_batch_size = 2
+    with db.connect() as con:
+        for number in range(5):
+            upsert_item(con, "news", {"source_id": str(number), "title": f"Documento {number}"}, str(number))
+    calls, progress = [], []
+
+    def interrupted(_settings, texts):
+        calls.append(len(texts))
+        if len(calls) == 2:
+            raise TimeoutError("worker lost its inference connection")
+        return [[1, 0, 0] for _ in texts]
+
+    monkeypatch.setattr("ofl.research.search.embed", interrupted)
+    with pytest.raises(TimeoutError):
+        embed_pending(db, 5, progress.append)
+    assert index_coverage(db)["indexed_passages"] == 2
+    assert progress == [{"embedded": 2, "total": 5}]
+    calls.clear()
+    monkeypatch.setattr(
+        "ofl.research.search.embed",
+        lambda _settings, texts: calls.append(len(texts)) or [[1, 0, 0] for _ in texts],
+    )
+    assert embed_pending(db, 5, progress.append) == 3
+    assert calls == [2, 1]
+    assert index_coverage(db)["status"] == "complete"

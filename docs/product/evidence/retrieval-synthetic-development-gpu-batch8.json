@@ -1,0 +1,592 @@
+{
+  "version": 1,
+  "status": "measured",
+  "unit": "document",
+  "k": 10,
+  "judgments_sha256": "2999b06cc9ffcf522fb9e219194adead71a660a1a86747da4d51b515adae337b",
+  "corpus": {
+    "sha256": "1c66d1cb502bb7b3a3185fad62423b04963d70bced4e1a102d0d4c5d49451965",
+    "passages": 20,
+    "model": "bge-m3-cpu:latest",
+    "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+    "coverage": {
+      "configured": true,
+      "model": "bge-m3-cpu:latest",
+      "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+      "eligible_passages": 20,
+      "indexed_passages": 20,
+      "pending_passages": 0,
+      "fraction": 1.0,
+      "status": "complete",
+      "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+    }
+  },
+  "split": "development",
+  "judge": "OFL-authored synthetic fixture v1; no independent relevance judgments or participants",
+  "planned_cases": 6,
+  "ineligible_cases": 0,
+  "query_embedding_reused_between_modes": true,
+  "summary": {
+    "keyword": {
+      "eligible": 6,
+      "errors": 0,
+      "recall_at_10": 0.2,
+      "ndcg_at_10": 0.2,
+      "reciprocal_rank": 0.2,
+      "expected_empty_correct": 1
+    },
+    "vector": {
+      "eligible": 6,
+      "errors": 0,
+      "recall_at_10": 1.0,
+      "ndcg_at_10": 1.0,
+      "reciprocal_rank": 1.0,
+      "expected_empty_correct": 0
+    },
+    "hybrid": {
+      "eligible": 6,
+      "errors": 0,
+      "recall_at_10": 1.0,
+      "ndcg_at_10": 1.0,
+      "reciprocal_rank": 1.0,
+      "expected_empty_correct": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "credit",
+      "eligible": true,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "f8257e6ad41d4356553ecc1258d24f294d72d2ffab0f676ea13171659fb43f16"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 1358.2180950002112
+        },
+        "vector": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "f8257e6ad41d4356553ecc1258d24f294d72d2ffab0f676ea13171659fb43f16",
+            "c537226b48352f08e0bc83ca9557b4e9b3ccb21ca8f8b0d66dca5413c0d1dda0",
+            "d1552ab323e1e705fe6da7bc3f7127b5bae9d2747bdc65d1b8e7cedc664c4030",
+            "58b741646d32ebf2b9d6f804b6a6b08adcdd099cce8f8449977571469452d22a",
+            "2299bd09223cbeaa092413d177d75d41a471cd4c2da1ccce5487af77a1da1b07",
+            "a54297f4bd5b7d82c2155454d044fedac30669c90835074a8733342c0ddc011f",
+            "fd225adb6d7c58836f35ead933eb8f02a51b284d4a7e517fa195cd5aafc4c4c3",
+            "6ec9512e0311f0b25bf5d8745e8b1d262b550748179b49e641fab98f6afeaf13",
+            "a05f5aacab3fc9df9a5a00de46e662ff1ad66da6b1171549d80fd340f12070ad",
+            "ea34b6ce8c629f82d1f45ac19ef4c005f5583bd2b6de27efa3adb27569d79520"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2300.77842899982
+        },
+        "hybrid": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "f8257e6ad41d4356553ecc1258d24f294d72d2ffab0f676ea13171659fb43f16",
+            "c537226b48352f08e0bc83ca9557b4e9b3ccb21ca8f8b0d66dca5413c0d1dda0",
+            "d1552ab323e1e705fe6da7bc3f7127b5bae9d2747bdc65d1b8e7cedc664c4030",
+            "58b741646d32ebf2b9d6f804b6a6b08adcdd099cce8f8449977571469452d22a",
+            "2299bd09223cbeaa092413d177d75d41a471cd4c2da1ccce5487af77a1da1b07",
+            "a54297f4bd5b7d82c2155454d044fedac30669c90835074a8733342c0ddc011f",
+            "fd225adb6d7c58836f35ead933eb8f02a51b284d4a7e517fa195cd5aafc4c4c3",
+            "6ec9512e0311f0b25bf5d8745e8b1d262b550748179b49e641fab98f6afeaf13",
+            "a05f5aacab3fc9df9a5a00de46e662ff1ad66da6b1171549d80fd340f12070ad",
+            "ea34b6ce8c629f82d1f45ac19ef4c005f5583bd2b6de27efa3adb27569d79520"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2767.14850999997
+        }
+      },
+      "query_embedding_ms": 314.8484559997087
+    },
+    {
+      "id": "prices",
+      "eligible": true,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "ranked_item_ids": [],
+          "recall_at_10": 0.0,
+          "ndcg_at_10": 0.0,
+          "reciprocal_rank": 0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 1555.6815210002242
+        },
+        "vector": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "c537226b48352f08e0bc83ca9557b4e9b3ccb21ca8f8b0d66dca5413c0d1dda0",
+            "f8257e6ad41d4356553ecc1258d24f294d72d2ffab0f676ea13171659fb43f16",
+            "2299bd09223cbeaa092413d177d75d41a471cd4c2da1ccce5487af77a1da1b07",
+            "a54297f4bd5b7d82c2155454d044fedac30669c90835074a8733342c0ddc011f",
+            "58b741646d32ebf2b9d6f804b6a6b08adcdd099cce8f8449977571469452d22a",
+            "ddbc5fbe3b7daad8cb5d1b6b129d0405153a211b7e0f6961c0605c820188a1fc",
+            "ea34b6ce8c629f82d1f45ac19ef4c005f5583bd2b6de27efa3adb27569d79520",
+            "3d0f9a0b3f0aad370681fca41184499f156b567908696a4de0abdcae830ffbe7",
+            "067ad156339411d2ff8c0e2e3763610386f18481a2f2f7057b6c35a518867251",
+            "d1552ab323e1e705fe6da7bc3f7127b5bae9d2747bdc65d1b8e7cedc664c4030"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2021.5932050000447
+        },
+        "hybrid": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "c537226b48352f08e0bc83ca9557b4e9b3ccb21ca8f8b0d66dca5413c0d1dda0",
+            "f8257e6ad41d4356553ecc1258d24f294d72d2ffab0f676ea13171659fb43f16",
+            "2299bd09223cbeaa092413d177d75d41a471cd4c2da1ccce5487af77a1da1b07",
+            "a54297f4bd5b7d82c2155454d044fedac30669c90835074a8733342c0ddc011f",
+            "58b741646d32ebf2b9d6f804b6a6b08adcdd099cce8f8449977571469452d22a",
+            "ddbc5fbe3b7daad8cb5d1b6b129d0405153a211b7e0f6961c0605c820188a1fc",
+            "ea34b6ce8c629f82d1f45ac19ef4c005f5583bd2b6de27efa3adb27569d79520",
+            "3d0f9a0b3f0aad370681fca41184499f156b567908696a4de0abdcae830ffbe7",
+            "067ad156339411d2ff8c0e2e3763610386f18481a2f2f7057b6c35a518867251",
+            "d1552ab323e1e705fe6da7bc3f7127b5bae9d2747bdc65d1b8e7cedc664c4030"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 3039.4339610002135
+        }
+      },
+      "query_embedding_ms": 287.6313100000516
+    },
+    {
+      "id": "portfolio",
+      "eligible": true,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "ranked_item_ids": [],
+          "recall_at_10": 0.0,
+          "ndcg_at_10": 0.0,
+          "reciprocal_rank": 0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2030.8356969999295
+        },
+        "vector": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "ddbc5fbe3b7daad8cb5d1b6b129d0405153a211b7e0f6961c0605c820188a1fc",
+            "fd225adb6d7c58836f35ead933eb8f02a51b284d4a7e517fa195cd5aafc4c4c3",
+            "f8257e6ad41d4356553ecc1258d24f294d72d2ffab0f676ea13171659fb43f16",
+            "58b741646d32ebf2b9d6f804b6a6b08adcdd099cce8f8449977571469452d22a",
+            "a54297f4bd5b7d82c2155454d044fedac30669c90835074a8733342c0ddc011f",
+            "a05f5aacab3fc9df9a5a00de46e662ff1ad66da6b1171549d80fd340f12070ad",
+            "6ec9512e0311f0b25bf5d8745e8b1d262b550748179b49e641fab98f6afeaf13",
+            "2299bd09223cbeaa092413d177d75d41a471cd4c2da1ccce5487af77a1da1b07",
+            "c537226b48352f08e0bc83ca9557b4e9b3ccb21ca8f8b0d66dca5413c0d1dda0",
+            "ea34b6ce8c629f82d1f45ac19ef4c005f5583bd2b6de27efa3adb27569d79520"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2309.025331000157
+        },
+        "hybrid": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "ddbc5fbe3b7daad8cb5d1b6b129d0405153a211b7e0f6961c0605c820188a1fc",
+            "fd225adb6d7c58836f35ead933eb8f02a51b284d4a7e517fa195cd5aafc4c4c3",
+            "f8257e6ad41d4356553ecc1258d24f294d72d2ffab0f676ea13171659fb43f16",
+            "58b741646d32ebf2b9d6f804b6a6b08adcdd099cce8f8449977571469452d22a",
+            "a54297f4bd5b7d82c2155454d044fedac30669c90835074a8733342c0ddc011f",
+            "a05f5aacab3fc9df9a5a00de46e662ff1ad66da6b1171549d80fd340f12070ad",
+            "6ec9512e0311f0b25bf5d8745e8b1d262b550748179b49e641fab98f6afeaf13",
+            "2299bd09223cbeaa092413d177d75d41a471cd4c2da1ccce5487af77a1da1b07",
+            "c537226b48352f08e0bc83ca9557b4e9b3ccb21ca8f8b0d66dca5413c0d1dda0",
+            "ea34b6ce8c629f82d1f45ac19ef4c005f5583bd2b6de27efa3adb27569d79520"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2819.8643660002745
+        }
+      },
+      "query_embedding_ms": 308.1287400000292
+    },
+    {
+      "id": "dataset",
+      "eligible": true,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "ranked_item_ids": [],
+          "recall_at_10": 0.0,
+          "ndcg_at_10": 0.0,
+          "reciprocal_rank": 0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2396.393384000021
+        },
+        "vector": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "ff983622d6ad50a120d3e212df4bf6893d5cc30b2fb779b4e1c3cc7469ba067f",
+            "10c30fb158e490fce0db81b4a2be38a436142237cad900a6a3825cd18a05afad",
+            "311f5e77df70ad0f6a67a271c8a4693283a81d1532c64cdf5489139d359b29b9",
+            "30d69ad6d76e01df451a7360e33d73340a878a0005b536a9028836bd3419665c",
+            "2299bd09223cbeaa092413d177d75d41a471cd4c2da1ccce5487af77a1da1b07",
+            "71b47f53a60d9422b36fa5b985470a4faf31006de0c6d699bf5847d3bef26479",
+            "ddbc5fbe3b7daad8cb5d1b6b129d0405153a211b7e0f6961c0605c820188a1fc",
+            "c537226b48352f08e0bc83ca9557b4e9b3ccb21ca8f8b0d66dca5413c0d1dda0",
+            "a05f5aacab3fc9df9a5a00de46e662ff1ad66da6b1171549d80fd340f12070ad",
+            "fd225adb6d7c58836f35ead933eb8f02a51b284d4a7e517fa195cd5aafc4c4c3"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2120.8551109998552
+        },
+        "hybrid": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "ff983622d6ad50a120d3e212df4bf6893d5cc30b2fb779b4e1c3cc7469ba067f",
+            "10c30fb158e490fce0db81b4a2be38a436142237cad900a6a3825cd18a05afad",
+            "311f5e77df70ad0f6a67a271c8a4693283a81d1532c64cdf5489139d359b29b9",
+            "30d69ad6d76e01df451a7360e33d73340a878a0005b536a9028836bd3419665c",
+            "2299bd09223cbeaa092413d177d75d41a471cd4c2da1ccce5487af77a1da1b07",
+            "71b47f53a60d9422b36fa5b985470a4faf31006de0c6d699bf5847d3bef26479",
+            "ddbc5fbe3b7daad8cb5d1b6b129d0405153a211b7e0f6961c0605c820188a1fc",
+            "c537226b48352f08e0bc83ca9557b4e9b3ccb21ca8f8b0d66dca5413c0d1dda0",
+            "a05f5aacab3fc9df9a5a00de46e662ff1ad66da6b1171549d80fd340f12070ad",
+            "fd225adb6d7c58836f35ead933eb8f02a51b284d4a7e517fa195cd5aafc4c4c3"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2571.3608650003152
+        }
+      },
+      "query_embedding_ms": 304.55422700015333
+    },
+    {
+      "id": "letter",
+      "eligible": true,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "ranked_item_ids": [],
+          "recall_at_10": 0.0,
+          "ndcg_at_10": 0.0,
+          "reciprocal_rank": 0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 1,
+            "indexed_passages": 1,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 1824.7846449999088
+        },
+        "vector": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "58b741646d32ebf2b9d6f804b6a6b08adcdd099cce8f8449977571469452d22a"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 1,
+            "indexed_passages": 1,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 1475.8183530002498
+        },
+        "hybrid": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "58b741646d32ebf2b9d6f804b6a6b08adcdd099cce8f8449977571469452d22a"
+          ],
+          "recall_at_10": 1.0,
+          "ndcg_at_10": 1.0,
+          "reciprocal_rank": 1.0,
+          "expected_empty_correct": null,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 1,
+            "indexed_passages": 1,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2267.366380999647
+        }
+      },
+      "query_embedding_ms": 314.9709740000617
+    },
+    {
+      "id": "empty",
+      "eligible": true,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "ranked_item_ids": [],
+          "recall_at_10": null,
+          "ndcg_at_10": null,
+          "reciprocal_rank": null,
+          "expected_empty_correct": true,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2540.9511369998654
+        },
+        "vector": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "ddbc5fbe3b7daad8cb5d1b6b129d0405153a211b7e0f6961c0605c820188a1fc",
+            "ea34b6ce8c629f82d1f45ac19ef4c005f5583bd2b6de27efa3adb27569d79520",
+            "2299bd09223cbeaa092413d177d75d41a471cd4c2da1ccce5487af77a1da1b07",
+            "10c30fb158e490fce0db81b4a2be38a436142237cad900a6a3825cd18a05afad",
+            "a54297f4bd5b7d82c2155454d044fedac30669c90835074a8733342c0ddc011f",
+            "f8257e6ad41d4356553ecc1258d24f294d72d2ffab0f676ea13171659fb43f16",
+            "311f5e77df70ad0f6a67a271c8a4693283a81d1532c64cdf5489139d359b29b9",
+            "ff983622d6ad50a120d3e212df4bf6893d5cc30b2fb779b4e1c3cc7469ba067f",
+            "378c581eac94561126df9ade3fbb892317d8f73fa5b18e883befc985edc49f62",
+            "24c86d1c0367a91397780102c5a67ca9d16c82111dbfd1c34697008210b32e18"
+          ],
+          "recall_at_10": null,
+          "ndcg_at_10": null,
+          "reciprocal_rank": null,
+          "expected_empty_correct": false,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2030.4813919997287
+        },
+        "hybrid": {
+          "status": "ok",
+          "ranked_item_ids": [
+            "ddbc5fbe3b7daad8cb5d1b6b129d0405153a211b7e0f6961c0605c820188a1fc",
+            "ea34b6ce8c629f82d1f45ac19ef4c005f5583bd2b6de27efa3adb27569d79520",
+            "2299bd09223cbeaa092413d177d75d41a471cd4c2da1ccce5487af77a1da1b07",
+            "10c30fb158e490fce0db81b4a2be38a436142237cad900a6a3825cd18a05afad",
+            "a54297f4bd5b7d82c2155454d044fedac30669c90835074a8733342c0ddc011f",
+            "f8257e6ad41d4356553ecc1258d24f294d72d2ffab0f676ea13171659fb43f16",
+            "311f5e77df70ad0f6a67a271c8a4693283a81d1532c64cdf5489139d359b29b9",
+            "ff983622d6ad50a120d3e212df4bf6893d5cc30b2fb779b4e1c3cc7469ba067f",
+            "378c581eac94561126df9ade3fbb892317d8f73fa5b18e883befc985edc49f62",
+            "24c86d1c0367a91397780102c5a67ca9d16c82111dbfd1c34697008210b32e18"
+          ],
+          "recall_at_10": null,
+          "ndcg_at_10": null,
+          "reciprocal_rank": null,
+          "expected_empty_correct": false,
+          "coverage": {
+            "configured": true,
+            "model": "bge-m3-cpu:latest",
+            "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+            "eligible_passages": 20,
+            "indexed_passages": 20,
+            "pending_passages": 0,
+            "fraction": 1.0,
+            "status": "complete",
+            "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+          },
+          "retrieval_ms": 2422.143565999704
+        }
+      },
+      "query_embedding_ms": 319.81112900029984
+    }
+  ],
+  "qualification": "Judged retrieval on this frozen corpus only. Latency excludes separately reported query embedding. Errors remain in eligible denominators. A held_out label does not establish independence, synthesis quality or user success.",
+  "fixture": {
+    "version": 1,
+    "documents": 20,
+    "newly_indexed": 20,
+    "indexing_ms": 7623.221575000116,
+    "temporary_schema_removed": true,
+    "qualification": "Authored synthetic development exercise. This is not a held-out, private-corpus, financial-analysis or user benchmark."
+  },
+  "execution_environment": {
+    "hardware": "RTX 4090 24 GB",
+    "ollama_version": "0.40.6",
+    "remote_batch_size": 8,
+    "model_loaded_before_run": true,
+    "database": "remote PostgreSQL over SSH loopback forwarding",
+    "qualification": "Authored development integration run, not a controlled hardware-only benchmark; inference already warm. This run precedes pipelined-insert change."
+  }
+}
