@@ -318,3 +318,28 @@ abstention do not count as requested artifact completion. UI source collection i
 the default, with an explicit experimental interpretation option. Study protocol
 covers finance/data workers, assessores/consultores and lay market/portfolio users;
 no independent reviewers, interviews or participant outcomes are fabricated.
+
+
+## Deployed outcome follow-up — 2026-10-18
+
+OFL #73 (caa3eab) and private agent 1f0eefa are deployed; all seven services ready.
+263 research CI tests, 260 local/three optional skips, 26 agent tests with
+PostgreSQL and typecheck passed. Actual T02 catalog-backed scoping now returned
+in 0.922 s; no dataset export was performed. T10 qualified absence took 1.181 s;
+T21S source collection 3.821 s. T01 still failed the requested brief in 29.888 s.
+Geographic ambiguity remains in a candidate headline. Baseline/no-agent conditions,
+independent relevance judgments and participant outcomes are not evaluated.
+
+Actual production API review binding/stale rejection/export/temporary cleanup
+passed. Browser source-only agent→dossier→source inspection→review controls,
+question invalidation, explicit citation selection and mobile passed with zero
+JS errors over the SSH application boundary, configured identity/origin injected;
+this does not retest Tailscale auth. The browser dossier was unsaved; local real
+PostgreSQL browser acceptance completed save/export as well.
+
+The larger 1.7B CPU candidate timed out at 45 s; the production 0.6B alias produced
+no valid draft in 42.943 s under the same request-local context/token/thread
+profile. No model was promoted, and the production baseline was reloaded.
+Desktop GPU remains a completed backfill resource only. See OUTCOME-TRIALS.md and
+evidence/vps-agent-outcome-followup.json / vps-cpu-model-comparison.json under
+docs/product. The participant study protocol/tooling is ready, not conducted.

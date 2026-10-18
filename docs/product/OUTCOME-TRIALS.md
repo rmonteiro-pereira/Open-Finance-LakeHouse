@@ -125,3 +125,49 @@ planning. Failed catalog access remains a failure to establish eligibility, not
 an empty catalog. Fully dated requests retain the existing preparation route.
 This completes a scoping/clarification step, not a dataset export. The documented
 T02 rehearsal is explicitly a scoping variant of the larger dataset-delivery task.
+
+
+## Deployed follow-up, not participant validation
+
+Public #73 and the private agent were deployed with all seven services ready.
+The same T02 preparation-scoping prompt returned actual catalog metadata and
+missing-rule clarification in 0.922 s; it did not prepare/export a dataset. T10
+returned a qualified gap in 1.181 s. A separate T21S source-collection stage
+returned inspectable references in 3.821 s; it is not the full T21 dossier task.
+T01 returned in 29.888 s but still failed the requested brief, with no valid
+interpretation. A geographic ambiguity in the selected news headline remains a
+review issue. These are single builder-operated development observations on a
+changing live corpus, not controlled user-performance measurements.
+
+The production application browser exercised source-collection mode, actual agent
+to dossier handoff, source inspection/review controls, question invalidation,
+explicit citation selection and mobile layout with zero JavaScript errors.
+Access used the SSH loopback trusted application boundary with configured identity
+and origin injected; Tailscale authentication was not retested. The dossier was
+left unsaved in this browser probe. A separate owned production API probe saved,
+exported, rejected a stale review and removed only its temporary dossier. Full
+save/export browser acceptance also passed on disposable local PostgreSQL.
+
+A larger Qwen3 1.7B was compared with the production 0.6B alias on the VPS CPU,
+using the same captured source excerpts and request-local context of 2,048,
+two threads, batch 64, 128 output tokens and a 45 s generation limit. Model load
+was recorded separately. The 0.6B finished in 42.943 s without a mechanically
+valid draft; 1.7B timed out at 45.062 s. Neither configuration is promoted.
+The production baseline was reloaded with its original context. This establishes
+neither independent claim support nor general model quality. See the sanitized
+follow-up/model reports in evidence/; private raw artifacts remain on research
+storage.
+
+Reproduce the bounded model comparison against a private recorded source artifact:
+
+```sh
+python tools/compare_interpretation_models.py /private/trials/run/T21S-ofl_agent.json \
+  --url "$OFL_EVAL_MODEL_URL" --baseline "$OFL_EVAL_BASELINE_MODEL" \
+  --candidate qwen3:1.7b --output /private/trials/run/model-comparison.json
+```
+
+Download both models on the VPS first. The tool records model digests and excerpt
+hashes, keeps raw output private, and reloads the baseline with the current OFL
+production context/thread profile. It does not select a production model or add
+a desktop dependency. Independent relevance judgments and actual participant
+completion/comprehension/reuse studies remain uncollected.
