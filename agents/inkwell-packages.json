@@ -1,0 +1,30 @@
+{
+  "version": "0.1.1",
+  "source_commit": "f01e741e76be4dd6561b11dfff6ed962a2172ff7",
+  "packages": [
+    {
+      "name": "@inkwell/core",
+      "archive": "inkwell-core-0.1.1.tgz",
+      "vendor": "inkwell-core-0.1.1-fc48ca126123.tgz",
+      "sha256": "fc48ca126123ba48c97ff3a83b2cd49a9f1dd66b17d2961af92706dbc885843d"
+    },
+    {
+      "name": "@inkwell/protocol",
+      "archive": "inkwell-protocol-0.1.1.tgz",
+      "vendor": "inkwell-protocol-0.1.1-059fc8d11612.tgz",
+      "sha256": "059fc8d11612837f20c9f752b8f00fdbbabaeac50137267ee8f8bc44f61aea1e"
+    },
+    {
+      "name": "@inkwell/server",
+      "archive": "inkwell-server-0.1.1.tgz",
+      "vendor": "inkwell-server-0.1.1-f7cfda97fed2.tgz",
+      "sha256": "f7cfda97fed23bce6707329870786aeb88552f3f40cc92a6d710d1899b0b4774"
+    },
+    {
+      "name": "@inkwell/store-postgres",
+      "archive": "inkwell-store-postgres-0.1.1.tgz",
+      "vendor": "inkwell-store-postgres-0.1.1-d14745fb8289.tgz",
+      "sha256": "d14745fb8289c1542764a7b7618b581ffbc11d3626a29d77c02a051ddcaa3a3b"
+    }
+  ]
+}

@@ -1,9 +1,8 @@
 import { SQL } from "bun";
-import { openAiCompatibleModel } from "@inkwell/core";
+import { openAiCompatibleModel, ollamaModel } from "@inkwell/core";
 import { migratePostgres, postgresConversationStore, postgresTranscript } from "@inkwell/store-postgres";
 import { SPECIALISTS } from "./agents";
 import { createOflEdge } from "./edge";
-import { ollamaModel } from "./ollama";
 import { oflSource } from "./source";
 function required(name: string): string {
   const value = process.env[name];
@@ -17,7 +16,7 @@ const token = required("OFL_RESEARCH_GATEWAY_TOKEN");
 const origin = required("OFL_RESEARCH_ORIGIN");
 const modelName = required("OFL_AGENT_MODEL_NAME");
 const model = process.env.OFL_AGENT_MODEL_PROTOCOL === "ollama"
-  ? ollamaModel(required("OFL_AGENT_MODEL_BASE_URL"), process.env.OFL_AGENT_NO_THINK === "1")
+  ? ollamaModel({baseUrl:required("OFL_AGENT_MODEL_BASE_URL"),thinking:process.env.OFL_AGENT_NO_THINK !== "1",keepAlive:-1})
   : openAiCompatibleModel({baseUrl: required("OFL_AGENT_MODEL_BASE_URL"), apiKey: required("OFL_AGENT_MODEL_API_KEY")});
 function budget(name:string, fallback:number, maximum:number){const value=Number(process.env[name]??fallback);if(!Number.isInteger(value)||value<10_000||value>maximum)throw Error(`${name} outside supported bounds`);return value;}
 const outputTokens=Number(process.env.OFL_AGENT_MAX_TOKENS??2048);

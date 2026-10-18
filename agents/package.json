@@ -1,1 +1,26 @@
-{"name":"ofl-research-agents","version":"0.1.0","private":true,"type":"module","scripts":{"start":"bun src/server.ts","test":"bun test","typecheck":"tsc --noEmit"},"dependencies":{"@inkwell/core":"file:vendor/inkwell-core-0.1.0.tgz","@inkwell/protocol":"file:vendor/inkwell-protocol-0.1.0.tgz","@inkwell/server":"file:vendor/inkwell-server-0.1.0.tgz","@inkwell/store-postgres":"file:vendor/inkwell-store-postgres-0.1.0.tgz","zod":"^4.0.0"},"overrides":{"@inkwell/core":"file:vendor/inkwell-core-0.1.0.tgz","@inkwell/protocol":"file:vendor/inkwell-protocol-0.1.0.tgz"},"devDependencies":{"@types/bun":"^1.4.2","typescript":"^5.9.0"}}
+{
+  "name": "ofl-research-agents",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "bun src/server.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@inkwell/core": "file:vendor/inkwell-core-0.1.1-fc48ca126123.tgz",
+    "@inkwell/protocol": "file:vendor/inkwell-protocol-0.1.1-059fc8d11612.tgz",
+    "@inkwell/server": "file:vendor/inkwell-server-0.1.1-f7cfda97fed2.tgz",
+    "@inkwell/store-postgres": "file:vendor/inkwell-store-postgres-0.1.1-d14745fb8289.tgz",
+    "zod": "^4.0.0"
+  },
+  "overrides": {
+    "@inkwell/core": "file:vendor/inkwell-core-0.1.1-fc48ca126123.tgz",
+    "@inkwell/protocol": "file:vendor/inkwell-protocol-0.1.1-059fc8d11612.tgz"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "typescript": "^5.9.0"
+  }
+}
