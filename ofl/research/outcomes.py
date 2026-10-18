@@ -50,7 +50,12 @@ def assess(protocol, trials, assessments, artifacts: Path):
             outcome = "failed_review_gate"
         if outcome == "correct_abstention" and gates != ("pass", "pass"):
             outcome = "failed_review_gate"
-        result.update(outcome=outcome, eligibility=eligibility, reviewer=judgment["reviewer"])
+        artifact = json.loads(path.read_text())
+        execution_failure = key[1] == "ofl_agent" and (artifact.get("http_status") != 200 or "transport_error" in artifact)
+        if execution_failure and outcome in {"completed", "correct_abstention"}:
+            outcome = "failed_execution"
+        result.update(outcome=outcome, eligibility=eligibility, reviewer=judgment["reviewer"],
+                      hard_gate=gates[0], claim_support=gates[1], execution_failure=execution_failure)
     summaries = {}
     for condition in CONDITIONS:
         selected = [r for r in rows if r["condition"] == condition]
@@ -61,6 +66,9 @@ def assess(protocol, trials, assessments, artifacts: Path):
             "assessed_eligible": len(eligible), "completed": complete,
             "completion_rate_assessed_eligible": complete / len(eligible) if eligible else None,
             "correct_abstentions": sum(r["outcome"] == "correct_abstention" for r in selected),
+            "execution_failures": sum(r.get("execution_failure", False) for r in selected),
+            "hard_gate_failures": sum(r.get("hard_gate") == "fail" for r in selected),
+            "claim_support_failures": sum(r.get("claim_support") == "fail" for r in selected),
             "review_gate_failures": sum(r["outcome"] == "failed_review_gate" for r in selected),
         }
     return {"version": 1, "study_kind": protocol.get("study_kind", "unspecified_not_user_validation"), "summary": summaries, "cases": rows,

@@ -9,6 +9,9 @@
       "completed": 0,
       "completion_rate_assessed_eligible": 0.0,
       "correct_abstentions": 1,
+      "execution_failures": 1,
+      "hard_gate_failures": 1,
+      "claim_support_failures": 0,
       "review_gate_failures": 0
     },
     "ofl_without_agent": {
@@ -18,6 +21,9 @@
       "completed": 0,
       "completion_rate_assessed_eligible": null,
       "correct_abstentions": 0,
+      "execution_failures": 0,
+      "hard_gate_failures": 0,
+      "claim_support_failures": 0,
       "review_gate_failures": 0
     },
     "baseline": {
@@ -27,6 +33,9 @@
       "completed": 0,
       "completion_rate_assessed_eligible": null,
       "correct_abstentions": 0,
+      "execution_failures": 0,
+      "hard_gate_failures": 0,
+      "claim_support_failures": 0,
       "review_gate_failures": 0
     }
   },
@@ -41,7 +50,10 @@
       "condition": "ofl_agent",
       "outcome": "failed",
       "eligibility": "eligible",
-      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation"
+      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation",
+      "hard_gate": "fail",
+      "claim_support": "not_assessed",
+      "execution_failure": false
     },
     {
       "case_id": "T01",
@@ -58,7 +70,10 @@
       "condition": "ofl_agent",
       "outcome": "failed",
       "eligibility": "eligible",
-      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation"
+      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation",
+      "hard_gate": "not_assessed",
+      "claim_support": "not_assessed",
+      "execution_failure": true
     },
     {
       "case_id": "T02",
@@ -75,7 +90,10 @@
       "condition": "ofl_agent",
       "outcome": "correct_abstention",
       "eligibility": "unavailable",
-      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation"
+      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation",
+      "hard_gate": "pass",
+      "claim_support": "pass",
+      "execution_failure": false
     },
     {
       "case_id": "T10",
