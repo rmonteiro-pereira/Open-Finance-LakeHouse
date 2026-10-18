@@ -7,6 +7,7 @@ portfolio project is secondary.
 - [Shape definido e primeira fatia de implementação](SHAPE.md).
 - [Delivery gaps and acceptance priorities](DELIVERY-GAPS.md).
 - [Real-corpus relevance review](RETRIEVAL-REVIEW.md).
+- [Offline dataset reproduction](DATASET-REPRODUCTION.md).
 - [Repeatable evaluation workflow](WORKFLOW.md): process, evidence, baselines,
   adversarial cases, outcome gates and decision cadence.
 - [First adversarial review](REVIEW.md): findings across the whole OFL, leading

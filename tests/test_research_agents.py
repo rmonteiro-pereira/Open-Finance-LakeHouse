@@ -104,6 +104,7 @@ def test_mcp_tools_preserve_exact_values_and_bound_network_access():
             "macro_series",
             "passage",
             "prepare_dataset",
+            "dataset_reproduction",
             "compare_prices",
             "compare_releases",
             "saved_work",

@@ -2,9 +2,11 @@
 
 from datetime import date
 from typing import Literal
+from urllib.parse import quote, unquote
 
 import httpx
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ResourceLink
 
 from .config import ResearchSettings
 
@@ -30,6 +32,66 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
                     f"OFL request failed ({result.status_code}); check access or query"
                 )
             return result.json()
+
+    def read_bundle(specification):
+        with httpx.Client(
+            base_url=settings.api_url.rstrip("/") + "/api/v1/",
+            headers={"Authorization": f"Bearer {settings.api_token}"},
+            timeout=60,
+            follow_redirects=False,
+            transport=transport,
+        ) as client:
+            with client.stream(
+                "GET", "datasets/bundle", params={"specification": specification}
+            ) as result:
+                if (
+                    result.status_code != 200
+                    or result.headers.get("content-type", "").split(";")[0] != "application/zip"
+                ):
+                    raise ValueError("OFL bundle request failed; check access or recipe")
+                chunks, size = [], 0
+                for chunk in result.iter_bytes():
+                    size += len(chunk)
+                    if size > 64 * 1024**2:
+                        raise ValueError("bundle exceeds MCP transfer bound")
+                    chunks.append(chunk)
+                return b"".join(chunks)
+
+    @server.resource("ofl://datasets/reproduction/{recipe}", mime_type="application/zip")
+    def reproduction_resource(recipe: str) -> bytes:
+        """Download a pinned offline reproduction bundle using this caller's service identity."""
+        from .analytics import DatasetSpec
+
+        if len(recipe) > 24000:
+            raise ValueError("recipe URI exceeds bound")
+        spec = DatasetSpec.model_validate_json(unquote(recipe))
+        return read_bundle(spec.model_dump_json())
+
+    @server.tool(structured_output=False)
+    def dataset_reproduction(specification: str) -> list[ResourceLink]:
+        """Prepare a pinned dataset and return a ZIP resource link.
+
+        Includes captured inputs and a Python stdlib offline reproducer.
+        Fetch the resource to download; no saved state is changed.
+        """
+        from .analytics import DatasetSpec
+
+        if len(specification) > 8000:
+            raise ValueError("specification exceeds bound")
+        spec = DatasetSpec.model_validate_json(specification)
+        read("datasets/preview", {"specification": spec.model_dump_json()})
+        return [
+            ResourceLink(
+                type="resource_link",
+                uri="ofl://datasets/reproduction/" + quote(spec.model_dump_json(), safe=""),
+                name="ofl-dataset-reproduction.zip",
+                mimeType="application/zip",
+                description=(
+                    "Captured inputs, manifest, CSV and offline reproducer; "
+                    "no server required after download."
+                ),
+            )
+        ]
 
     @server.tool()
     def coverage() -> dict:
