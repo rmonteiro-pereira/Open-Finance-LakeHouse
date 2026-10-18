@@ -4,6 +4,8 @@ import copy
 
 import pytest
 
+pytest.importorskip("psycopg")
+
 from ofl.research.db import digest
 from ofl.research.retrieval_review import MODES, assess, worksheet
 
