@@ -172,3 +172,7 @@ Real Qwen 4B completed structured JSON and a tool call but took approximately
 103/108 seconds on this host, exceeding the agent's per-call budget. A smaller
 local model is being evaluated; native-tool smoke success alone is not a claim
 that the complete agent workflow is ready.
+
+Archive observations now expose explicit passage_id and item_id fields alongside
+the human citation, so small models do not have to parse concatenated references
+to perform dependent context reads.
