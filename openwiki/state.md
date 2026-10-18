@@ -160,3 +160,8 @@ Interface parity follow-up: MCP can list/read caller-owned work (including portf
 versions), and the data specialist can execute typed read-only dataset preparation.
 Thirteen MCP tools total. Source-context verification remains independent of model
 messages. Malformed finding/check tags reject as invalid input.
+
+Real-source letter processing also passed: one actual PDF processed into fourteen
+active passages in the disposable schema. Coverage-check comparisons exclude
+self-generated job counts, preventing every scheduled run from producing a false
+source-coverage change; the full operational snapshot remains inspectable.

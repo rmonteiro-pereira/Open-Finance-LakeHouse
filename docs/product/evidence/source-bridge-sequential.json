@@ -8,7 +8,10 @@
   "news_batches_processed": 1,
   "news_items": 2,
   "letters_registered": 1,
-  "letters_pdf_processing": "not part of this bounded registration run",
+  "letters_pdf_processing": {
+    "state": "processed",
+    "active_passages": 14
+  },
   "validation": "snapshot checksum/schema/coverage and original PDF identity checked by production code paths",
   "limitation": "Small acceptance sample, not corpus completeness, retrieval quality or user outcome validation"
 }

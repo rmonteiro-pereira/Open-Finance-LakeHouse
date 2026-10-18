@@ -415,3 +415,14 @@ def test_release_diff_ignores_only_provenance_and_detects_actual_change(monkeypa
     revised["close"] = "31.00"
     result = release_diff(None, **args)
     assert result["changes"][0]["fields"] == ["close"]
+
+
+def test_coverage_check_does_not_alert_on_its_own_job_count(research):
+    db, store = research
+    saved = save(db, "owner", "check", "Coverage", {"type": "coverage"})
+    rerun(db, store, "owner", saved["id"])
+    db.enqueue("research_check", {"workspace_id": saved["id"], "owner": "owner"})
+    rerun(db, store, "owner", saved["id"])
+    result = load(db, "owner", saved["id"])["body"]["content"]
+    assert result["comparison"]["changed"] is False
+    assert result["result"]["jobs"]

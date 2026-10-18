@@ -248,11 +248,25 @@ def rerun(db, store, actor, workspace_id):
         result = coverage(db)
     previous = body.get("result")
     body = {**body, "result": json.loads(json.dumps(result, default=str))}
+
     # Compare source identifiers/content, not wall-clock invocation metadata.
+    def comparable(value):
+        # Running this check creates jobs; do not report its own changing job count
+        # as a source-coverage change. Preserve the full result for inspection.
+        return (
+            {k: v for k, v in value.items() if k != "jobs"}
+            if body["type"] == "coverage" and isinstance(value, dict)
+            else value
+        )
+
+    before, after = comparable(previous), comparable(body["result"])
     body["comparison"] = {
-        "previous_sha256": digest(previous) if previous is not None else None,
-        "current_sha256": digest(body["result"]),
-        "changed": previous != body["result"] if previous is not None else None,
+        "previous_sha256": digest(before) if previous is not None else None,
+        "current_sha256": digest(after),
+        "changed": before != after if previous is not None else None,
+        "comparison_scope": "source coverage excluding self-generated job counts"
+        if body["type"] == "coverage"
+        else "bounded retrieved evidence",
     }
     return save(
         db,
