@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-18",
+  "application_merge": "87f030acadb9adc25e65e67023a83bd4c4d10255",
+  "private_agent_source": "2fe6c1e",
+  "private_framework_commit": "f01e741e76be4dd6561b11dfff6ed962a2172ff7",
+  "framework_tests": {
+    "passed": 847,
+    "postgresql": true,
+    "packaged_typescript_and_python_consumers": true
+  },
+  "ofl_tests": {
+    "agent_passed": 21,
+    "postgresql": true,
+    "typecheck": true,
+    "structural_diagnostic_gaps": 0,
+    "ci": "public PR and main checks passed"
+  },
+  "live_source_only": {
+    "http_status": 200,
+    "seconds": 1.52,
+    "tools": [
+      "search_archive",
+      "read_passage"
+    ],
+    "verified_excerpt": true,
+    "issues": 0,
+    "scope": "builder-operated integration, not model reasoning or user outcomes"
+  },
+  "live_natural_question": {
+    "http_status": 200,
+    "seconds": 46.85,
+    "tools": [
+      "search_archive",
+      "read_passage",
+      "read_passage"
+    ],
+    "sources_verified_and_retained": true,
+    "interpretation": "timed out; no generated hypothesis shown",
+    "requested_analytical_artifact_completed": false,
+    "runtime_outcome": "completed denotes committed turn, not successful analysis"
+  },
+  "actual_tailscale_browser": {
+    "real_source_agent_to_dossier": true,
+    "question_and_references_preserved": true,
+    "mobile": true,
+    "client_errors": 0
+  },
+  "corpus_observation": {
+    "active_passages": 8204,
+    "indexed_vectors_for_pinned_model": 281,
+    "completed_embedding_jobs": 35,
+    "scope": "point-in-time counts before this rollout; partial semantic coverage, not retrieval-quality evidence"
+  },
+  "remaining": [
+    "Complete indexing and measure filtered retrieval relevance on judged held-out tasks.",
+    "Demonstrate useful, source-supported synthesis within the resource budget.",
+    "Historical B3 and MUB3 corpus completeness remains open.",
+    "Run actual participant task completion, comprehension and repeat-use evaluations."
+  ]
+}

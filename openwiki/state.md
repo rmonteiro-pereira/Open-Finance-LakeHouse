@@ -4,7 +4,7 @@ repo: this repo (Open-Finance-LakeHouse, public)
 branch: main
 phase: OFL-deploy
 status: done
-updated: 2026-10-08T12:30Z
+updated: 2026-10-18
 ---
 
 > Written from a read of `main` at `d61ea70` and from deploying it on a new
@@ -226,3 +226,18 @@ The structural product diagnostic caught a routing regression: strict tool offer
 initially omitted archive item-metadata reads after search. Restore that dependent
 read in the archive offer. This gate is re-run, not declared passed from unit
 tests alone. Existing source identity/role constraints remain enforced.
+
+## Inkwell reuse live acceptance — 2026-10-18
+
+OFL #69 is merged; private agent 2fe6c1e is deployed with healthy GitOps and all
+five services ready. Actual source-only turn: HTTP 200, search + context read,
+verified excerpt, no issues, 1.52 s. Actual Tailscale browser handed real sources
+and question to a dossier, passed mobile layout, and reported no JavaScript errors.
+Natural-language turn: sources read and verified, optional generation timed out,
+46.85 s total. The conversation committed; the requested analytical interpretation
+was NOT completed. Runtime completed is not a user-task-success metric.
+
+A point-in-time corpus check found 281 matching vectors for 8,204 active passages
+and 35 completed embedding jobs. Indexing progresses, but semantic coverage is
+partial and relevance remains unmeasured. Actual participant and held-out analytical
+tasks remain open. See docs/product/evidence/inkwell-reuse-acceptance.json.
