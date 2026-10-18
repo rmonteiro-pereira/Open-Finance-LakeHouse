@@ -157,3 +157,7 @@ Actual Tailscale HTTPS browser acceptance passed agent-source-to-dossier handoff
 (question and references), mobile width and zero client errors, with no injected
 identity headers. An initial attempt timed out during rollout; repeat on ready
 services passed. SSH stdio MCP connected: thirteen tools and successful catalog.
+
+Single-complete-passage live embedding succeeded; hybrid search returned a real
+vector contribution with the pinned model revision (39.6 s combined probe). This
+validates the smaller-batch path, not complete indexing or retrieval relevance.

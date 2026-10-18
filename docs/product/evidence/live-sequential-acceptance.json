@@ -35,7 +35,14 @@
     "semantic_indexing": {
       "eight_passage_batch": "exceeded 120-second remote CPU deadline before any vector was persisted",
       "mitigation": "one complete passage per remote request; retain completed progress, preserve digest and no-truncation checks",
-      "validation": "in progress"
+      "validation": {
+        "single_complete_passage_indexed": true,
+        "new_vectors": 1,
+        "hybrid_vector_contribution": true,
+        "model_revision_verified": true,
+        "seconds": 39.6,
+        "scope": "small live integration, not full corpus indexing or retrieval-quality benchmark"
+      }
     }
   },
   "agent": {

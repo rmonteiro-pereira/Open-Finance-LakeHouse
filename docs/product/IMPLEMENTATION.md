@@ -51,3 +51,10 @@ its budget (47.53 seconds total). This demonstrates useful source collection and
 honest failure behavior; it does not establish generative analytical quality.
 The original agent diagnostic remains intact. See
 `evidence/live-sequential-acceptance.json` for sanitized observations.
+
+Actual Tailscale HTTPS browser acceptance also completed agent → dossier handoff
+with question and references, mobile layout and no JavaScript errors. SSH stdio MCP
+listed thirteen tools and read the catalog. A complete real passage was embedded
+and retrieved with a vector contribution in hybrid search (39.6 seconds for the
+small indexing/search probe); digest verification remained enabled. The corpus is
+not fully indexed and retrieval relevance has not been established by this probe.
