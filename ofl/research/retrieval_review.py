@@ -6,6 +6,7 @@ Raw pools contain private source text and must stay in private storage.
 
 import math
 import statistics
+from copy import deepcopy
 from datetime import date
 
 from .db import digest
@@ -180,7 +181,7 @@ def worksheet(pool):
                 "query": case["query"],
                 "filters": case["filters"],
                 "candidates": [
-                    {**candidate, "verdict": "not_assessed", "rationale": ""}
+                    {**deepcopy(candidate), "verdict": "not_assessed", "rationale": ""}
                     for candidate in case["candidates"]
                 ],
             }
