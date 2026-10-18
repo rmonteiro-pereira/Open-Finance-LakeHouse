@@ -36,7 +36,8 @@ in one currency, computes weights/concentration and explicit class-shock scenari
 and preserves inputs/results in owned versions. These are not backtests,
 automatic market valuations or personal suitability recommendations.
 
-The Python MCP now provides thirteen read-only tools. Owned edits remain in the
+The Python MCP now provides fourteen read-only tools, including a portable dataset
+ZIP through an authenticated resource link. Owned edits remain in the
 same-origin private REST/dashboard flow; agents cannot write, approve or publish.
 Inkwell is private and must not enter public image contexts. Model-provider
 readiness and live-model quality are separate from deterministic integration tests.

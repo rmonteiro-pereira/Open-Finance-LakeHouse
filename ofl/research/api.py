@@ -764,6 +764,22 @@ def create_app(settings=None):
             headers={"Content-Disposition": 'attachment; filename="ofl-dataset.csv"'},
         )
 
+    @app.post("/api/v1/datasets/bundle")
+    def dataset_bundle(body: DatasetSpec, _user=Depends(identity)):
+        from .dataset_bundle import bundle
+
+        return Response(
+            bundle(db, store, body),
+            media_type="application/zip",
+            headers={"Content-Disposition": 'attachment; filename="ofl-dataset-reproduction.zip"',
+                     "Cache-Control": "no-store"},
+        )
+
+    @app.get("/api/v1/datasets/bundle")
+    def dataset_bundle_read(specification: str = Query(max_length=8000), _user=Depends(identity)):
+        # Read-only service credentials can export the same artifact; no saved state.
+        return dataset_bundle(DatasetSpec.model_validate_json(specification), _user)
+
     @app.get("/api/v1/quotes/compare")
     def comparison(
         symbol: str = Query(min_length=1, max_length=32),

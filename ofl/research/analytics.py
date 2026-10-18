@@ -51,7 +51,7 @@ class DatasetSpec(BaseModel):
     # No filling: observations on mismatched calendars stay null.
 
 
-def prepare_dataset(db, store, specification):
+def prepare_dataset(db, store, specification, *, source_capture=None):
     from .macro import series_query
 
     spec = (
@@ -79,6 +79,8 @@ def prepare_dataset(db, store, specification):
             )
             if source["has_more"]:
                 raise ValueError("dataset exceeds 100,000 source rows; narrow dates")
+            if source_capture is not None:
+                source_capture.append(source)
             values = [None if r["value"] is None else Decimal(r["value"]) for r in source["rows"]]
             transformed = []
             base = next((v for v in values if v is not None), None)
