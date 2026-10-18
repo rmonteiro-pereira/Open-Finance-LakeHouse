@@ -1,6 +1,6 @@
 # OFL research agents using Inkwell
 
-Three actual Inkwell specialists: **market history**, **archive research**, and
+Three actual Inkwell specialists: **financial research**, **data and methods**, and
 **data quality**. Tools read OFL's private REST API; no SQL, shell, arbitrary URL,
 filesystem, upload, approval, retry or publication tool is available.
 
@@ -10,8 +10,12 @@ item/passage/asset/page references and embedding revision. Catalog dates are
 publication intervals. OCR is not approved numerical data. Review-history reads
 still require the caller's reviewer/admin role at the OFL API.
 
-Each turn makes one planning call and delivers evidence tables. There is no
-allegedly verified generated narrative or production scripted-data fallback.
+Each turn allows six model steps and twelve tool calls. Dependent reads receive
+bounded source observations. Final excerpts are independently re-read through
+the authenticated API and checked as exact substrings. Optional qualitative
+interpretations are model hypotheses for human review; citation validation does
+not verify entailment. Unmatched numerical claims are excluded. There is no
+production scripted-data fallback.
 
 ## Install and test
 
@@ -86,3 +90,15 @@ Current checks: 9 Inkwell tests (including real PostgreSQL restart/ownership),
 production Next.js build, a local private container bootstrap with PostgreSQL and
 401 rejection, and a browser flow covering exact evidence, reopen, export and
 handoff. Browser model/source data were scripted fixtures, not live generation.
+
+## Workbench foundation
+
+The archive tool catalog now includes indexed news and manager letters through
+`search_archive`, cited passage inspection through `read_passage`, and macro
+catalog/series reads through `read_data_catalog` and `read_macro_series`. Market
+specialists also receive the macro tools. These connections support bounded multi-step research. Direct search and CSV export in
+the workbench remain available without a text-generation provider.
+
+See [the workbench operation guide](../docs/research/WORKBENCH.md) for ingestion,
+source restrictions and reproducible exports. The Python MCP exposes thirteen
+read-only tools, including `data_catalog`, `macro_series` and `passage`.

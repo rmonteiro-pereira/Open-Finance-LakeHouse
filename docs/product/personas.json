@@ -1,0 +1,462 @@
+{
+  "version": 1,
+  "date": "2026-10-18",
+  "primary_domains": [
+    "finance workers",
+    "data workers"
+  ],
+  "secondary_goal": "portfolio project; assessed separately from product-user ranking",
+  "scale": "1=weak, 5=strong; delivery_feasibility means easier to deliver responsibly",
+  "warning": "Judgment-based prioritization, not measured demand, willingness to pay, TAM, or validated market fit. Close scores are not meaningful precision.",
+  "profiles": {
+    "balanced": {
+      "pain": 25,
+      "recurrence": 15,
+      "cross_source_value": 20,
+      "current_data_fit": 15,
+      "pilot_reach": 10,
+      "differentiation": 10,
+      "delivery_feasibility": 5
+    },
+    "deliverable_now": {
+      "pain": 20,
+      "recurrence": 10,
+      "cross_source_value": 10,
+      "current_data_fit": 35,
+      "pilot_reach": 15,
+      "differentiation": 5,
+      "delivery_feasibility": 5
+    }
+  },
+  "personas": [
+    {
+      "id": "F01",
+      "domain": "finance",
+      "name": "Macro / multi-asset research analyst",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 5,
+        "cross_source_value": 5,
+        "current_data_fit": 4,
+        "pilot_reach": 3,
+        "differentiation": 4,
+        "delivery_feasibility": 3
+      },
+      "job": "Produce a recurring Brazil rates/inflation/FX brief with competing explanations and evidence against the thesis.",
+      "success_artifact": "A source-backed brief plus reusable series and explicit information cutoff.",
+      "data_needs": "Official series, release documents, fund commentary, frequency alignment.",
+      "hypothesized_workaround_and_cadence": "Weekly; spreadsheets, official websites, research terminals, notebooks.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "Analysts do not reuse the weekly brief, cannot verify its claims, or do not save active work against their actual current process."
+    },
+    {
+      "id": "D01",
+      "domain": "data",
+      "name": "Financial data engineer",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 5,
+        "cross_source_value": 5,
+        "current_data_fit": 4,
+        "pilot_reach": 3,
+        "differentiation": 4,
+        "delivery_feasibility": 3
+      },
+      "job": "Deliver a reliable, versioned multi-source dataset without rebuilding collection and reconciliation.",
+      "success_artifact": "Documented data contract, coverage/freshness report, pinned dataset, reproducible consumption recipe.",
+      "data_needs": "Stable identities, schema/version changes, source lineage, source-use terms, incremental exports.",
+      "hypothesized_workaround_and_cadence": "Daily; custom ETL, source APIs, object storage, Python/SQL.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "A data worker cannot reproduce the dataset from its manifest or prefers to retain their existing source integrations after a paired task."
+    },
+    {
+      "id": "F02",
+      "domain": "finance",
+      "name": "Independent / small-team investment research analyst",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 5,
+        "cross_source_value": 5,
+        "current_data_fit": 3,
+        "pilot_reach": 4,
+        "differentiation": 4,
+        "delivery_feasibility": 3
+      },
+      "job": "Investigate a company or macro-linked thesis and preserve evidence, counterarguments and unresolved questions.",
+      "success_artifact": "An editable thesis dossier with traceable claims and a clear next research step.",
+      "data_needs": "Issuer/instrument resolution, fundamentals where needed, prices, macro context, documents.",
+      "hypothesized_workaround_and_cadence": "Daily/weekly; browser tabs, spreadsheets, notes, existing data vendors.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "The thesis artifact does not surface useful counterevidence or the researcher must repeat collection/verification outside OFL."
+    },
+    {
+      "id": "D02",
+      "domain": "data",
+      "name": "Analytics engineer / financial BI analyst",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 5,
+        "cross_source_value": 4,
+        "current_data_fit": 4,
+        "pilot_reach": 3,
+        "differentiation": 4,
+        "delivery_feasibility": 4
+      },
+      "job": "Turn raw financial inputs into consistent tables and dashboards colleagues can trust.",
+      "success_artifact": "A tested semantic model, reusable transformations, freshness/coverage indicators and stable extracts.",
+      "data_needs": "Units, frequencies, definitions, dimensions, lineage and versioned tabular outputs.",
+      "hypothesized_workaround_and_cadence": "Daily/weekly; SQL models, BI tools, spreadsheets.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "D03",
+      "domain": "data",
+      "name": "Financial data scientist / systematic researcher",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 5,
+        "cross_source_value": 5,
+        "current_data_fit": 2,
+        "pilot_reach": 3,
+        "differentiation": 4,
+        "delivery_feasibility": 2
+      },
+      "job": "Turn a financial hypothesis into a reproducible dataset and experiment without hidden leakage.",
+      "success_artifact": "A research specification, eligible dataset, baseline, validation split and qualified results.",
+      "data_needs": "Information-availability dates, adjustments, universe membership, benchmark, costs and reproducible transforms.",
+      "hypothesized_workaround_and_cadence": "Weekly; notebooks, provider feeds, experiment tracking.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "F03",
+      "domain": "finance",
+      "name": "Fund-selection / allocator research analyst",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 4,
+        "cross_source_value": 5,
+        "current_data_fit": 3,
+        "pilot_reach": 3,
+        "differentiation": 4,
+        "delivery_feasibility": 3
+      },
+      "job": "Compare how managers describe a theme and track changes without mistaking commentary for measured performance.",
+      "success_artifact": "A sourced comparison matrix, timeline, disagreements and missing coverage.",
+      "data_needs": "Manager-letter metadata, extraction, publication dates, document provenance; performance data if performance is requested.",
+      "hypothesized_workaround_and_cadence": "Monthly; manager websites, PDF folders, due-diligence notes.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "F04",
+      "domain": "finance",
+      "name": "Economic policy analyst / forecaster",
+      "ratings": {
+        "pain": 4,
+        "recurrence": 4,
+        "cross_source_value": 4,
+        "current_data_fit": 4,
+        "pilot_reach": 3,
+        "differentiation": 3,
+        "delivery_feasibility": 4
+      },
+      "job": "Reconstruct an economic argument with definitions, release timing and revisions visible.",
+      "success_artifact": "A reproducible evidence pack distinguishing current revised data from what was known then.",
+      "data_needs": "Macro series, source definitions, calendar/release metadata, document context.",
+      "hypothesized_workaround_and_cadence": "Weekly/monthly; official portals, spreadsheets, statistical software.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "D04",
+      "domain": "data",
+      "name": "Quant research engineer",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 5,
+        "cross_source_value": 5,
+        "current_data_fit": 1,
+        "pilot_reach": 3,
+        "differentiation": 4,
+        "delivery_feasibility": 2
+      },
+      "job": "Supply trustworthy experiment inputs and reproduce a result across revisions or machines.",
+      "success_artifact": "Dataset manifest, code/configuration, environment and deterministic experiment lineage.",
+      "data_needs": "Point-in-time availability, instrument history, adjustments, universe and cost assumptions.",
+      "hypothesized_workaround_and_cadence": "Daily/weekly; notebooks, research frameworks, private data feeds.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "D05",
+      "domain": "data",
+      "name": "Financial data API / product developer",
+      "ratings": {
+        "pain": 4,
+        "recurrence": 5,
+        "cross_source_value": 4,
+        "current_data_fit": 4,
+        "pilot_reach": 4,
+        "differentiation": 2,
+        "delivery_feasibility": 3
+      },
+      "job": "Embed financial datasets in another app with predictable contracts and transparent coverage.",
+      "success_artifact": "A documented client recipe, stable response schema, version pins and explainable failures.",
+      "data_needs": "API/SDK ergonomics, discovery, quotas, change notices and permitted redistribution.",
+      "hypothesized_workaround_and_cadence": "Daily; existing market APIs, custom services, data-provider SDKs.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "F05",
+      "domain": "finance",
+      "name": "Financial investigative journalist",
+      "ratings": {
+        "pain": 4,
+        "recurrence": 4,
+        "cross_source_value": 4,
+        "current_data_fit": 3,
+        "pilot_reach": 4,
+        "differentiation": 4,
+        "delivery_feasibility": 3
+      },
+      "job": "Verify a market or economic claim and distinguish supporting evidence from unsupported narrative.",
+      "success_artifact": "A fact-check packet with original sources, chronology and defensible qualifications.",
+      "data_needs": "Searchable originals, date precision, source corroboration and publication-safe citations.",
+      "hypothesized_workaround_and_cadence": "Event-driven; official sources, browser searches, spreadsheets.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "F06",
+      "domain": "finance",
+      "name": "Corporate treasury / FP&A analyst",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 4,
+        "cross_source_value": 3,
+        "current_data_fit": 3,
+        "pilot_reach": 2,
+        "differentiation": 3,
+        "delivery_feasibility": 2
+      },
+      "job": "Explain rate/FX changes and prepare scenarios relevant to a company decision.",
+      "success_artifact": "A sourced assumptions sheet and scenario model tied to an explicit exposure.",
+      "data_needs": "Macro/FX series plus the company exposure and treasury assumptions not currently in OFL.",
+      "hypothesized_workaround_and_cadence": "Weekly/monthly; bank reports, ERP extracts, spreadsheets.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "F07",
+      "domain": "finance",
+      "name": "Portfolio risk analyst",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 5,
+        "cross_source_value": 4,
+        "current_data_fit": 1,
+        "pilot_reach": 1,
+        "differentiation": 3,
+        "delivery_feasibility": 1
+      },
+      "job": "Explain portfolio exposures and stress outcomes using controlled data and assumptions.",
+      "success_artifact": "A reproducible exposure/stress report with gaps and model limitations.",
+      "data_needs": "Private holdings, mappings, risk-factor models, market data quality and access controls.",
+      "hypothesized_workaround_and_cadence": "Daily; risk systems, private positions, spreadsheets.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "D06",
+      "domain": "data",
+      "name": "Financial NLP / retrieval evaluation scientist",
+      "ratings": {
+        "pain": 4,
+        "recurrence": 4,
+        "cross_source_value": 4,
+        "current_data_fit": 2,
+        "pilot_reach": 3,
+        "differentiation": 3,
+        "delivery_feasibility": 2
+      },
+      "job": "Build and evaluate a financial corpus without treating OCR, duplicated commentary or metadata as truth.",
+      "success_artifact": "A documented, rights-scoped corpus, labels, held-out tasks and an evaluation report.",
+      "data_needs": "Text extraction quality, dates, provenance, source diversity, duplication controls and judgments.",
+      "hypothesized_workaround_and_cadence": "Weekly; PDF processing, search engines, evaluation notebooks.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "D07",
+      "domain": "data",
+      "name": "Financial data steward / governance analyst",
+      "ratings": {
+        "pain": 4,
+        "recurrence": 4,
+        "cross_source_value": 5,
+        "current_data_fit": 3,
+        "pilot_reach": 2,
+        "differentiation": 4,
+        "delivery_feasibility": 3
+      },
+      "job": "Assess whether a dataset is fit for a particular research use and explain corrections.",
+      "success_artifact": "A fitness-for-use report, source-use ledger, lineage and correction history.",
+      "data_needs": "Data contracts, coverage, access/rights, version history and ownership.",
+      "hypothesized_workaround_and_cadence": "Weekly; catalogs, spreadsheets, quality reports.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "F08",
+      "domain": "finance",
+      "name": "Credit / issuer research analyst",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 4,
+        "cross_source_value": 4,
+        "current_data_fit": 1,
+        "pilot_reach": 2,
+        "differentiation": 3,
+        "delivery_feasibility": 2
+      },
+      "job": "Challenge an issuer-risk thesis using statements, disclosures and macro conditions.",
+      "success_artifact": "A credit evidence pack with reconciled metrics and counterevidence.",
+      "data_needs": "Issuer financial statements, debt terms, disclosures, peer definitions and current source coverage.",
+      "hypothesized_workaround_and_cadence": "Weekly/event-driven; filings, credit research, financial models.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "F09",
+      "domain": "finance",
+      "name": "Assessor de investimentos / client-facing wealth adviser",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 5,
+        "cross_source_value": 5,
+        "current_data_fit": 3,
+        "pilot_reach": 3,
+        "differentiation": 4,
+        "delivery_feasibility": 3
+      },
+      "job": "Prepare recurring client market conversations and explain the exposures behind an existing allocation, with sources and uncertainty visible.",
+      "success_artifact": "A reviewable client market brief and portfolio-exposure questions; no unsupported suitability conclusion.",
+      "data_needs": "Macro data, market/issuer mappings, relevant news and manager views; client holdings and objectives only when explicitly supplied.",
+      "hypothesized_workaround_and_cadence": "Weekly; spreadsheets, provider reports, client notes.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "F10",
+      "domain": "finance",
+      "name": "Forensic accountant / financial due-diligence analyst",
+      "ratings": {
+        "pain": 5,
+        "recurrence": 3,
+        "cross_source_value": 4,
+        "current_data_fit": 1,
+        "pilot_reach": 2,
+        "differentiation": 4,
+        "delivery_feasibility": 1
+      },
+      "job": "Investigate inconsistencies across financial claims and original records.",
+      "success_artifact": "A traceable discrepancy log with corroboration and unresolved evidence.",
+      "data_needs": "Filings, corporate records, ownership history, entity resolution and source completeness.",
+      "hypothesized_workaround_and_cadence": "Project-based; records, workpapers, audit tools.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "D08",
+      "domain": "data",
+      "name": "Data platform engineer evaluating a reusable reference stack",
+      "ratings": {
+        "pain": 3,
+        "recurrence": 4,
+        "cross_source_value": 3,
+        "current_data_fit": 4,
+        "pilot_reach": 4,
+        "differentiation": 2,
+        "delivery_feasibility": 3
+      },
+      "job": "Reuse operational patterns or validate architecture for a financial data workload.",
+      "success_artifact": "A runnable reference with failure/recovery demonstrations and bounded operational claims.",
+      "data_needs": "Reproducible setup, contracts, resource/cost evidence and operational documentation.",
+      "hypothesized_workaround_and_cadence": "Project-based; repositories, infrastructure demos, architecture reviews.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "In paired task trials, this persona does not produce a better correct artifact or save enough active work to return voluntarily."
+    },
+    {
+      "id": "F11",
+      "domain": "finance",
+      "name": "Independent financial consultant / portfolio reviewer",
+      "ratings": {
+        "pain": 4,
+        "recurrence": 4,
+        "cross_source_value": 5,
+        "current_data_fit": 3,
+        "pilot_reach": 3,
+        "differentiation": 4,
+        "delivery_feasibility": 3
+      },
+      "job": "Challenge a portfolio narrative, explain concentration and economic exposures, and prepare a clear evidence-backed review for a client.",
+      "success_artifact": "A documented portfolio review with explicit assumptions, source-backed context, missing inputs and questions for the client.",
+      "data_needs": "User-supplied holdings/weights/objectives, instrument and exposure mappings, approved calculations, macro/news/commentary.",
+      "hypothesized_workaround_and_cadence": "Monthly/event-driven; spreadsheets, client interviews, research reports and independent market data.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "The completed explanation/review is no clearer or more verifiable than the existing workaround, or users cannot distinguish source opinion from supported fact."
+    },
+    {
+      "id": "F12",
+      "domain": "market understanding",
+      "name": "Leigo / self-directed investor evaluating markets and a portfolio",
+      "ratings": {
+        "pain": 4,
+        "recurrence": 4,
+        "cross_source_value": 4,
+        "current_data_fit": 3,
+        "pilot_reach": 4,
+        "differentiation": 3,
+        "delivery_feasibility": 3
+      },
+      "job": "Understand how economic developments and competing market narratives relate to a portfolio without knowing tickers, market codes or statistical jargon.",
+      "success_artifact": "A plain-language explanation with inspectable evidence, an exposure summary when holdings are provided, and clear limits on what can be concluded.",
+      "data_needs": "Guided questions, definitions, identity resolution, timely macro context, accessible news/manager comparisons and explicit missing holdings/performance data.",
+      "hypothesized_workaround_and_cadence": "Weekly/event-driven; news, videos, adviser conversations and portfolio spreadsheets.",
+      "evidence_status": "author hypothesis; no user interviews or adoption measurements",
+      "adoption_falsifier": "The completed explanation/review is no clearer or more verifiable than the existing workaround, or users cannot distinguish source opinion from supported fact."
+    }
+  ],
+  "adjacent_audiences": [
+    {
+      "name": "Economics / finance educator",
+      "role": "Possible knowledge-distribution partner; validate teaching workflow separately."
+    },
+    {
+      "name": "Archive curator",
+      "role": "Source/corpus partner and review operator, not the assumed principal product buyer."
+    },
+    {
+      "name": "Academic financial-history researcher",
+      "role": "Potential archival cohort; evaluate separately from the initial recurring market/data jobs."
+    }
+  ],
+  "secondary_portfolio_audiences": [
+    {
+      "name": "Data engineering hiring manager",
+      "artifact": "Reproduce a dataset and inspect recovery, contracts, lineage and resource evidence."
+    },
+    {
+      "name": "Applied AI / data science reviewer",
+      "artifact": "Run held-out task evaluations and inspect evidence binding, numerical checks and known failures."
+    },
+    {
+      "name": "Product-minded technical reviewer",
+      "artifact": "Observe one completed real finance/data workflow and see the decisions and rejected alternatives."
+    }
+  ],
+  "explicit_supported_audience": "Laypeople assessing markets and investment portfolios are included in product discovery; engineering-portfolio reviewers remain secondary."
+}

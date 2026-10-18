@@ -40,7 +40,7 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
     def search_archive(
         q: str,
         mode: Literal["keyword", "vector", "hybrid"] = "keyword",
-        source: Literal["b3_bulletin", "mub3"] | None = None,
+        source: Literal["b3_bulletin", "mub3", "news", "manager_letter"] | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
         limit: int = 8,
@@ -86,5 +86,104 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
         if not 1 <= limit <= 100:
             raise ValueError("limit outside bounds")
         return read("releases", {"limit": limit})
+
+    @server.tool()
+    def data_catalog(q: str | None = None, snapshot_id: str | None = None) -> dict:
+        """Discover open macro series with units, frequencies, validated coverage and snapshot ID."""
+        if q and len(q) > 200:
+            raise ValueError("catalog query is too long")
+        return read("data/catalog", {"q": q, "snapshot_id": snapshot_id})
+
+    @server.tool()
+    def macro_series(
+        series_id: str,
+        snapshot_id: str | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        limit: int = 100,
+    ) -> dict:
+        """Pinned macro observations; values preserve source numeric representation, not historical publication availability."""
+        from .macro import SERIES
+
+        if not SERIES.fullmatch(series_id) or not 1 <= limit <= 1000:
+            raise ValueError("invalid macro series query")
+        if date_from and date_to and date_from > date_to:
+            raise ValueError("reversed date interval")
+        return read(
+            f"data/series/{series_id}",
+            {
+                "snapshot_id": snapshot_id,
+                "date_from": date_from,
+                "date_to": date_to,
+                "limit": limit,
+            },
+        )
+
+    @server.tool()
+    def passage(passage_id: str) -> dict:
+        """Inspect a cited passage, its source/date/content qualifications and revision state."""
+        if (
+            not passage_id
+            or len(passage_id) > 128
+            or not all(c.isascii() and (c.isalnum() or c in "_-") for c in passage_id)
+        ):
+            raise ValueError("invalid passage ID")
+        return read(f"passages/{passage_id}")
+
+    @server.tool()
+    def prepare_dataset(specification: str) -> dict:
+        """Read-only deterministic multi-series preparation. JSON specification pins snapshot, alignment and transformations; no imputation or arbitrary SQL."""
+        from .analytics import DatasetSpec
+
+        spec = DatasetSpec.model_validate_json(specification)
+        return read("datasets/preview", {"specification": spec.model_dump_json()})
+
+    @server.tool()
+    def compare_prices(
+        symbol: str, market: str, date_from: date, date_to: date, release: str
+    ) -> dict:
+        """Exact observed unadjusted price change with compatible instrument identity and quotation basis. Not total return."""
+        if (
+            not 1 <= len(symbol) <= 32
+            or len(market) != 3
+            or not market.isdigit()
+            or date_from >= date_to
+            or len(release) > 128
+        ):
+            raise ValueError("explicit bounded instrument, dates and release required")
+        return read("quotes/compare", locals())
+
+    @server.tool()
+    def compare_releases(
+        left: str, right: str, symbol: str, market: str, date_from: date, date_to: date
+    ) -> dict:
+        """Scoped record-level differences between immutable quote releases."""
+        if (
+            not 1 <= len(symbol) <= 32
+            or len(market) != 3
+            or not market.isdigit()
+            or date_from > date_to
+            or max(len(left), len(right)) > 128
+        ):
+            raise ValueError("invalid release comparison scope")
+        return read("releases/diff", locals())
+
+    @server.tool()
+    def saved_work(workspace_id: str, revision: int | None = None) -> dict:
+        """Read a caller-owned dossier, portfolio, dataset recipe or check. Credentials must represent the artifact owner. No edit capability."""
+        import re
+
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", workspace_id) or (
+            revision is not None and revision < 1
+        ):
+            raise ValueError("invalid owned artifact reference")
+        return read(f"workspaces/{workspace_id}", {"revision": revision})
+
+    @server.tool()
+    def list_saved_work(
+        kind: Literal["investigation", "portfolio", "dataset", "watchlist", "check"] | None = None,
+    ) -> list:
+        """List only work owned by the authenticated credential principal."""
+        return read("workspaces", {"kind": kind})
 
     return server

@@ -59,6 +59,7 @@ class Database:
             "INSERT INTO jobs(id,kind,payload) VALUES (%s,%s,%s)", (job, kind, Jsonb(payload))
         )
         con.execute("INSERT INTO audit(actor,action,target) VALUES (%s,'enqueue',%s)", (actor, job))
+        con.execute("INSERT INTO job_events(job_id,state) VALUES (%s,'queued')", (job,))
         return job
 
     def claim(self, owner):
@@ -68,12 +69,17 @@ class Database:
                 FOR UPDATE SKIP LOCKED LIMIT 1""").fetchone()
             if not row:
                 return None
-            return con.execute(
+            claimed = con.execute(
                 """UPDATE jobs SET state='running',lease_owner=%s,
                 lease_until=now()+(%s * interval '1 second'),attempts=attempts+1,
                 updated_at=now() WHERE id=%s RETURNING *""",
                 (owner, self.settings.lease_seconds, row["id"]),
             ).fetchone()
+            con.execute(
+                "INSERT INTO job_events(job_id,state,detail) VALUES (%s,'running',%s)",
+                (row["id"], Jsonb({"attempt": claimed["attempts"]})),
+            )
+            return claimed
 
     def heartbeat(self, job, owner, progress=None):
         with self.connect() as con:
@@ -88,8 +94,13 @@ class Database:
 
     def finish(self, job, owner, error=None):
         with self.connect() as con:
-            con.execute(
+            updated = con.execute(
                 """UPDATE jobs SET state=%s,error=%s,lease_until=NULL,updated_at=now()
                 WHERE id=%s AND lease_owner=%s AND state='running'""",
                 ("failed" if error else "done", error, job, owner),
             )
+            if updated.rowcount:
+                con.execute(
+                    "INSERT INTO job_events(job_id,state,detail) VALUES (%s,%s,%s)",
+                    (job, "failed" if error else "done", Jsonb({"error": error})),
+                )

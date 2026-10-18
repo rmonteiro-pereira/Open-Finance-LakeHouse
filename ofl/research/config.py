@@ -29,5 +29,10 @@ class ResearchSettings(BaseSettings):
     embedding_dimensions: int = Field(1024, ge=1, le=2000)
     approximate_search: bool = False  # enable only after a filtered-recall pilot
     lease_seconds: int = Field(300, ge=30)
+    library_bucket: str = "documents"
+    snapshot_bucket: str = "ofl-public"
+    bridge_object_limit: int = Field(10000, ge=1, le=100000)
+    bridge_metadata_bytes: int = Field(8 * 1024**2, ge=1024)
+    bridge_asset_bytes: int = Field(64 * 1024**2, ge=1024)
     airflow_url: str = ""
     airflow_token: str = ""

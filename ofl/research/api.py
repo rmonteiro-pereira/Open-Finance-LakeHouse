@@ -10,7 +10,7 @@ from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, Field
 
@@ -57,6 +57,38 @@ class ManualCandidate(BaseModel):
     page: int = Field(ge=1)
     bbox: list[float] = Field(min_length=4, max_length=4)
     cells: list[list[str | None]]
+
+
+class LibrarySyncBody(BaseModel):
+    kind: Literal["news", "letters", "macro"]
+    limit: int = Field(20, ge=1, le=200)
+    collection: str | None = Field(None, pattern=r"^[A-Za-z0-9_-]{1,80}$")
+
+
+class WorkspaceBody(BaseModel):
+    kind: Literal["investigation", "portfolio", "dataset", "watchlist", "check"]
+    title: str = Field(min_length=1, max_length=200)
+    content: dict
+    expected_revision: int = Field(0, ge=0)
+
+
+class ScheduleBody(BaseModel):
+    interval_minutes: int = Field(60, ge=15, le=10080)
+    enabled: bool = True
+
+
+class FeedbackBody(BaseModel):
+    category: Literal[
+        "wrong_source", "wrong_number", "missing_context", "coverage", "usability", "other"
+    ]
+    detail: str = Field(min_length=1, max_length=4000)
+    artifact_id: str | None = Field(None, max_length=128)
+
+
+class FeedbackReview(BaseModel):
+    expected_revision: int = Field(0, ge=0)
+    state: Literal["triaged", "evaluation_candidate", "resolved", "dismissed"]
+    note: str = Field(min_length=1, max_length=2000)
 
 
 def create_app(settings=None):
@@ -184,6 +216,147 @@ def create_app(settings=None):
             )
         )
 
+    @app.get("/api/v1/workbench")
+    def workbench(_user=Depends(identity)):
+        counts = db.rows(
+            "SELECT source,item_type,count(*) AS items FROM items GROUP BY source,item_type"
+        )
+        macro = db.rows(
+            "SELECT s.id,s.generated_at,s.catalog FROM macro_pointer p JOIN macro_snapshots s ON s.id=p.snapshot_id"
+        )
+        dataset = None
+        if macro:
+            dataset = {
+                "snapshot_id": macro[0]["id"],
+                "generated_at": macro[0]["generated_at"],
+                "series_with_data": sum(
+                    row.get("redistribution") == "open" and bool(row.get("rows"))
+                    for row in macro[0]["catalog"]["series"]
+                ),
+            }
+        return response(
+            {
+                "documents": counts,
+                "macro": dataset,
+                "processing": db.rows("SELECT state,count(*) AS assets FROM assets GROUP BY state"),
+                "date_quality": db.rows(
+                    "SELECT source,date_precision,count(*) AS items FROM items GROUP BY source,date_precision"
+                ),
+                "qualification": "Indexed scope only; collection totals and source coverage are separate.",
+            }
+        )
+
+    @app.post("/api/v1/library/sync")
+    def library_sync(body: LibrarySyncBody, request: Request, user=Depends(admin)):
+        payload = body.model_dump()
+
+        def operation(con):
+            return {"job_id": db.enqueue_on(con, "library_sync", payload, user[0])}
+
+        return response(idempotent(request, user[0], payload, operation), 202)
+
+    @app.get("/api/v1/data/catalog")
+    def data_catalog(
+        snapshot_id: str | None = None,
+        q: str | None = Query(None, max_length=200),
+        _user=Depends(identity),
+    ):
+        from .macro import catalog
+
+        return response(catalog(db, snapshot_id=snapshot_id, query=q))
+
+    @app.get("/api/v1/data/series/{series_id}")
+    def macro_series(
+        series_id: str,
+        snapshot_id: str | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        limit: int = Query(1000, ge=1, le=1000),
+        offset: int = Query(0, ge=0),
+        _user=Depends(identity),
+    ):
+        from .macro import series_query
+
+        return response(
+            series_query(
+                db,
+                store,
+                series_id,
+                snapshot_id=snapshot_id,
+                date_from=date_from,
+                date_to=date_to,
+                limit=limit,
+                offset=offset,
+            )
+        )
+
+    @app.get("/api/v1/data/series/{series_id}/export")
+    def macro_export(
+        series_id: str,
+        snapshot_id: str,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        _user=Depends(identity),
+    ):
+        from .macro import IDENTIFIER, export_series
+
+        if not IDENTIFIER.fullmatch(snapshot_id):
+            raise ValueError("invalid snapshot ID")
+        content, data = export_series(
+            db, store, series_id, snapshot_id=snapshot_id, date_from=date_from, date_to=date_to
+        )
+        return Response(
+            content,
+            media_type="text/csv; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="ofl-{series_id}-{snapshot_id}.csv"',
+                "X-OFL-Snapshot": data["snapshot_id"],
+            },
+        )
+
+    @app.get("/api/v1/data/series/{series_id}/manifest")
+    def macro_manifest(
+        series_id: str,
+        snapshot_id: str,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        _user=Depends(identity),
+    ):
+        from .macro import export_series
+
+        content, data = export_series(
+            db, store, series_id, snapshot_id=snapshot_id, date_from=date_from, date_to=date_to
+        )
+        data.pop("rows")
+        data["csv_sha256"] = hashlib.sha256(content.encode()).hexdigest()
+        data["csv_columns"] = [
+            "series_id",
+            "observation_date",
+            "value",
+            "unit",
+            "frequency",
+            "snapshot_id",
+        ]
+        return response(data)
+
+    @app.get("/api/v1/passages/{passage_id}")
+    def passage(passage_id: str, _user=Depends(identity)):
+        rows = db.rows(
+            """SELECT p.*,i.title,i.source,i.date_start,i.date_end,i.date_precision,
+            i.metadata->>'url' AS source_url,i.metadata->>'content_tier' AS content_tier,
+            i.metadata->>'epistemic_status' AS epistemic_status FROM passages p JOIN items i ON i.id=p.item_id WHERE p.id=%s
+            AND (i.source<>'news' OR i.metadata->>'content_tier'<>'headline_only' OR p.active)""",
+            (passage_id,),
+        )
+        if not rows:
+            raise LookupError()
+        return response(
+            {
+                "passage": rows[0],
+                "qualification": "A superseded passage remains citable with active=false; source text is not reviewed numerical truth.",
+            }
+        )
+
     @app.get("/api/v1/coverage")
     def get_coverage(_user=Depends(identity)):
         return response(coverage(db))
@@ -269,7 +442,11 @@ def create_app(settings=None):
 
     @app.get("/api/v1/assets/{asset_id}")
     def asset(asset_id: str, _user=Depends(identity)):
-        rows = db.rows("SELECT * FROM assets WHERE id=%s", (asset_id,))
+        rows = db.rows(
+            """SELECT a.* FROM assets a JOIN items i ON i.id=a.item_id WHERE a.id=%s
+            AND (i.source<>'news' OR i.metadata->>'content_tier'<>'headline_only' OR a.active)""",
+            (asset_id,),
+        )
         if not rows:
             raise LookupError()
         row = rows[0]
@@ -555,6 +732,287 @@ def create_app(settings=None):
             raise LookupError()
         return FileResponse(
             path, filename=f"quotes-{job_id}.parquet", media_type="application/vnd.apache.parquet"
+        )
+
+    from .analytics import DatasetSpec
+
+    @app.get("/api/v1/datasets/preview")
+    def dataset_preview(specification: str = Query(max_length=8000), _user=Depends(identity)):
+        from .analytics import prepare_dataset
+
+        data = prepare_dataset(db, store, DatasetSpec.model_validate_json(specification))
+        return response({"manifest": data["manifest"], "preview": data["preview"]})
+
+    @app.post("/api/v1/datasets/prepare")
+    def dataset_prepare(body: DatasetSpec, _user=Depends(identity)):
+        from .analytics import prepare_dataset
+
+        data = prepare_dataset(db, store, body)
+        return response({"manifest": data["manifest"], "preview": data["preview"]})
+
+    @app.post("/api/v1/datasets/export")
+    def dataset_export(body: DatasetSpec, _user=Depends(identity)):
+        from .analytics import prepare_dataset
+
+        data = prepare_dataset(db, store, body)
+        return Response(
+            data["csv"],
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="ofl-dataset.csv"'},
+        )
+
+    @app.get("/api/v1/quotes/compare")
+    def comparison(
+        symbol: str = Query(min_length=1, max_length=32),
+        market: str = Query(pattern=r"^\d{3}$"),
+        date_from: date = Query(),
+        date_to: date = Query(),
+        release: str = Query(max_length=128),
+        _user=Depends(identity),
+    ):
+        from .analytics import compare_quotes
+
+        return response(
+            compare_quotes(
+                db,
+                symbol=symbol,
+                market=market,
+                date_from=date_from,
+                date_to=date_to,
+                release=release,
+            )
+        )
+
+    @app.get("/api/v1/releases/diff")
+    def release_comparison(
+        left: str = Query(max_length=128),
+        right: str = Query(max_length=128),
+        symbol: str = Query(min_length=1, max_length=32),
+        market: str = Query(pattern=r"^\d{3}$"),
+        date_from: date = Query(),
+        date_to: date = Query(),
+        _user=Depends(identity),
+    ):
+        from .analytics import release_diff
+
+        return response(
+            release_diff(
+                db,
+                left=left,
+                right=right,
+                symbol=symbol,
+                market=market,
+                date_from=date_from,
+                date_to=date_to,
+            )
+        )
+
+    @app.get("/api/v1/workspaces")
+    def workspace_list(kind: str | None = Query(None, max_length=30), user=Depends(identity)):
+        return response(
+            db.rows(
+                "SELECT id,kind,title,current_revision,created_at FROM workspaces WHERE owner=%s AND (%s::text IS NULL OR kind=%s) ORDER BY created_at DESC LIMIT 200",
+                (user[0], kind, kind),
+            )
+        )
+
+    @app.post("/api/v1/workspaces")
+    def workspace_create(body: WorkspaceBody, user=Depends(identity)):
+        from .workspaces import save
+
+        return response(
+            save(
+                db,
+                user[0],
+                body.kind,
+                body.title,
+                body.content,
+                expected_revision=body.expected_revision,
+            ),
+            201,
+        )
+
+    @app.post("/api/v1/workspaces/{workspace_id}")
+    def workspace_save(workspace_id: str, body: WorkspaceBody, user=Depends(identity)):
+        from .workspaces import save
+
+        return response(
+            save(
+                db,
+                user[0],
+                body.kind,
+                body.title,
+                body.content,
+                workspace_id=workspace_id,
+                expected_revision=body.expected_revision,
+            )
+        )
+
+    @app.get("/api/v1/workspaces/{workspace_id}")
+    def workspace_read(
+        workspace_id: str, revision: int | None = Query(None, ge=1), user=Depends(identity)
+    ):
+        from .workspaces import load
+
+        return response(load(db, user[0], workspace_id, revision))
+
+    @app.get("/api/v1/workspaces/{workspace_id}/revisions")
+    def workspace_history(workspace_id: str, user=Depends(identity)):
+        from .workspaces import load
+
+        load(db, user[0], workspace_id)
+        return response(
+            db.rows(
+                "SELECT revision,sha256,created_at FROM workspace_revisions WHERE workspace_id=%s ORDER BY revision DESC LIMIT 200",
+                (workspace_id,),
+            )
+        )
+
+    @app.get("/api/v1/workspaces/{workspace_id}/export")
+    def workspace_export(
+        workspace_id: str,
+        revision: int = Query(ge=1),
+        format: Literal["json", "markdown"] = "json",
+        user=Depends(identity),
+    ):
+        from .workspaces import export_markdown, load
+
+        data = load(db, user[0], workspace_id, revision)
+        if format == "markdown":
+            return Response(
+                export_markdown(data),
+                media_type="text/markdown",
+                headers={"Content-Disposition": 'attachment; filename="ofl-research.md"'},
+            )
+        return response(data)
+
+    @app.post("/api/v1/workspaces/{workspace_id}/run")
+    def workspace_run(workspace_id: str, user=Depends(identity)):
+        from .workspaces import rerun
+
+        return response(rerun(db, store, user[0], workspace_id))
+
+    @app.get("/api/v1/workspaces/{workspace_id}/diff")
+    def workspace_diff(
+        workspace_id: str, left: int = Query(ge=1), right: int = Query(ge=1), user=Depends(identity)
+    ):
+        from .workspaces import load
+
+        a, b = load(db, user[0], workspace_id, left), load(db, user[0], workspace_id, right)
+        old, new = a["body"]["content"], b["body"]["content"]
+        return response(
+            {
+                "left": {"revision": left, "sha256": a["sha256"]},
+                "right": {"revision": right, "sha256": b["sha256"]},
+                "changed_fields": [
+                    k for k in sorted(old.keys() | new.keys()) if old.get(k) != new.get(k)
+                ],
+                "before": old,
+                "after": new,
+            }
+        )
+
+    @app.post("/api/v1/feedback")
+    def feedback_create(body: FeedbackBody, user=Depends(identity)):
+        if body.artifact_id:
+            from .workspaces import load
+
+            load(db, user[0], body.artifact_id)
+        feedback_id = uid()
+        with db.connect() as con:
+            con.execute(
+                "INSERT INTO research_feedback(id,owner,category,detail,artifact_id) VALUES (%s,%s,%s,%s,%s)",
+                (feedback_id, user[0], body.category, body.detail, body.artifact_id),
+            )
+        return response({"id": feedback_id, "state": "new"}, 201)
+
+    @app.get("/api/v1/feedback")
+    def feedback_list(user=Depends(identity)):
+        if user[1] in {"reviewer", "admin"}:
+            return response(
+                db.rows("SELECT * FROM research_feedback ORDER BY created_at DESC LIMIT 200")
+            )
+        return response(
+            db.rows(
+                "SELECT * FROM research_feedback WHERE owner=%s ORDER BY created_at DESC LIMIT 200",
+                (user[0],),
+            )
+        )
+
+    @app.post("/api/v1/feedback/{feedback_id}/review")
+    def feedback_review(feedback_id: str, body: FeedbackReview, user=Depends(reviewer)):
+        with db.connect() as con:
+            item = con.execute(
+                "SELECT * FROM research_feedback WHERE id=%s FOR UPDATE", (feedback_id,)
+            ).fetchone()
+            if not item:
+                raise LookupError("feedback not found")
+            current = con.execute(
+                "SELECT COALESCE(max(revision),0) AS revision FROM feedback_reviews WHERE feedback_id=%s",
+                (feedback_id,),
+            ).fetchone()["revision"]
+            if current != body.expected_revision:
+                raise FileExistsError("feedback review changed")
+            con.execute(
+                "INSERT INTO feedback_reviews(feedback_id,revision,actor,state,note) VALUES (%s,%s,%s,%s,%s)",
+                (feedback_id, current + 1, user[0], body.state, body.note),
+            )
+            con.execute(
+                "UPDATE research_feedback SET state=%s WHERE id=%s", (body.state, feedback_id)
+            )
+        return response({"id": feedback_id, "revision": current + 1, "state": body.state})
+
+    @app.get("/api/v1/feedback/{feedback_id}/history")
+    def feedback_history(feedback_id: str, user=Depends(identity)):
+        items = db.rows("SELECT owner FROM research_feedback WHERE id=%s", (feedback_id,))
+        if not items or (items[0]["owner"] != user[0] and user[1] not in {"reviewer", "admin"}):
+            raise LookupError("feedback not found")
+        return response(
+            db.rows(
+                "SELECT revision,actor,state,note,created_at FROM feedback_reviews WHERE feedback_id=%s ORDER BY revision",
+                (feedback_id,),
+            )
+        )
+
+    @app.post("/api/v1/workspaces/{workspace_id}/schedule")
+    def check_schedule(workspace_id: str, body: ScheduleBody, user=Depends(identity)):
+        from .workspaces import owned
+
+        with db.connect() as con:
+            item = owned(con, user[0], workspace_id)
+            if item["kind"] != "check":
+                raise ValueError("only saved checks can be scheduled")
+            con.execute(
+                "INSERT INTO check_schedules(workspace_id,owner,interval_minutes,enabled) VALUES (%s,%s,%s,%s) ON CONFLICT(workspace_id) DO UPDATE SET interval_minutes=excluded.interval_minutes,enabled=excluded.enabled,next_run_at=now()",
+                (workspace_id, user[0], body.interval_minutes, body.enabled),
+            )
+        return response(
+            {
+                "workspace_id": workspace_id,
+                "interval_minutes": body.interval_minutes,
+                "enabled": body.enabled,
+            }
+        )
+
+    @app.get("/api/v1/workspaces/{workspace_id}/schedule")
+    def schedule_read(workspace_id: str, user=Depends(identity)):
+        from .workspaces import load
+
+        load(db, user[0], workspace_id)
+        return response(
+            db.rows(
+                "SELECT interval_minutes,enabled,next_run_at FROM check_schedules WHERE workspace_id=%s",
+                (workspace_id,),
+            )
+        )
+
+    @app.get("/api/v1/jobs/{job_id}/events")
+    def job_events(job_id: str, _user=Depends(identity)):
+        return response(
+            db.rows(
+                "SELECT state,detail,created_at FROM job_events WHERE job_id=%s ORDER BY id LIMIT 500",
+                (job_id,),
+            )
         )
 
     return app

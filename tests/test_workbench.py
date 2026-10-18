@@ -1,0 +1,315 @@
+"""Product-foundation contracts: actual snapshots and collector-to-evidence integration."""
+
+import hashlib
+import io
+import json
+from datetime import date
+
+import pytest
+
+pytest.importorskip("psycopg")
+
+from ofl.research.library import date_interval, sync_library
+from ofl.research.macro import catalog, export_series, series_query, sync_macro
+from ofl.research.search import search
+from tests.test_research import research  # noqa: F401
+
+
+class LibraryFixture:
+    news_tiers = {"official-source": "official", "restricted": "headline_only"}
+
+    def __init__(self, blobs):
+        self.blobs = blobs
+        self.reads = []
+
+    def read(self, key, maximum, *, snapshot=False):
+        self.reads.append(key)
+        value = self.blobs[key]
+        if len(value) > maximum:
+            raise ValueError("source too large")
+        return value
+
+    def objects(self, prefix):
+        return [
+            {"key": k, "signature": hashlib.sha256(v).hexdigest(), "modified": "2026-01-01"}
+            for k, v in sorted(self.blobs.items())
+            if k.startswith(prefix)
+        ]
+
+
+def news(
+    *,
+    tier="official",
+    source="official-source",
+    published="2026-01-05",
+    fetched="2026-01-06T12:00:00Z",
+    title="Inflação no Brasil",
+    body="Indicadores documentados e contexto econômico.",
+):
+    return {
+        "id": "n1",
+        "source": source,
+        "tier": tier,
+        "title": title,
+        "link": "https://example.org/story",
+        "published": published,
+        "fetched_at": fetched,
+        "author": "Source author",
+        "summary": "Resumo da notícia",
+        "body": body,
+    }
+
+
+def snapshot(*, snapshot_id="s1", values=None, private=False):
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    values = values or [
+        {"series_id": "ipca", "date": date(2026, 1, 1), "value": 0.56},
+        {"series_id": "ipca", "date": date(2026, 2, 1), "value": 0.42},
+    ]
+    stream = io.BytesIO()
+    pq.write_table(pa.Table.from_pylist(values), stream)
+    body = stream.getvalue()
+    prefix = f"snapshots/{snapshot_id}/"
+    manifest = {
+        "run_id": snapshot_id,
+        "generated_at": "2026-03-01T12:00:00+00:00",
+        "catalog": prefix + "catalog.json",
+        "observations": {
+            "path": prefix + "observations.parquet",
+            "sha256": hashlib.sha256(body).hexdigest(),
+        },
+    }
+    cat = {
+        "series": [
+            {
+                "key": "ipca",
+                "name": "Inflação IPCA",
+                "unit": "%",
+                "frequency": "monthly",
+                "source": "official",
+                "redistribution": "private" if private else "open",
+                "rows": 99999,
+            }
+        ]
+    }
+    return LibraryFixture(
+        {
+            "latest.json": json.dumps({"manifest": prefix + "manifest.json"}).encode(),
+            prefix + "manifest.json": json.dumps(manifest).encode(),
+            prefix + "catalog.json": json.dumps(cat).encode(),
+            prefix + "observations.parquet": body,
+        }
+    )
+
+
+@pytest.mark.parametrize(
+    "raw,precision,start,end",
+    [
+        ("", "unknown", None, None),
+        ("sem data", "unknown", None, None),
+        ("2020", "year", date(2020, 1, 1), date(2020, 12, 31)),
+        ("2020-02", "month", date(2020, 2, 1), date(2020, 2, 29)),
+        ("2026-01-05T18:00:00-03:00", "day", date(2026, 1, 5), date(2026, 1, 5)),
+    ],
+)
+def test_publication_date_precision(raw, precision, start, end):
+    actual_start, actual_end, actual_precision, _timestamp = date_interval(raw)
+    assert (actual_start, actual_end, actual_precision) == (start, end, precision)
+
+
+def test_news_sync_is_searchable_citable_and_idempotent(research):
+    db, store = research
+    key = "news/items/official-source/2026-01-06/120000.jsonl"
+    source = LibraryFixture({key: json.dumps(news(), ensure_ascii=False).encode()})
+    result = sync_library(db, store, "news", source=source)
+    assert result["items"] == 1
+    hits = search(db, "inflação", mode="keyword")["results"]
+    assert hits[0]["source"] == "news"
+    assert hits[0]["epistemic_status"] == "official_publication"
+    assert hits[0]["date_precision"] == "day"
+    assert hits[0]["asset_id"]
+    assert sync_library(db, store, "news", source=source)["unchanged"] == 1
+    assert len(db.rows("SELECT id FROM items")) == 1
+    assert len(db.rows("SELECT id FROM observations")) == 0
+
+
+def test_headline_policy_is_reapplied_even_when_body_was_stored(research):
+    db, store = research
+    key = "news/items/restricted/2026-01-06/120000.jsonl"
+    source = LibraryFixture(
+        {
+            key: json.dumps(
+                news(source="restricted", tier="feed_fulltext", body="SECRETCONTENTNOTALLOWED")
+            ).encode()
+        }
+    )
+    sync_library(db, store, "news", source=source)
+    assert not search(db, "SECRETCONTENTNOTALLOWED", mode="keyword")["results"]
+    asset = db.rows("SELECT object_key FROM assets")[0]
+    assert "SECRETCONTENTNOTALLOWED" not in store.path(asset["object_key"]).read_text()
+    assert (
+        db.rows("SELECT metadata->>'content_tier' AS tier FROM items")[0]["tier"] == "headline_only"
+    )
+
+
+def test_older_news_batch_cannot_replace_newer_capture(research):
+    db, store = research
+    for stamp, title in [
+        ("2026-01-06T12:00:00Z", "Versão nova"),
+        ("2026-01-05T12:00:00Z", "Versão antiga"),
+    ]:
+        key = "news/items/official-source/" + stamp[:10] + "/batch.jsonl"
+        sync_library(
+            db,
+            store,
+            "news",
+            source=LibraryFixture({key: json.dumps(news(fetched=stamp, title=title)).encode()}),
+        )
+    assert db.rows("SELECT title FROM items")[0]["title"] == "Versão nova"
+
+
+def test_bad_news_has_no_partial_batch_publication(research):
+    db, store = research
+    key = "news/items/official-source/2026-01-06/batch.jsonl"
+    payload = "\n".join(json.dumps(row) for row in [news(), news(source="different-source")])
+    with pytest.raises(ValueError, match="failed inputs"):
+        sync_library(db, store, "news", source=LibraryFixture({key: payload.encode()}))
+    assert not db.rows("SELECT id FROM items")
+    assert not db.rows("SELECT * FROM library_entries")
+
+
+def test_letter_original_is_verified_and_date_is_not_invented(research):
+    db, store = research
+    pdf = b"%PDF-1.7\nsynthetic original for bridge contract\n"
+    sha = hashlib.sha256(pdf).hexdigest()
+    record = {
+        "url": "https://example.org/letter",
+        "title": "Carta de gestão",
+        "published": "",
+        "status": "stored",
+        "sha256": sha,
+        "seen_at": "2026-01-06T12:00:00Z",
+    }
+    source = LibraryFixture(
+        {
+            "letters/manifest/test-manager.jsonl": json.dumps(record).encode(),
+            f"letters/files/test-manager/{sha}.pdf": pdf,
+        }
+    )
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    row = db.rows("SELECT * FROM items")[0]
+    assert row["date_start"] is None and row["date_precision"] == "unknown"
+    assert row["metadata"]["epistemic_status"] == "attributed_opinion"
+    assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
+    assert len(db.rows("SELECT id FROM jobs WHERE kind='process_asset'")) == 1
+    assert store.path(db.rows("SELECT object_key FROM assets")[0]["object_key"]).read_bytes() == pdf
+
+
+def test_macro_snapshot_validates_actual_coverage_and_export(research):
+    db, store = research
+    source = snapshot()
+    assert sync_macro(db, store, source=source)["snapshot_id"] == "s1"
+    cat = catalog(db)
+    assert cat["series"][0]["rows"] == 2
+    assert cat["series"][0]["source_declared_rows"] == 99999
+    result = series_query(db, store, "ipca", limit=1)
+    assert result["rows"][0]["value"] == "0.56"
+    assert result["matching_rows"] == 2 and result["has_more"]
+    content, exported = export_series(db, store, "ipca", snapshot_id="s1")
+    assert "observation_date" in content and "s1" in content
+    assert exported["returned_rows"] == 2
+    assert sync_macro(db, store, source=source)["snapshot_id"] == "s1"
+
+
+def test_old_macro_snapshot_remains_reproducible_after_new_pointer(research):
+    db, store = research
+    sync_macro(db, store, source=snapshot())
+    sync_macro(
+        db,
+        store,
+        source=snapshot(
+            snapshot_id="s2",
+            values=[{"series_id": "ipca", "date": date(2026, 1, 1), "value": 99.0}],
+        ),
+    )
+    assert series_query(db, store, "ipca")["rows"][0]["value"] == "99.0"
+    assert series_query(db, store, "ipca", snapshot_id="s1")["rows"][0]["value"] == "0.56"
+
+
+@pytest.mark.parametrize("failure", ["checksum", "private", "duplicate", "path", "immutable"])
+def test_bad_macro_snapshots_never_replace_serving_pointer(research, failure):
+    db, store = research
+    sync_macro(db, store, source=snapshot())
+    source = snapshot(snapshot_id="s2", private=failure == "private")
+    if failure == "checksum":
+        source.blobs["snapshots/s2/observations.parquet"] = b"corrupt"
+    if failure == "duplicate":
+        source = snapshot(
+            snapshot_id="s2",
+            values=[{"series_id": "ipca", "date": date(2026, 1, 1), "value": 1.0}] * 2,
+        )
+    if failure == "path":
+        source.blobs["latest.json"] = json.dumps(
+            {"manifest": "snapshots/../../private/manifest.json"}
+        ).encode()
+    if failure == "immutable":
+        source = snapshot(values=[{"series_id": "ipca", "date": date(2026, 1, 1), "value": 42.0}])
+    with pytest.raises(ValueError):
+        sync_macro(db, store, source=source)
+    assert catalog(db)["snapshot_id"] == "s1"
+
+
+def test_workbench_api_keeps_auth_and_export_version(research):
+    from fastapi.testclient import TestClient
+
+    from ofl.research.api import create_app
+
+    db, store = research
+    sync_macro(db, store, source=snapshot())
+    api = TestClient(create_app(db.settings))
+    headers = {"X-OFL-Gateway-Token": "test-gateway", "X-OFL-Identity": "reader"}
+    assert api.get("/api/v1/data/catalog").status_code == 401
+    assert api.get("/api/v1/workbench", headers=headers).json()["macro"]["series_with_data"] == 1
+    assert api.get("/api/v1/data/series/ipca/export", headers=headers).status_code == 422
+    result = api.get("/api/v1/data/series/ipca/export?snapshot_id=s1", headers=headers)
+    assert result.status_code == 200 and result.headers["x-ofl-snapshot"] == "s1"
+    assert (
+        api.post("/api/v1/library/sync", headers=headers, json={"kind": "news"}).status_code == 403
+    )
+
+
+def test_policy_downgrade_reindexes_and_closes_old_body_access(research):
+    from fastapi.testclient import TestClient
+
+    from ofl.research.api import create_app
+
+    db, store = research
+    key = "news/items/official-source/2026-01-06/120000.jsonl"
+    source = LibraryFixture({key: json.dumps(news(body="PREVIOUSFULLBODYUNIQUE")).encode()})
+    sync_library(db, store, "news", source=source)
+    hit = search(db, "PREVIOUSFULLBODYUNIQUE", mode="keyword")["results"][0]
+    source.news_tiers = {"official-source": "headline_only"}
+    assert sync_library(db, store, "news", source=source)["items"] == 1
+    assert not search(db, "PREVIOUSFULLBODYUNIQUE", mode="keyword")["results"]
+    api = TestClient(create_app(db.settings))
+    headers = {"X-OFL-Gateway-Token": "test-gateway", "X-OFL-Identity": "reader"}
+    assert api.get(f"/api/v1/passages/{hit['id']}", headers=headers).status_code == 404
+    assert api.get(f"/api/v1/assets/{hit['asset_id']}", headers=headers).status_code == 404
+
+
+def test_macro_manifest_hash_matches_csv_bytes(research):
+    from fastapi.testclient import TestClient
+
+    from ofl.research.api import create_app
+
+    db, store = research
+    sync_macro(db, store, source=snapshot())
+    api = TestClient(create_app(db.settings))
+    headers = {"X-OFL-Gateway-Token": "test-gateway", "X-OFL-Identity": "reader"}
+    base = "/api/v1/data/series/ipca/"
+    csv = api.get(base + "export?snapshot_id=s1&date_to=2026-01-31", headers=headers)
+    manifest = api.get(base + "manifest?snapshot_id=s1&date_to=2026-01-31", headers=headers).json()
+    assert manifest["csv_sha256"] == hashlib.sha256(csv.content).hexdigest()
+    assert manifest["matching_rows"] == 1 and manifest["scope"]["date_to"] == "2026-01-31"

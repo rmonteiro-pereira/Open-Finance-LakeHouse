@@ -1,7 +1,13 @@
 "use client";
 
 import { useRef, useState } from "react";
-import Agents from "./agents";
+import Workbench from "./workbench";
+import Projects from "./projects";
+import Portfolio from "./portfolio";
+import DatasetBuilder from "./dataset-builder";
+import ResearchOperations, {QuoteComparison} from "./research-operations";
+import ResearchDesk from "./research-desk";
+import DataExplorer from "./data-explorer";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 
@@ -216,7 +222,7 @@ function RegionImage({
 }
 
 export default function Workspace() {
-  const [tab, setTab] = useState("Mercados");
+  const [tab, setTab] = useState("Início");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -377,13 +383,13 @@ export default function Workspace() {
         <span>Mercados históricos · Acervo documental · Acesso privado</span>
       </header>
       <main>
-        <h1>Explore o mercado e sua história</h1>
+        <h1>Entenda mercados. Trabalhe com evidências.</h1>
         <p className="muted">
           Dados com origem identificada. Documentos, páginas e valores revisados
           no mesmo lugar.
         </p>
         <nav aria-label="Áreas">
-          {["Pesquisa", "Mercados", "Acervo", "Revisão", "Operações"].map((t) => (
+          {["Início", "Pesquisa", "Dossiês", "Dados", "Preparar dados", "Carteiras", "Acompanhar", "Comparações", "Mercados", "Acervo", "Revisão", "Operações"].map((t) => (
             <button
               key={t}
               aria-current={tab === t}
@@ -406,7 +412,14 @@ export default function Workspace() {
             {message}
           </div>
         )}
-        {tab === "Pesquisa" && <Agents />}
+        {tab === "Início" && <Workbench navigate={setTab} />}
+        {tab === "Pesquisa" && <ResearchDesk />}
+        {tab === "Dossiês" && <Projects />}
+        {tab === "Preparar dados" && <DatasetBuilder />}
+        {tab === "Carteiras" && <Portfolio />}
+        {tab === "Acompanhar" && <ResearchOperations />}
+        {tab === "Comparações" && <QuoteComparison />}
+        {tab === "Dados" && <DataExplorer />}
         {tab === "Mercados" && (
           <>
             <section className="card">
@@ -607,6 +620,8 @@ export default function Workspace() {
                     onChange={(e) => setSource(e.target.value)}
                   >
                     <option value="">Todas</option>
+                    <option value="news">Notícias</option>
+                    <option value="manager_letter">Cartas de gestoras</option>
                     <option value="mub3">MUB3</option>
                     <option value="b3_bulletin">Boletins B3</option>
                   </select>

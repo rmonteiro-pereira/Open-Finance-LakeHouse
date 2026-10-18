@@ -1,0 +1,79 @@
+{
+  "method": "deterministic diagnostic through actual OFL edge; scripted model and synthetic sources",
+  "scope": "architecture constraints and preserved safeguards, not market demand or live-model quality",
+  "cases": [
+    {
+      "id": "AE01",
+      "job": "Understand financial data semantics",
+      "kind": "structural_gap",
+      "criterion": "Preserve a relevant clarification instead of replacing every no-tool response with generic required fields",
+      "criterion_met": true,
+      "observation": "Curated date semantics are preserved.",
+      "model_calls": 0
+    },
+    {
+      "id": "AE02",
+      "job": "Scope an investigation without knowing database codes",
+      "kind": "structural_gap",
+      "criterion": "Retain the user's goal-oriented clarification before requiring a three-digit market code",
+      "criterion_met": true,
+      "observation": "Structured goal-oriented clarification is retained."
+    },
+    {
+      "id": "AE03",
+      "job": "Search, inspect context, then produce an evidence-backed result",
+      "kind": "structural_gap",
+      "criterion": "Allow a dependent second read using the item ID found by the first read",
+      "criterion_met": true,
+      "reads": [
+        "search",
+        "items/synthetic-item"
+      ],
+      "model_calls": 3,
+      "observation": "Bounded multi-step policy permits a dependent context read."
+    },
+    {
+      "id": "AE04",
+      "job": "Combine OFL macro data, fund letters and news for a research brief",
+      "kind": "structural_gap",
+      "criterion": "Provide a route from specialist tools to all three existing upstream asset classes",
+      "criterion_met": true,
+      "offered_tools": [
+        "read_quotes",
+        "search_archive",
+        "read_passage",
+        "read_reviewed_observations",
+        "read_data_catalog",
+        "read_macro_series",
+        "compare_prices",
+        "prepare_dataset",
+        "read_saved_work",
+        "read_coverage",
+        "read_item",
+        "inspect_processing",
+        "inspect_ocr_review"
+      ],
+      "observation": "Macro and unified archive tools are exposed; source-specific correctness is tested separately."
+    },
+    {
+      "id": "AE05",
+      "job": "Inspect precise, qualified source data without model-invented figures",
+      "kind": "existing_strength",
+      "criterion": "Preserve exact source price, release and basis while suppressing invented planner prose",
+      "criterion_met": true,
+      "observation": "Source values and provenance survive the turn; invented planning prose is not displayed."
+    },
+    {
+      "id": "AE06",
+      "job": "Inspect research without accidental publication or data mutation",
+      "kind": "existing_strength",
+      "criterion": "Offer only read-only tool effects",
+      "criterion_met": true,
+      "observation": "All currently offered specialist tools are read-only."
+    }
+  ],
+  "summary": {
+    "demonstrated_gaps": 0,
+    "demonstrated_strengths": 2
+  }
+}

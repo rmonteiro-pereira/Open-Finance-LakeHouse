@@ -24,6 +24,7 @@ def configure(subparsers):
                 "index",
                 "build",
                 "mcp",
+                "sync",
             ),
         )
         parser.add_argument("path", nargs="?", type=Path)
@@ -38,6 +39,9 @@ def configure(subparsers):
         parser.add_argument("--host", default="127.0.0.1")
         parser.add_argument("--port", type=int, default=8081)
         parser.add_argument("--limit", type=int, default=1000)
+        parser.add_argument("--kind", choices=("news", "letters", "macro"))
+        parser.add_argument("--collection")
+        parser.add_argument("--sync-limit", type=int, default=20)
         parser.set_defaults(func=dispatch)
 
 
@@ -107,6 +111,19 @@ def dispatch(args):
 
         uvicorn.run(create_app(settings), host=args.host, port=args.port)
         return 0
+    elif args.action == "sync":
+        if not args.kind or not 1 <= args.sync_limit <= 200:
+            raise ValueError("sync requires --kind and --sync-limit between 1 and 200")
+        from .library import COLLECTION
+
+        if args.collection and not COLLECTION.fullmatch(args.collection):
+            raise ValueError("invalid collection")
+        result = {
+            "job_id": db.enqueue(
+                "library_sync",
+                {"kind": args.kind, "limit": args.sync_limit, "collection": args.collection},
+            )
+        }
     elif args.action == "coverage":
         from .imports import coverage
 

@@ -2,7 +2,7 @@
 import { ToolFailure } from "@inkwell/core";
 export type Params = Record<string, string | number | undefined>;
 export interface ResearchSource { read(path: string, params?: Params, signal?: AbortSignal): Promise<unknown>; }
-const PATH = /^(me|coverage|quotes|observations|releases|jobs|imports|items(?:\/[a-zA-Z0-9_-]+)?|search|candidates(?:\/[a-zA-Z0-9_-]+)?)$/;
+const PATH = /^(me|workbench|datasets\/preview|quotes\/compare|releases\/diff|workspaces(?:\/[a-zA-Z0-9_-]+)?|data\/catalog|data\/series\/[a-zA-Z0-9_-]+|passages\/[a-zA-Z0-9_-]+|coverage|quotes|observations|releases|jobs|imports|items(?:\/[a-zA-Z0-9_-]+)?|search|candidates(?:\/[a-zA-Z0-9_-]+)?)$/;
 export function oflSource(base: string, gatewayToken: string, identity: string, transport: (input: URL | RequestInfo, init?: RequestInit) => Promise<Response> = fetch): ResearchSource {
   const url = new URL(base);
   if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash) throw new Error("Invalid OFL service URL");
