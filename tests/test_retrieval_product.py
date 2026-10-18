@@ -341,3 +341,50 @@ def test_candidate_pool_records_failures_and_isolates_concurrent_changes(researc
     assert frozen["corpus"]["sha256"] == before
     assert corpus_manifest(db)["sha256"] != before
     assert frozen["collection"]["isolation"] == "repeatable_read_read_only"
+
+
+def test_original_catalog_metadata_is_discoverable_but_not_vector_evidence(research, monkeypatch):
+    from ofl.research.archive import index_text
+    from ofl.research.search import embed_pending
+
+    db, _ = research
+    with db.connect() as con:
+        item = upsert_item(
+            con,
+            "manager_letter",
+            {
+                "source_id": "catalog-only",
+                "title": "Carta sobre juros",
+                "content_tier": "private_original",
+            },
+            "catalog-only",
+        )
+        metadata = con.execute("SELECT id FROM passages WHERE item_id=%s", (item,)).fetchone()["id"]
+        # Previously backfilled metadata vectors remain stored but never enter
+        # semantic coverage/rankings. Original captures and embeddings are not deleted.
+        con.execute(
+            "INSERT INTO embeddings VALUES (%s,%s,%s,'[1,0,0]'::vector)",
+            (metadata, db.settings.embedding_model, db.settings.embedding_revision),
+        )
+    assert search(db, "juros", mode="keyword")["results"][0]["item_id"] == item
+    assert not search(db, "juros", mode="vector", vector=[1, 0, 0])["results"]
+    assert index_coverage(db)["eligible_passages"] == 0
+    with db.connect() as con:
+        index_text(
+            con,
+            item_id=item,
+            revision="extracted-body",
+            text="A carta interpreta a política de juros como restritiva.",
+            method="pdf_text",
+        )
+    calls = []
+    monkeypatch.setattr(
+        "ofl.research.search.embed",
+        lambda _settings, texts: calls.extend(texts) or [[1, 0, 0] for _ in texts],
+    )
+    assert embed_pending(db) == 1
+    assert calls == ["A carta interpreta a política de juros como restritiva."]
+    result = search(db, "juros", mode="vector", vector=[1, 0, 0])
+    assert result["results"][0]["method"] == "pdf_text"
+    assert result["index_coverage"]["eligible_passages"] == 1
+    assert len(db.rows("SELECT * FROM embeddings WHERE passage_id=%s", (metadata,))) == 1

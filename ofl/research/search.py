@@ -5,6 +5,10 @@ from functools import lru_cache
 
 from .db import digest
 
+SEMANTIC_CONTENT = (
+    "(p.method<>'metadata' OR COALESCE(i.metadata->>'content_tier','')<>'private_original')"
+)
+
 
 def fuse(rankings, k=60):
     scores = {}
@@ -80,9 +84,10 @@ def embed_pending(db, limit=1000, heartbeat=lambda _: None):
     if not settings.embedding_revision:
         raise ValueError("embedding revision is not pinned")
     rows = db.rows(
-        """SELECT p.id,p.text FROM passages p LEFT JOIN embeddings e
+        f"""SELECT p.id,p.text FROM passages p JOIN items i ON i.id=p.item_id LEFT JOIN embeddings e
         ON e.passage_id=p.id AND e.model=%s AND e.revision=%s WHERE p.active AND e.passage_id IS NULL
         AND (p.asset_id IS NULL OR EXISTS(SELECT 1 FROM assets a WHERE a.id=p.asset_id AND a.active))
+        AND {SEMANTIC_CONTENT}
         ORDER BY p.id LIMIT %s""",
         (settings.embedding_model, settings.embedding_revision, limit),
     )
@@ -134,6 +139,7 @@ def index_coverage(db, *, where=None, params=()):
     """Point-in-time eligible passage coverage, never a relevance or truth score."""
     if where is None:
         where, params = scope_conditions()
+    where = f"({where}) AND {SEMANTIC_CONTENT}"
     settings = db.settings
     configured = bool(settings.embedding_revision)
     row = db.rows(
@@ -161,7 +167,7 @@ def index_coverage(db, *, where=None, params=()):
         else "complete"
         if indexed == total
         else "partial",
-        "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth.",
+        "qualification": "Current active semantic passages within source/publication filters; catalog-only private-original metadata is excluded. Query terms are not a coverage filter. This is not relevance, historical completeness or truth.",
     }
 
 
@@ -222,7 +228,7 @@ def search(
             db.rows(
                 f"""SELECT {projection},1-({expression} <=> %s::vector) AS score
             FROM passages p JOIN items i ON i.id=p.item_id JOIN embeddings e ON e.passage_id=p.id
-            WHERE {where} AND e.model=%s AND e.revision=%s
+            WHERE {where} AND {SEMANTIC_CONTENT} AND e.model=%s AND e.revision=%s
             ORDER BY {expression} <=> %s::vector,p.id LIMIT %s""",
                 (
                     literal,

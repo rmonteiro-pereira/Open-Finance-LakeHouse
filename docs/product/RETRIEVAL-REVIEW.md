@@ -67,3 +67,20 @@ jurisdiction confusion, related-link contamination and catalog metadata entering
 vector results. It does not establish a winning method or whole-corpus absence.
 The sanitized receipt is `evidence/retrieval-review-development.json`; raw passages,
 worksheets and individual rationales remain in private research storage.
+
+## Semantic eligibility after the catalog-only finding
+
+Vector search and semantic coverage exclude `method=metadata` captures explicitly
+labeled `content_tier=private_original`. A title/manager/identifier is catalog
+discovery, not the original's extracted text. Keyword search can still find those
+records. Extracted PDF/OCR passages and actual permitted news headlines remain
+eligible, with their existing qualifications. Hybrid search can return catalog
+matches through its keyword contribution; it cannot assign those metadata passages
+a vector contribution.
+
+Existing originals, revisions and vectors are retained; no GPU backfill or embedding
+space change is required. Future embedding work skips those catalog-only passages.
+Coverage now uses the same semantic eligibility rule as vector retrieval. Its
+denominator therefore differs from the earlier baseline; a higher coverage fraction
+must not be presented as measured relevance improvement. Similarity still ranks
+candidates for unrelated topics. This change does not implement calibrated abstention.
