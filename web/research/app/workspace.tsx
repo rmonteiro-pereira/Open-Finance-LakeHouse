@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Agents from "./agents";
 import { sha256 } from "@noble/hashes/sha2.js";
 import { bytesToHex } from "@noble/hashes/utils.js";
 
@@ -382,7 +383,7 @@ export default function Workspace() {
           no mesmo lugar.
         </p>
         <nav aria-label="Áreas">
-          {["Mercados", "Acervo", "Revisão", "Operações"].map((t) => (
+          {["Pesquisa", "Mercados", "Acervo", "Revisão", "Operações"].map((t) => (
             <button
               key={t}
               aria-current={tab === t}
@@ -405,6 +406,7 @@ export default function Workspace() {
             {message}
           </div>
         )}
+        {tab === "Pesquisa" && <Agents />}
         {tab === "Mercados" && (
           <>
             <section className="card">
