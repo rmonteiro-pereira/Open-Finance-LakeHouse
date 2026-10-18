@@ -154,3 +154,8 @@ archive with the same release name but different bytes is refused.
 Follow-up verification: Inkwell 847 tests including real PostgreSQL, packaged
 consumer checks (TypeScript and Python) and OFL 21 agent tests with PostgreSQL.
 These are implementation checks; the live deployment check is recorded separately.
+
+Physical model calls emit Inkwell call-ledger records to private structured logs:
+role, outcome, latency, model/provider and reported usage. Records contain no
+prompt, response, source text or user identity. Source-only workflows create no
+model-call record. Model usage is not a measurement of financial task quality.

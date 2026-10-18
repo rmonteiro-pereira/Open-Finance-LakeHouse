@@ -24,7 +24,7 @@ if(!Number.isInteger(outputTokens)||outputTokens<128||outputTokens>2048)throw Er
 const [database] = await sql`SELECT to_regclass('public.dag_run') AS airflow`;
 if (database?.airflow) throw new Error("Refusing to migrate an Airflow metadata database");
 for (const kind of SPECIALISTS) await migratePostgres(sql, {schema: `ofl_agent_${kind}`});
-const fetch = createOflEdge({gatewayToken: token, origin, model, modelName, noThinking: process.env.OFL_AGENT_NO_THINK === "1", guidedDocuments:process.env.OFL_AGENT_GUIDED_DOCUMENTS === "1", modelMaxTokens:outputTokens, modelTimeoutMs:budget("OFL_AGENT_MODEL_TIMEOUT_MS",60_000,180_000), turnTimeoutMs:budget("OFL_AGENT_TURN_TIMEOUT_MS",110_000,600_000),
+const fetch = createOflEdge({ledger:{record:row=>console.info(JSON.stringify({event:"ofl.model_call",...row}))},gatewayToken: token, origin, model, modelName, noThinking: process.env.OFL_AGENT_NO_THINK === "1", guidedDocuments:process.env.OFL_AGENT_GUIDED_DOCUMENTS === "1", modelMaxTokens:outputTokens, modelTimeoutMs:budget("OFL_AGENT_MODEL_TIMEOUT_MS",60_000,180_000), turnTimeoutMs:budget("OFL_AGENT_TURN_TIMEOUT_MS",110_000,600_000),
   source: identity => oflSource(api, token, identity),
   conversations: kind => postgresConversationStore(sql, {schema: `ofl_agent_${kind}`}),
   transcript: kind => postgresTranscript(sql, {schema: `ofl_agent_${kind}`}),

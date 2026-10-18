@@ -217,3 +217,7 @@ consumer checks passed. OFL consumes SHA-256-pinned private 0.1.1 packages and h
 21 passing agent tests including spoofed-observation and revision-change cases.
 The private runtime image must be rolled out separately; no private implementation
 or archive is committed or included in public image contexts.
+
+Optional generation now emits the existing Inkwell call-ledger records to private
+structured service logs without prompt, response, source text or user identity.
+Source-only workflow decisions do not fabricate model-call accounting.

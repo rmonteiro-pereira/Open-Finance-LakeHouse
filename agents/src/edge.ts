@@ -1,11 +1,12 @@
 import { timingSafeEqual } from "node:crypto";
-import { actor, actorId, createChat, type ConversationStore, type ModelPort, type TranscriptPort } from "@inkwell/core";
+import { actor, actorId, createChat, type ConversationStore, type ModelPort, type TranscriptPort, type CallLedger } from "@inkwell/core";
 import { createChatServer } from "@inkwell/server";
 import { CATALOG, SPECIALISTS, oflAgent, type Specialist } from "./agents";
 import type { ResearchSource } from "./source";
 import {guidedDocuments} from "./guided";
 import { evidencePlanner, researchOffer } from "./planner";
 export interface EdgeConfig {
+  ledger?:CallLedger;
   gatewayToken: string; origin: string; model: ModelPort; modelName: string;
   guidedDocuments?:boolean; noThinking?: boolean; modelTimeoutMs?:number; turnTimeoutMs?:number; modelMaxTokens?:number;
   source(identity: string): ResearchSource;
@@ -48,7 +49,7 @@ export function createOflEdge(config: EdgeConfig) {
       if(config.guidedDocuments)definition.replyStep=(ctx,step)=>guidedDocuments(ctx,step,ctx.userProse,resolvePassage);
       const chat = createChat({agent:definition, model:evidencePlanner(config.model,kind,resolvePassage,config.noThinking?"\n/no_think":""),
         roles:{research:{model:config.modelName,maxTokens:config.modelMaxTokens??2048,timeoutMs:config.modelTimeoutMs??60_000},interpretation:{model:config.modelName,maxTokens:128,timeoutMs:45_000}},
-        conversations:config.conversations(kind),transcript:config.transcript?.(kind),
+        ledger:config.ledger,conversations:config.conversations(kind),transcript:config.transcript?.(kind),
         policy:{maxModelSteps:6,maxToolCallsPerTurn:12,policyVersion:"ofl/typed-source-workflow/3"},
       });
       server = createChatServer({chat, prefix: `/api/agents/${kind}`, authenticate: async () => actor(identity)});
