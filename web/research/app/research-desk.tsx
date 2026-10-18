@@ -30,7 +30,7 @@ export default function ResearchDesk({onDossier}:{onDossier?:(draft:{question:st
     catch(e) {if (version === inspection.current) setError(e instanceof Error ? e.message : "Não foi possível abrir a evidência");}
   }
   return <>
-    <section className="card"><h2>Investigue um tema nas fontes</h2><p>Busque notícias, cartas de gestoras e documentos. Os resultados são evidências para sua pesquisa; ainda não são uma análise ou uma conclusão automática.</p>
+    <section className="card"><h2>Investigue um tema nas fontes</h2><p>Busque notícias, cartas de gestoras e documentos. Os resultados são candidatos para leitura. A ordenação e a presença de uma citação não confirmam pertinência nem uma conclusão.</p>
       <form onSubmit={e => {e.preventDefault(); void search();}}>
         <label htmlFor="evidence-question">Tema ou pergunta</label><input id="evidence-question" value={question} maxLength={1000} onChange={e => setQuestion(e.target.value)} placeholder="Inflação, juros, câmbio ou uma tese que você quer investigar"/>
         <div className="filters"><label>Modo de busca<select value={mode} onChange={e=>setMode(e.target.value)}><option value="keyword">Termos exatos</option><option value="hybrid">Termos e significado</option><option value="vector">Significado</option></select></label><label>Fontes<select value={source} onChange={e => setSource(e.target.value)}><option value="">Todas as fontes conectadas</option><option value="news">Notícias</option><option value="manager_letter">Cartas de gestoras</option><option value="b3_bulletin">Boletins B3</option><option value="mub3">Acervo MUB3</option></select></label>
@@ -39,7 +39,7 @@ export default function ResearchDesk({onDossier}:{onDossier?:(draft:{question:st
       </form><p className="muted">O período se refere à data de publicação registrada, não ao pregão nem à coleta. Documentos sem data ficam fora dos filtros de período.</p>
     </section>
     {error && <p className="status error" role="alert">{error}</p>}
-    {searched && <section className="card"><h3>{hits.length} evidências encontradas neste recorte</h3><p className="muted">Até 20 documentos por busca. Uma ausência de resultados não demonstra que um evento não aconteceu.</p><button disabled={!hits.length} onClick={() => downloadJson({scope, index_coverage:coverage, evidence: hits, qualification: "Retrieved evidence; not an analytical conclusion"}, "ofl-evidencias.json")}>Salvar referências</button></section>}
+    {searched && <section className="card"><h3>{hits.length} documentos candidatos neste recorte</h3><p className="muted">Até 20 documentos por busca. Uma ausência de resultados não demonstra que um evento não aconteceu.</p><button disabled={!hits.length} onClick={() => downloadJson({scope, index_coverage:coverage, evidence: hits, qualification: "Retrieved evidence; not an analytical conclusion"}, "ofl-evidencias.json")}>Salvar referências</button></section>}
     {searched&&<SemanticCoverage coverage={coverage}/>}
     {hits.map(hit => <article className="card" key={hit.id}><p className="eyebrow">{labels[hit.source] ?? hit.source} · {hit.collection || "coleção não informada"}</p><h3>{hit.title}</h3>
       <p>{hit.snippet}</p><p className="muted">Publicação: {hit.date_start ? `${hit.date_start}${hit.date_end !== hit.date_start ? ` a ${hit.date_end}` : ""}` : "data desconhecida"} · precisão: {show(hit.date_precision)} · extração: {hit.method}{hit.page ? ` · página ${hit.page}` : ""}</p>

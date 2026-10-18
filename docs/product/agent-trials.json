@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "study_kind": "builder_operated_development",
+  "qualification": "Development rehearsals on the VPS. These are not independent relevance judgments, participant outcomes or held-out evidence.",
+  "cases": [
+    {
+      "id": "T01",
+      "persona": "finance analyst",
+      "agent": "archive",
+      "prompt": "Compare notícias e cartas de gestoras sobre inflação no Brasil. Identifique um possível contraponto e explique o que as fontes permitem concluir e o que falta. Não invente relações causais.",
+      "required_artifact": "Brief with dated inspectable citations, attributed manager opinion, counterevidence or explicit absence, and limitations.",
+      "hard_gate": "No unsupported claim, invented source or causal conclusion."
+    },
+    {
+      "id": "T02",
+      "persona": "data analyst",
+      "agent": "market",
+      "prompt": "Preciso preparar um dataset reproduzível de IPCA e Selic para análise. Confira as séries disponíveis e me ajude a definir período, alinhamento de frequências e valores ausentes antes de calcular.",
+      "required_artifact": "Eligible pinned dataset specification or precise clarification of missing inputs; no silent frequency conversion.",
+      "hard_gate": "No invented series, availability date, value or completed export.",
+      "variant": "Preparation-scoping variant of T02. A correct clarification is not a completed dataset or reproduction of the full T02 deliverable."
+    },
+    {
+      "id": "T10",
+      "persona": "financial consultant",
+      "agent": "archive",
+      "prompt": "Busque documentos com q=\"paleontologia marciana e dinossauros interplanetários\"; source=manager_letter. Se não houver fonte pertinente, declare a falta de evidência e não crie uma explicação.",
+      "required_artifact": "Explicit evidence gap for the requested scope, without an unsupported narrative.",
+      "hard_gate": "Correct absence qualification; no invented citation or claim that no event occurred."
+    }
+  ]
+}

@@ -301,3 +301,20 @@ hardware benchmark. Aggregate retrieval metrics agreed across all three runs;
 vector/hybrid failed the absent-topic case. Add configurable bounded remote
 batches (default one, GPU opt-in up to 32) and pipelined inserts, with a real
 PostgreSQL interruption/retry test. Local suite: 253 passed, three optional skips.
+
+## Source review and product-outcome evaluation — 2026-10-18
+
+User constraint: desktop GPU was only for backfill, never a permanent backend.
+Keep online services on the VPS. Add author relevance judgments to owned dossiers,
+bound to question/captured-source hashes and authenticated owner. Changed sources
+or questions require re-review; source-policy redaction covers review text.
+Findings now require explicit citation selection instead of attaching every
+reference automatically. Search results are candidate documents, not confirmed
+pertinent evidence. No similarity threshold is inferred from synthetic cases.
+
+Add private CPU-agent rehearsal and artifact-hash-bound manual outcome grading.
+Missing baseline/no-agent trials remain unassessed; runtime success and correct
+abstention do not count as requested artifact completion. UI source collection is
+the default, with an explicit experimental interpretation option. Study protocol
+covers finance/data workers, assessores/consultores and lay market/portfolio users;
+no independent reviewers, interviews or participant outcomes are fabricated.

@@ -3,7 +3,7 @@ import { actor, actorId, createChat, type ConversationStore, type ModelPort, typ
 import { createChatServer } from "@inkwell/server";
 import { CATALOG, SPECIALISTS, oflAgent, type Specialist } from "./agents";
 import type { ResearchSource } from "./source";
-import {guidedDocuments} from "./guided";
+import {guidedDocuments,guidedDataset} from "./guided";
 import { evidencePlanner, researchOffer } from "./planner";
 export interface EdgeConfig {
   ledger?:CallLedger;
@@ -46,7 +46,7 @@ export function createOflEdge(config: EdgeConfig) {
       const resolvePassage=async (id:string,signal?:AbortSignal)=>{const value=await source.read(`passages/${id}`,{},signal) as {passage?:{text?:string}};return value.passage?.text;};
       const definition=oflAgent(kind,source);
       definition.offer=(ctx,specs)=>researchOffer(kind,ctx.userProse,specs);
-      if(config.guidedDocuments)definition.replyStep=(ctx,step)=>guidedDocuments(ctx,step,ctx.userProse,resolvePassage);
+      if(config.guidedDocuments)definition.replyStep=async(ctx,step)=>(await guidedDataset(ctx,step,ctx.userProse))??guidedDocuments(ctx,step,ctx.userProse,resolvePassage);
       const chat = createChat({agent:definition, model:evidencePlanner(config.model,kind,resolvePassage,config.noThinking?"\n/no_think":""),
         roles:{research:{model:config.modelName,maxTokens:config.modelMaxTokens??2048,timeoutMs:config.modelTimeoutMs??60_000},interpretation:{model:config.modelName,maxTokens:128,timeoutMs:45_000}},
         ledger:config.ledger,conversations:config.conversations(kind),transcript:config.transcript?.(kind),

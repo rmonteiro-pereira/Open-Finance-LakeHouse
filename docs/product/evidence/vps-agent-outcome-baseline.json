@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "study_kind": "builder_operated_development",
+  "summary": {
+    "ofl_agent": {
+      "planned": 3,
+      "unassessed": 0,
+      "assessed_eligible": 2,
+      "completed": 0,
+      "completion_rate_assessed_eligible": 0.0,
+      "correct_abstentions": 1,
+      "execution_failures": 1,
+      "hard_gate_failures": 1,
+      "claim_support_failures": 0,
+      "review_gate_failures": 0
+    },
+    "ofl_without_agent": {
+      "planned": 3,
+      "unassessed": 3,
+      "assessed_eligible": 0,
+      "completed": 0,
+      "completion_rate_assessed_eligible": null,
+      "correct_abstentions": 0,
+      "execution_failures": 0,
+      "hard_gate_failures": 0,
+      "claim_support_failures": 0,
+      "review_gate_failures": 0
+    },
+    "baseline": {
+      "planned": 3,
+      "unassessed": 3,
+      "assessed_eligible": 0,
+      "completed": 0,
+      "completion_rate_assessed_eligible": null,
+      "correct_abstentions": 0,
+      "execution_failures": 0,
+      "hard_gate_failures": 0,
+      "claim_support_failures": 0,
+      "review_gate_failures": 0
+    }
+  },
+  "cases": [
+    {
+      "case_id": "T01",
+      "condition": "baseline",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T01",
+      "condition": "ofl_agent",
+      "outcome": "failed",
+      "eligibility": "eligible",
+      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation",
+      "hard_gate": "fail",
+      "claim_support": "not_assessed",
+      "execution_failure": false
+    },
+    {
+      "case_id": "T01",
+      "condition": "ofl_without_agent",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T02",
+      "condition": "baseline",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T02",
+      "condition": "ofl_agent",
+      "outcome": "failed",
+      "eligibility": "eligible",
+      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation",
+      "hard_gate": "not_assessed",
+      "claim_support": "not_assessed",
+      "execution_failure": true
+    },
+    {
+      "case_id": "T02",
+      "condition": "ofl_without_agent",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T10",
+      "condition": "baseline",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T10",
+      "condition": "ofl_agent",
+      "outcome": "correct_abstention",
+      "eligibility": "unavailable",
+      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation",
+      "hard_gate": "pass",
+      "claim_support": "pass",
+      "execution_failure": false
+    },
+    {
+      "case_id": "T10",
+      "condition": "ofl_without_agent",
+      "outcome": "unassessed"
+    }
+  ],
+  "qualification": "Manual judgments on recorded artifacts. Reviewer identity is self-reported, not independently authenticated. Missing trials remain unassessed; runtime completion, synthetic runs and correct abstention do not establish requested artifact completion, user validation or population performance.",
+  "execution": {
+    "agent_model": "ofl-research-qwen3:small-cpu2",
+    "deployment": "VPS CPU, existing production before this change",
+    "study_kind": "builder_operated_development",
+    "client_request_timeout_seconds": 125,
+    "configured_planning_timeout_seconds": 180,
+    "configured_turn_timeout_seconds": 480,
+    "independent_review": false,
+    "participant_trials": 0
+  },
+  "observations": [
+    {
+      "case_id": "T01",
+      "seconds": 52.729,
+      "http_status": 200,
+      "observation": "Returned exact quotations from sources outside the requested inflation topic and no usable interpretative brief. HTTP success did not complete the task."
+    },
+    {
+      "case_id": "T02",
+      "seconds": 125.119,
+      "http_status": null,
+      "observation": "Client timed out before an artifact was returned. Production turn budget was longer than the client budget."
+    },
+    {
+      "case_id": "T10",
+      "seconds": 2.526,
+      "http_status": 200,
+      "observation": "Explicit scoped evidence gap, without claiming that an event did not occur."
+    }
+  ]
+}

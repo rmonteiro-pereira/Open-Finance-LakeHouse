@@ -165,5 +165,31 @@ test("a passage revision change during fresh verification invalidates the quotat
 test("semantic source coverage remains visible even when no matching document is returned",async()=>{
  const tool=researchTools(source({mode:"vector",index_coverage:{indexed_passages:3,eligible_passages:100},results:[]})).archive[0]!;
  const result=await tool.run({q:"tema",mode:"vector",limit:8},{});
- expect(result).toMatchObject({title:"Evidências documentais · datas do catálogo · 3 de 100 passagens com vetores; não mede relevância",rows:[]});
+ expect(result).toMatchObject({title:"Documentos candidatos · datas do catálogo · 3 de 100 passagens com vetores; não mede relevância",rows:[]});
+});
+
+test("document query keeps the topic instead of OR-matching analysis instructions",async()=>{
+ const {documentQuery}=await import('./guided');
+ expect(documentQuery('Compare notícias e cartas de gestoras sobre inflação no Brasil. Identifique um possível contraponto.')).toBe('"inflação" "Brasil"');
+ expect(documentQuery('Busque documentos com q="paleontologia marciana"; source=manager_letter.')).toBe('paleontologia marciana');
+});
+
+test("dataset scoping reads actual catalogs and asks missing preparation rules without a model",async()=>{
+ const model=scriptedModel([]);const queries:unknown[]=[];
+ const edge=createOflEdge({gatewayToken:"secret",origin:"https://test.ofl",modelName:"test",model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async(path,args)=>{if(path==='me')return{identity:'ana',role:'reader'};if(path!=='data/catalog')throw Error('unexpected data read');queries.push(args);return{snapshot_id:'pinned',series:[{key:'actual-series',name:'Catalog source',rows:3,frequency:'monthly',unit:'%'}]};}})});
+ const response=await edge(new Request('https://test.ofl/api/agents/market/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'dataset-guided',message:'Preciso preparar um dataset reproduzível de IPCA e Selic.'})}));
+ const body=await response.text();expect(response.status).toBe(200);expect(queries).toEqual([{q:'ipca'},{q:'selic'}]);expect(body).toContain('valores ausentes');expect(body).toContain('Não realizei transformação');expect(body).toContain('pinned');expect(model.requests).toHaveLength(0);
+});
+
+test("excerpt window does not prefer a generic country mention over the main topic",async()=>{
+ const {excerptWindow}=await import('./guided');
+ const text='Brasil '+ 'contexto '.repeat(60)+'Inflação e Brasil aparecem neste trecho temático.';
+ expect(excerptWindow(text,['Inflação','Brasil'])).toContain('trecho temático');
+});
+
+test("UI source-collection intent handles a bare topic without invoking interpretation",async()=>{
+ const model=scriptedModel([]);let query:unknown;
+ const edge=createOflEdge({gatewayToken:"secret",origin:"https://test.ofl",modelName:"test",model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async(path,args)=>{if(path==='me')return{identity:'ana',role:'reader'};query=args;return{mode:'keyword',results:[]};}})});
+ const response=await edge(new Request('https://test.ofl/api/agents/market/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'bare-topic',message:'Público: analista. Objetivo: coletar e conferir fontes, sem hipóteses. Escopo solicitado: início não definido a fim não definido. Pergunta: inflação'})}));
+ expect(response.status).toBe(200);expect(await response.text()).toContain('Não encontrei evidências neste recorte');expect(query).toMatchObject({q:'"inflação"'});expect(model.requests).toHaveLength(0);
 });
