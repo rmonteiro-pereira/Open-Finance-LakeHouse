@@ -1,7 +1,7 @@
 "use client";
 import {useRef, useState} from "react";
 import Agents from "./agents";
-import {downloadJson, researchApi, show} from "./workbench";
+import {downloadJson, researchApi, show, SemanticCoverage, type IndexCoverage} from "./workbench";
 type Hit = {id: string; title: string; snippet: string; source: string; item_id: string; asset_id: string | null; page: number | null; collection: string; method: string; date_start: string | null; date_end: string | null; date_precision: string; content_tier: string | null; epistemic_status: string | null; source_url: string | null};
 const labels: Record<string, string> = {news: "Notícia", manager_letter: "Carta de gestora", mub3: "MUB3", b3_bulletin: "Boletim B3"};
 export default function ResearchDesk({onDossier}:{onDossier?:(draft:{question:string;references:string[];scope:Record<string,unknown>})=>void} = {}) {
@@ -11,6 +11,7 @@ export default function ResearchDesk({onDossier}:{onDossier?:(draft:{question:st
   const [busy, setBusy] = useState(false); const [error, setError] = useState(""); const [searched, setSearched] = useState(false);
   const [mode,setMode] = useState("keyword"); const [chosen,setChosen] = useState<string[]>([]);const [chosenScopes,setChosenScopes]=useState<Record<string,Record<string,string>>>({});
   const [assistant, setAssistant] = useState(false); const [scope, setScope] = useState<Record<string, string>>({});
+  const [coverage,setCoverage]=useState<IndexCoverage|null>(null);
   const current = useRef(0); const inspection = useRef(0);
   async function search() {
     const version = ++current.current; ++inspection.current;
@@ -19,7 +20,7 @@ export default function ResearchDesk({onDossier}:{onDossier?:(draft:{question:st
     try {
       if (from && to && from > to) throw new Error("A data inicial precisa ser anterior à data final.");
       const result = await researchApi(`search?${new URLSearchParams(params)}`);
-      if (version === current.current) {setHits(result.results.map((hit:Hit)=>({...hit,model_revision:result.model_revision,model:result.model,approximate:result.approximate}))); setScope(params); setSearched(true);}
+      if (version === current.current) {setHits(result.results.map((hit:Hit)=>({...hit,model_revision:result.model_revision,model:result.model,approximate:result.approximate}))); setScope(params); setCoverage(result.index_coverage??null); setSearched(true);}
     } catch(e) {if (version === current.current) setError(e instanceof Error ? e.message : "Falha na pesquisa");}
     finally {if (version === current.current) setBusy(false);}
   }
@@ -38,7 +39,8 @@ export default function ResearchDesk({onDossier}:{onDossier?:(draft:{question:st
       </form><p className="muted">O período se refere à data de publicação registrada, não ao pregão nem à coleta. Documentos sem data ficam fora dos filtros de período.</p>
     </section>
     {error && <p className="status error" role="alert">{error}</p>}
-    {searched && <section className="card"><h3>{hits.length} evidências encontradas neste recorte</h3><p className="muted">Até 20 documentos por busca. Uma ausência de resultados não demonstra que um evento não aconteceu.</p><button disabled={!hits.length} onClick={() => downloadJson({scope, evidence: hits, qualification: "Retrieved evidence; not an analytical conclusion"}, "ofl-evidencias.json")}>Salvar referências</button></section>}
+    {searched && <section className="card"><h3>{hits.length} evidências encontradas neste recorte</h3><p className="muted">Até 20 documentos por busca. Uma ausência de resultados não demonstra que um evento não aconteceu.</p><button disabled={!hits.length} onClick={() => downloadJson({scope, index_coverage:coverage, evidence: hits, qualification: "Retrieved evidence; not an analytical conclusion"}, "ofl-evidencias.json")}>Salvar referências</button></section>}
+    {searched&&<SemanticCoverage coverage={coverage}/>}
     {hits.map(hit => <article className="card" key={hit.id}><p className="eyebrow">{labels[hit.source] ?? hit.source} · {hit.collection || "coleção não informada"}</p><h3>{hit.title}</h3>
       <p>{hit.snippet}</p><p className="muted">Publicação: {hit.date_start ? `${hit.date_start}${hit.date_end !== hit.date_start ? ` a ${hit.date_end}` : ""}` : "data desconhecida"} · precisão: {show(hit.date_precision)} · extração: {hit.method}{hit.page ? ` · página ${hit.page}` : ""}</p>
       {hit.epistemic_status === "attributed_opinion" && <p>Opinião atribuída à gestora. Não representa um resultado verificado nem comprova desempenho.</p>}

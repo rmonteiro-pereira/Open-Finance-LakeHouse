@@ -14,8 +14,17 @@ export function downloadJson(value: unknown, filename: string) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], {type: "application/json"}));
   const a = document.createElement("a"); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
 }
+export type IndexCoverage = {configured:boolean; eligible_passages:number; indexed_passages:number; pending_passages:number; fraction:number|null; status:"disabled"|"empty"|"partial"|"complete"; model_revision:string|null};
+export function SemanticCoverage({coverage}:{coverage:IndexCoverage|null|undefined}) {
+  if(!coverage)return null;
+  return <aside className="card" aria-label="Cobertura da busca semântica"><h3>Cobertura da busca semântica</h3>
+    {!coverage.configured?<p>A busca por significado não está configurada. A busca por termos continua disponível.</p>:coverage.status==="empty"?<p>Não há passagens disponíveis neste recorte.</p>:<><p>{coverage.indexed_passages.toLocaleString("pt-BR")} de {coverage.eligible_passages.toLocaleString("pt-BR")} passagens com vetores ({((coverage.fraction??0)*100).toLocaleString("pt-BR",{maximumFractionDigits:1})}%).</p>
+    {coverage.status==="partial"?<p>A busca por significado cobre parte deste recorte. A busca combinada também procura por termos nas passagens disponíveis, inclusive nas que ainda não têm vetores.</p>:<p>Todas as passagens disponíveis neste recorte têm vetores para a versão atual do modelo.</p>}</>}
+    <p className="muted">Contagem das passagens ativas nas fontes e datas selecionadas; os termos da pergunta não reduzem essa contagem. Cobertura de vetores não mede relevância, veracidade nem a completude do histórico original.</p>
+  </aside>;
+}
 export default function Workbench({navigate}: {navigate: (tab: string) => void}) {
-  const [data, setData] = useState<{documents: Row[]; macro: {snapshot_id: string; generated_at: string; series_with_data: number} | null; date_quality: Row[]} | null>(null);
+  const [data, setData] = useState<{documents: Row[]; macro: {snapshot_id: string; generated_at: string; series_with_data: number} | null; date_quality: Row[]; index_coverage:IndexCoverage} | null>(null);
   const [error, setError] = useState("");
   useEffect(() => {
     const controller = new AbortController();
@@ -35,10 +44,11 @@ export default function Workbench({navigate}: {navigate: (tab: string) => void})
     </section>
     {error && <p role="alert" className="status error">{error}</p>}
     <section className="card"><h2>Disponível neste workbench</h2>{!data && !error ? <p>Consultando cobertura…</p> : <>
-      <p><strong>{data?.macro?.series_with_data ?? 0}</strong> séries com observações · <strong>{news}</strong> notícias indexadas · <strong>{letters}</strong> cartas catalogadas</p>
+      <p><strong>{data?.macro?.series_with_data ?? 0}</strong> séries com observações · <strong>{news}</strong> notícias catalogadas · <strong>{letters}</strong> cartas catalogadas</p>
       {data?.macro ? <p className="muted">Snapshot {data.macro.snapshot_id} · publicado {data.macro.generated_at}</p> : <p>O snapshot macro ainda não foi conectado ao catálogo privado.</p>}
       {undated > 0 && <p>{undated} documentos têm data de publicação desconhecida. Filtros de período não incluem esses documentos.</p>}
       <p className="muted">Estes números descrevem o que foi conectado e indexado aqui. O acervo bruto e a cobertura de cada série podem ser diferentes. Cartas expressam opiniões atribuídas; uma notícia não é uma observação financeira revisada.</p>
     </>}</section>
+    <SemanticCoverage coverage={data?.index_coverage}/>
   </>;
 }

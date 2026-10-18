@@ -62,11 +62,31 @@ class Database:
         con.execute("INSERT INTO job_events(job_id,state) VALUES (%s,'queued')", (job,))
         return job
 
-    def claim(self, owner):
+    def enqueue_if_idle(self, kind, payload, actor="cli"):
+        """Avoid growing a recurring queue while the same kind is still in flight."""
         with self.connect() as con:
-            row = con.execute("""SELECT id FROM jobs WHERE state='queued' OR
-                (state='running' AND lease_until < now()) ORDER BY created_at
-                FOR UPDATE SKIP LOCKED LIMIT 1""").fetchone()
+            con.execute(
+                "SELECT pg_advisory_xact_lock(hashtext(%s))", ("ofl-research-enqueue:" + kind,)
+            )
+            pending = con.execute(
+                "SELECT id FROM jobs WHERE kind=%s AND state IN ('queued','running') ORDER BY created_at LIMIT 1",
+                (kind,),
+            ).fetchone()
+            return pending["id"] if pending else self.enqueue_on(con, kind, payload, actor)
+
+    def claim(self, owner, kinds=None):
+        with self.connect() as con:
+            if kinds is not None and not kinds:
+                raise ValueError("worker kind selection cannot be empty")
+            scope = " AND kind=ANY(%s)" if kinds is not None else ""
+            row = con.execute(
+                """SELECT id FROM jobs WHERE (state='queued' OR
+                (state='running' AND lease_until < now()))"""
+                + scope
+                + """ ORDER BY created_at
+                FOR UPDATE SKIP LOCKED LIMIT 1""",
+                (list(kinds),) if kinds is not None else (),
+            ).fetchone()
             if not row:
                 return None
             claimed = con.execute(

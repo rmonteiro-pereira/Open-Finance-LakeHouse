@@ -218,6 +218,8 @@ def create_app(settings=None):
 
     @app.get("/api/v1/workbench")
     def workbench(_user=Depends(identity)):
+        from .search import index_coverage
+
         counts = db.rows(
             "SELECT source,item_type,count(*) AS items FROM items GROUP BY source,item_type"
         )
@@ -237,6 +239,7 @@ def create_app(settings=None):
         return response(
             {
                 "documents": counts,
+                "index_coverage": index_coverage(db),
                 "macro": dataset,
                 "processing": db.rows("SELECT state,count(*) AS assets FROM assets GROUP BY state"),
                 "date_quality": db.rows(

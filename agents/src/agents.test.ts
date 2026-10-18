@@ -160,3 +160,10 @@ test("a passage revision change during fresh verification invalidates the quotat
  const response=await edge(new Request("https://test.ofl/api/agents/market/turn",{method:"POST",headers:{"x-ofl-gateway-token":"secret","x-ofl-identity":"ana",origin:"https://test.ofl","content-type":"application/json"},body:JSON.stringify({conversationId:"changed-source",message:"Busque notícias sobre inflação, sem hipóteses"})}));
  const data=await response.json();const answer=data.data.messages.filter((m:{role:string})=>m.role==="assistant").map((m:{content:string})=>m.content).join("\n");expect(answer).not.toContain("Seleção de trechos conferidos");expect(answer).toContain("não estão disponíveis");expect(passageReads).toBe(2);
 });
+
+
+test("semantic source coverage remains visible even when no matching document is returned",async()=>{
+ const tool=researchTools(source({mode:"vector",index_coverage:{indexed_passages:3,eligible_passages:100},results:[]})).archive[0]!;
+ const result=await tool.run({q:"tema",mode:"vector",limit:8},{});
+ expect(result).toMatchObject({title:"Evidências documentais · datas do catálogo · 3 de 100 passagens com vetores; não mede relevância",rows:[]});
+});

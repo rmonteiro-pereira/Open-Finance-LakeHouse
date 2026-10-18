@@ -21,6 +21,8 @@ def configure(subparsers):
                 "coverage",
                 "embed",
                 "pilot",
+                "evaluate",
+                "evaluate-fixture",
                 "index",
                 "build",
                 "mcp",
@@ -35,6 +37,12 @@ def configure(subparsers):
         )
         parser.add_argument("--dry-run", action="store_true")
         parser.add_argument("--once", action="store_true")
+        parser.add_argument(
+            "--lane", choices=("all", "default", "embedding", "checks"), default="all"
+        )
+        parser.add_argument(
+            "--if-idle", action="store_true", help="embedding enqueue only: reuse an in-flight job"
+        )
         parser.add_argument("--drain", action="store_true")
         parser.add_argument("--host", default="127.0.0.1")
         parser.add_argument("--port", type=int, default=8081)
@@ -55,7 +63,9 @@ def dispatch(args):
         create_mcp(settings).run(transport="stdio")
         return 0
     db = Database(settings)
-    store = Store.from_settings(settings)
+    store = (
+        None if args.action in {"evaluate", "evaluate-fixture"} else Store.from_settings(settings)
+    )
     if args.action == "migrate":
         db.migrate()
         result = {"schema": 1}
@@ -102,7 +112,7 @@ def dispatch(args):
     elif args.action == "worker":
         from .worker import run
 
-        run(db, store, once=args.once, drain=args.drain)
+        run(db, store, once=args.once, drain=args.drain, lane=args.lane)
         result = {"worker": "stopped"}
     elif args.action == "serve":
         import uvicorn
@@ -129,7 +139,24 @@ def dispatch(args):
 
         result = coverage(db)
     elif args.action == "embed":
-        result = {"job_id": db.enqueue("embed", {"limit": args.limit})}
+        result = {
+            "job_id": (db.enqueue_if_idle if args.if_idle else db.enqueue)(
+                "embed", {"limit": args.limit}
+            )
+        }
+    elif args.action == "evaluate-fixture":
+        import sys
+        from .retrieval_fixture import evaluate_fixture
+
+        result = evaluate_fixture(
+            settings, progress=lambda value: print(json.dumps(value), file=sys.stderr, flush=True)
+        )
+    elif args.action == "evaluate":
+        if args.path is None:
+            raise ValueError("judged evaluation manifest required")
+        from .retrieval_eval import evaluate
+
+        result = evaluate(db, args.path, maximum=args.limit)
     elif args.action == "pilot":
         if args.path is None:
             raise ValueError("judged-query JSONL required")

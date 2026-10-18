@@ -241,3 +241,29 @@ A point-in-time corpus check found 281 matching vectors for 8,204 active passage
 and 35 completed embedding jobs. Indexing progresses, but semantic coverage is
 partial and relevance remains unmeasured. Actual participant and held-out analytical
 tasks remain open. See docs/product/evidence/inkwell-reuse-acceptance.json.
+
+## Retrieval coverage and fair processing follow-up — 2026-10-18
+
+Expose scoped index coverage in API, dashboard/search exports and semantic agent
+tables. Count active eligible passages and vectors for the pinned model/revision;
+never equate complete local indexing with source completeness or relevance.
+Keyword saved checks ignore indexing-only progress when comparing evidence.
+
+Add default/embedding/checks worker lanes with disjoint job claims and compatible
+shared/exclusive legacy advisory locks. Preserve serial Delta/source work while
+allowing embedding and saved checks to progress independently. Atomic --if-idle
+embedding enqueue prevents recurring queue growth. Private rollout uses a bounded
+64-passage increment on the dedicated pool, not higher per-request model batches.
+
+Add frozen-corpus document-level keyword/vector/hybrid evaluation with explicit
+judgments, model/corpus hashes, ineligible/error denominators and an absent-topic
+metric. A public twenty-document Portuguese synthetic development exercise uses
+a temporary schema and the real configured model; it does not establish held-out
+relevance, financial correctness or user outcomes. See
+docs/research/RETRIEVAL-EVALUATION.md. Browser checks exercised partial/complete/zero
+coverage against real local API/PostgreSQL, with mobile layout and no JS errors.
+
+Research CI passed all 255 tests including optional OCR/vector-pilot dependencies.
+The minimal unit lane initially could not collect the new integration module
+without FastAPI; align its dependency guard with the other research suites. The
+research lane continues to execute these tests against PostgreSQL.
