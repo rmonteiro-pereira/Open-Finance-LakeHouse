@@ -10,7 +10,7 @@ from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from psycopg.types.json import Jsonb
 from pydantic import BaseModel, Field
 
@@ -57,6 +57,12 @@ class ManualCandidate(BaseModel):
     page: int = Field(ge=1)
     bbox: list[float] = Field(min_length=4, max_length=4)
     cells: list[list[str | None]]
+
+
+class LibrarySyncBody(BaseModel):
+    kind: Literal["news", "letters", "macro"]
+    limit: int = Field(20, ge=1, le=200)
+    collection: str | None = Field(None, pattern=r"^[A-Za-z0-9_-]{1,80}$")
 
 
 def create_app(settings=None):
@@ -184,6 +190,147 @@ def create_app(settings=None):
             )
         )
 
+    @app.get("/api/v1/workbench")
+    def workbench(_user=Depends(identity)):
+        counts = db.rows(
+            "SELECT source,item_type,count(*) AS items FROM items GROUP BY source,item_type"
+        )
+        macro = db.rows(
+            "SELECT s.id,s.generated_at,s.catalog FROM macro_pointer p JOIN macro_snapshots s ON s.id=p.snapshot_id"
+        )
+        dataset = None
+        if macro:
+            dataset = {
+                "snapshot_id": macro[0]["id"],
+                "generated_at": macro[0]["generated_at"],
+                "series_with_data": sum(
+                    row.get("redistribution") == "open" and bool(row.get("rows"))
+                    for row in macro[0]["catalog"]["series"]
+                ),
+            }
+        return response(
+            {
+                "documents": counts,
+                "macro": dataset,
+                "processing": db.rows("SELECT state,count(*) AS assets FROM assets GROUP BY state"),
+                "date_quality": db.rows(
+                    "SELECT source,date_precision,count(*) AS items FROM items GROUP BY source,date_precision"
+                ),
+                "qualification": "Indexed scope only; collection totals and source coverage are separate.",
+            }
+        )
+
+    @app.post("/api/v1/library/sync")
+    def library_sync(body: LibrarySyncBody, request: Request, user=Depends(admin)):
+        payload = body.model_dump()
+
+        def operation(con):
+            return {"job_id": db.enqueue_on(con, "library_sync", payload, user[0])}
+
+        return response(idempotent(request, user[0], payload, operation), 202)
+
+    @app.get("/api/v1/data/catalog")
+    def data_catalog(
+        snapshot_id: str | None = None,
+        q: str | None = Query(None, max_length=200),
+        _user=Depends(identity),
+    ):
+        from .macro import catalog
+
+        return response(catalog(db, snapshot_id=snapshot_id, query=q))
+
+    @app.get("/api/v1/data/series/{series_id}")
+    def macro_series(
+        series_id: str,
+        snapshot_id: str | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        limit: int = Query(1000, ge=1, le=1000),
+        offset: int = Query(0, ge=0),
+        _user=Depends(identity),
+    ):
+        from .macro import series_query
+
+        return response(
+            series_query(
+                db,
+                store,
+                series_id,
+                snapshot_id=snapshot_id,
+                date_from=date_from,
+                date_to=date_to,
+                limit=limit,
+                offset=offset,
+            )
+        )
+
+    @app.get("/api/v1/data/series/{series_id}/export")
+    def macro_export(
+        series_id: str,
+        snapshot_id: str,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        _user=Depends(identity),
+    ):
+        from .macro import IDENTIFIER, export_series
+
+        if not IDENTIFIER.fullmatch(snapshot_id):
+            raise ValueError("invalid snapshot ID")
+        content, data = export_series(
+            db, store, series_id, snapshot_id=snapshot_id, date_from=date_from, date_to=date_to
+        )
+        return Response(
+            content,
+            media_type="text/csv; charset=utf-8",
+            headers={
+                "Content-Disposition": f'attachment; filename="ofl-{series_id}-{snapshot_id}.csv"',
+                "X-OFL-Snapshot": data["snapshot_id"],
+            },
+        )
+
+    @app.get("/api/v1/data/series/{series_id}/manifest")
+    def macro_manifest(
+        series_id: str,
+        snapshot_id: str,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        _user=Depends(identity),
+    ):
+        from .macro import export_series
+
+        content, data = export_series(
+            db, store, series_id, snapshot_id=snapshot_id, date_from=date_from, date_to=date_to
+        )
+        data.pop("rows")
+        data["csv_sha256"] = hashlib.sha256(content.encode()).hexdigest()
+        data["csv_columns"] = [
+            "series_id",
+            "observation_date",
+            "value",
+            "unit",
+            "frequency",
+            "snapshot_id",
+        ]
+        return response(data)
+
+    @app.get("/api/v1/passages/{passage_id}")
+    def passage(passage_id: str, _user=Depends(identity)):
+        rows = db.rows(
+            """SELECT p.*,i.title,i.source,i.date_start,i.date_end,i.date_precision,
+            i.metadata->>'url' AS source_url,i.metadata->>'content_tier' AS content_tier,
+            i.metadata->>'epistemic_status' AS epistemic_status FROM passages p JOIN items i ON i.id=p.item_id WHERE p.id=%s
+            AND (i.source<>'news' OR i.metadata->>'content_tier'<>'headline_only' OR p.active)""",
+            (passage_id,),
+        )
+        if not rows:
+            raise LookupError()
+        return response(
+            {
+                "passage": rows[0],
+                "qualification": "A superseded passage remains citable with active=false; source text is not reviewed numerical truth.",
+            }
+        )
+
     @app.get("/api/v1/coverage")
     def get_coverage(_user=Depends(identity)):
         return response(coverage(db))
@@ -269,7 +416,11 @@ def create_app(settings=None):
 
     @app.get("/api/v1/assets/{asset_id}")
     def asset(asset_id: str, _user=Depends(identity)):
-        rows = db.rows("SELECT * FROM assets WHERE id=%s", (asset_id,))
+        rows = db.rows(
+            """SELECT a.* FROM assets a JOIN items i ON i.id=a.item_id WHERE a.id=%s
+            AND (i.source<>'news' OR i.metadata->>'content_tier'<>'headline_only' OR a.active)""",
+            (asset_id,),
+        )
         if not rows:
             raise LookupError()
         row = rows[0]

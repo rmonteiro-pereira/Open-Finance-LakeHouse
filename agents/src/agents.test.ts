@@ -72,3 +72,16 @@ test("planner cannot present invented financial assertions as a generated readin
   expect(result.content).not.toContain("9999");
   expect(result.content).toContain("intervalo de datas");
 });
+
+
+test("macro evidence keeps the requested snapshot and source values", async () => {
+  const reads: unknown[] = [];
+  const tools = researchTools({read: async (path, params) => {
+    reads.push({path, params});
+    return {snapshot_id: "snapshot1", series: {unit: "%", frequency: "daily"}, rows: [{date: "2026-01-05", value: "13.250000"}], matching_rows: 1};
+  }});
+  const tool = tools.market.find(t => t.name === "read_macro_series")!;
+  const result = await tool.run({series_id: "selic", snapshot_id: "snapshot1", date_from: "2026-01-05", date_to: "2026-01-05", limit: 30}, {});
+  expect(reads).toEqual([{path: "data/series/selic", params: {snapshot_id: "snapshot1", date_from: "2026-01-05", date_to: "2026-01-05", limit: 30}}]);
+  expect(result).toMatchObject({rows: [{value: "13.250000", snapshot_id: "snapshot1", unit: "%"}]});
+});

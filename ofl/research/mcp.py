@@ -40,7 +40,7 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
     def search_archive(
         q: str,
         mode: Literal["keyword", "vector", "hybrid"] = "keyword",
-        source: Literal["b3_bulletin", "mub3"] | None = None,
+        source: Literal["b3_bulletin", "mub3", "news", "manager_letter"] | None = None,
         date_from: date | None = None,
         date_to: date | None = None,
         limit: int = 8,
@@ -86,5 +86,48 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
         if not 1 <= limit <= 100:
             raise ValueError("limit outside bounds")
         return read("releases", {"limit": limit})
+
+    @server.tool()
+    def data_catalog(q: str | None = None, snapshot_id: str | None = None) -> dict:
+        """Discover open macro series with units, frequencies, validated coverage and snapshot ID."""
+        if q and len(q) > 200:
+            raise ValueError("catalog query is too long")
+        return read("data/catalog", {"q": q, "snapshot_id": snapshot_id})
+
+    @server.tool()
+    def macro_series(
+        series_id: str,
+        snapshot_id: str | None = None,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        limit: int = 100,
+    ) -> dict:
+        """Pinned macro observations; values preserve source numeric representation, not historical publication availability."""
+        from .macro import SERIES
+
+        if not SERIES.fullmatch(series_id) or not 1 <= limit <= 1000:
+            raise ValueError("invalid macro series query")
+        if date_from and date_to and date_from > date_to:
+            raise ValueError("reversed date interval")
+        return read(
+            f"data/series/{series_id}",
+            {
+                "snapshot_id": snapshot_id,
+                "date_from": date_from,
+                "date_to": date_to,
+                "limit": limit,
+            },
+        )
+
+    @server.tool()
+    def passage(passage_id: str) -> dict:
+        """Inspect a cited passage, its source/date/content qualifications and revision state."""
+        if (
+            not passage_id
+            or len(passage_id) > 128
+            or not all(c.isascii() and (c.isalnum() or c in "_-") for c in passage_id)
+        ):
+            raise ValueError("invalid passage ID")
+        return read(f"passages/{passage_id}")
 
     return server

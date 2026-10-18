@@ -76,6 +76,21 @@ def execute(db, store, job, heartbeat):
         if rows[0]["source"] == "b3_cotahist":
             return import_quotes(db, store, payload["import_id"], heartbeat)
         return import_archive(db, store, payload["import_id"], heartbeat)
+    if job["kind"] == "library_sync":
+        if payload["kind"] == "macro":
+            from .macro import sync_macro
+
+            return sync_macro(db, store)
+        from .library import sync_library
+
+        return sync_library(
+            db,
+            store,
+            payload["kind"],
+            limit=payload.get("limit", 20),
+            collection=payload.get("collection"),
+            heartbeat=heartbeat,
+        )
     if job["kind"] == "process_asset":
         return process_asset(db, store, payload["asset_id"], heartbeat)
     if job["kind"] == "build_observations":

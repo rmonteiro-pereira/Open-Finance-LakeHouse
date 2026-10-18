@@ -4,6 +4,7 @@ Finance workers and data workers are primary. Assessores, consultores and lay
 market/investment-portfolio users are explicitly considered. The engineering
 portfolio project is secondary.
 
+- [Shape definido e primeira fatia de implementação](SHAPE.md).
 - [Repeatable evaluation workflow](WORKFLOW.md): process, evidence, baselines,
   adversarial cases, outcome gates and decision cadence.
 - [First adversarial review](REVIEW.md): findings across the whole OFL, leading

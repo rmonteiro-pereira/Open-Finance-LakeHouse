@@ -107,3 +107,27 @@ safeguards (exact source values/provenance and read-only tools). These are diagn
 counterexamples, not real user-task or generation-model success-rate measurements.
 No runtime feature changes or production writes were made. The inherited backlog
 is labeled unvalidated; its inaccurate immutable-conversation claim is corrected.
+
+
+## Workbench foundation — 2026-10-18
+
+Product shape documented in `docs/product/SHAPE.md`: financial research, data
+exploration and portfolio understanding, with finance/data workers both primary.
+Initial implementation connects existing news/letter objects and validated macro
+snapshots to private API, MCP, Inkwell tools and research/data dashboard journeys.
+See `docs/research/WORKBENCH.md` for bounded sync jobs and export semantics.
+Local checks: 26 PostgreSQL-backed workbench/agent-API tests passed; private Next
+build passed; lint has two existing warnings and no errors; nine existing Inkwell
+tests passed before the additional macro-tool contract test. Production deployment,
+real-source bridge acceptance and user outcome gates are not established by these
+checks. Generative synthesis and portfolio holdings analysis remain subsequent
+work; text generation still requires a configured provider.
+
+Final local foundation verification: 222 Python tests passed, three optional
+Qdrant/OCR checks skipped; TypeScript typecheck and ten Inkwell tests passed.
+Chromium acceptance with simulated API fixtures covered data discovery/query,
+version-pinned CSV links, evidence search/passage inspection and mobile overflow.
+Private Next build passed and ESLint reported no errors (two existing warnings).
+Python fatal/syntax Ruff rules passed; the full broad Ruff policy is not clean in
+this lane and is not claimed as a passing check. Live-source acceptance and rollout
+remain outstanding.

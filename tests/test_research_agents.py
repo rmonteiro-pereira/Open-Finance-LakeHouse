@@ -100,6 +100,9 @@ def test_mcp_tools_preserve_exact_values_and_bound_network_access():
             "search_archive",
             "item",
             "releases",
+            "data_catalog",
+            "macro_series",
+            "passage",
         }
         result = await server.call_tool(
             "quotes",

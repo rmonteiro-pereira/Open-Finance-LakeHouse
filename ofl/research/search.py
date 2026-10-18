@@ -137,7 +137,9 @@ def search(
         params.append(date_to)
     where = " AND ".join(conditions)
     projection = """p.id,p.item_id,p.asset_id,p.page,p.text,p.method,p.evidence,
-        i.title,i.source,i.item_type,i.collection,i.date_start,i.date_end"""
+        i.title,i.source,i.item_type,i.collection,i.date_start,i.date_end,i.date_precision,
+        i.metadata->>'url' AS source_url,i.metadata->>'content_tier' AS content_tier,
+        i.metadata->>'epistemic_status' AS epistemic_status"""
     rankings = []
     candidates = max(100, limit * 5)
     if mode in {"keyword", "hybrid"}:

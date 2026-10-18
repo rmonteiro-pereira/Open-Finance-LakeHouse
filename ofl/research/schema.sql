@@ -97,3 +97,20 @@ CREATE TABLE IF NOT EXISTS uploads (
  expected_size bigint NOT NULL, expected_sha256 text NOT NULL, received bigint NOT NULL DEFAULT 0,
  state text NOT NULL DEFAULT 'open', metadata jsonb NOT NULL DEFAULT '{}'
 );
+
+-- Existing collector/snapshot bridge. Originals and derived facts remain separate.
+CREATE TABLE IF NOT EXISTS library_entries (
+ kind text NOT NULL, source_key text NOT NULL, signature text NOT NULL,
+ detail jsonb NOT NULL DEFAULT '{}', updated_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(kind,source_key)
+);
+CREATE TABLE IF NOT EXISTS macro_snapshots (
+ id text PRIMARY KEY, generated_at timestamptz NOT NULL, fingerprint text NOT NULL,
+ observations_key text NOT NULL, sha256 text NOT NULL,
+ manifest jsonb NOT NULL, catalog jsonb NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS macro_pointer (
+ singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
+ snapshot_id text NOT NULL REFERENCES macro_snapshots(id)
+);

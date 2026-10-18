@@ -86,3 +86,16 @@ Current checks: 9 Inkwell tests (including real PostgreSQL restart/ownership),
 production Next.js build, a local private container bootstrap with PostgreSQL and
 401 rejection, and a browser flow covering exact evidence, reopen, export and
 handoff. Browser model/source data were scripted fixtures, not live generation.
+
+## Workbench foundation
+
+The archive tool catalog now includes indexed news and manager letters through
+`search_archive`, cited passage inspection through `read_passage`, and macro
+catalog/series reads through `read_data_catalog` and `read_macro_series`. Market
+specialists also receive the macro tools. These connections do not remove the
+single-planning-step limitation described above. Direct search and CSV export in
+the workbench remain available without a text-generation provider.
+
+See [the workbench operation guide](../docs/research/WORKBENCH.md) for ingestion,
+source restrictions and reproducible exports. The Python MCP exposes eight
+read-only tools, including `data_catalog`, `macro_series` and `passage`.

@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY ofl ./ofl
+COPY sources/news.yml ./sources/news.yml
 ARG INCLUDE_EMBEDDINGS=0
 RUN --mount=type=cache,target=/root/.cache/uv \
     if [ "$INCLUDE_EMBEDDINGS" = "1" ]; then \
