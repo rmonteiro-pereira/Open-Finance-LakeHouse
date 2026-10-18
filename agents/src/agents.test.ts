@@ -102,7 +102,7 @@ test("actual edge performs dependent passage read and verifies the final excerpt
     throw Error("unexpected source");
   }})});
   const result=await edge(new Request("https://test.ofl/api/agents/archive/turn",{method:"POST",headers:{"x-ofl-gateway-token":"secret","x-ofl-identity":"ana",origin:"https://test.ofl","content-type":"application/json"},body:JSON.stringify({conversationId:"grounded",message:"Encontre uma carta sobre inflação e leia seu contexto"})}));
-  const body=await result.text();expect(result.status).toBe(200);expect(calls).toContain("passages/passage1");expect(model.requests).toHaveLength(3);expect(model.requests[0]?.tools?.map(t=>t.name)).toEqual(["search_archive","read_passage"]);expect(body).toContain("Seleção de trechos conferidos");expect(body).not.toContain("Unverified return");
+  const body=await result.text();expect(result.status).toBe(200);expect(calls).toContain("passages/passage1");expect(model.requests).toHaveLength(3);expect(model.requests[0]?.tools?.map(t=>t.name)).toEqual(["search_archive","read_passage","read_item"]);expect(body).toContain("Seleção de trechos conferidos");expect(body).not.toContain("Unverified return");
 });
 
 test("tailored clarification survives the verification boundary",async()=>{

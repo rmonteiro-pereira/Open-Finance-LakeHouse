@@ -221,3 +221,8 @@ or archive is committed or included in public image contexts.
 Optional generation now emits the existing Inkwell call-ledger records to private
 structured service logs without prompt, response, source text or user identity.
 Source-only workflow decisions do not fabricate model-call accounting.
+
+The structural product diagnostic caught a routing regression: strict tool offers
+initially omitted archive item-metadata reads after search. Restore that dependent
+read in the archive offer. This gate is re-run, not declared passed from unit
+tests alone. Existing source identity/role constraints remain enforced.

@@ -53,13 +53,14 @@ export function researchOffer(kind:Specialist,question:string,specs:readonly Too
     const explicit = specs?.filter(t=>question.includes(t.name))??[];
     let names:string[]=[];
     if(explicit.length) names=explicit.map(t=>t.name);
-    else if(/not[ií]ci|cartas?|document|acervo|evid[eê]ncia/i.test(question)) names=["search_archive","read_passage",...(/s[eé]ries?|macro|dados|snapshot|indicadores|observa[cç]/i.test(question)?["read_data_catalog","read_macro_series"]:[])];
+    else if(/not[ií]ci|cartas?|document|acervo|evid[eê]ncia/i.test(question)) names=["search_archive","read_passage","read_item",...(/s[eé]ries?|macro|dados|snapshot|indicadores|observa[cç]/i.test(question)?["read_data_catalog","read_macro_series"]:[])];
     else if(/carteira|portf[oó]lio|dossi[eê]|trabalho salvo|workspace/i.test(question)) names=["read_saved_work","read_data_catalog","read_macro_series"];
     else if(/s[eé]rie|macro|selic|ipca|juros|dados|dataset/i.test(question)) names=["read_data_catalog","read_macro_series","prepare_dataset","read_coverage"];
     else if(/cota[cç][aã]o|pre[cç]os?|read_quotes/i.test(question)) names=["read_quotes","compare_prices","read_coverage"];
     else if(/cobertura|lacunas?/i.test(question)) names=["read_coverage"];
-    else if(kind!=="quality") names=kind==="archive"?["read_data_catalog","search_archive","read_passage"]:["search_archive","read_passage","read_data_catalog"];
+    else if(kind!=="quality") names=kind==="archive"?["read_data_catalog","search_archive","read_passage","read_item"]:["search_archive","read_passage","read_data_catalog"];
     if(names.includes("read_passage")&&!names.includes("search_archive"))names.push("search_archive");
+    if(names.includes("search_archive")&&!names.includes("read_item"))names.push("read_item");
     if(names.includes("read_macro_series")&&!names.includes("read_data_catalog"))names.push("read_data_catalog");
     return specs.filter(t=>names.length===0||names.includes(t.name));
 
