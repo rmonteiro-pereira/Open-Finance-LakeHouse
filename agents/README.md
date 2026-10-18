@@ -46,7 +46,10 @@ Supply server-side settings through the private infrastructure secret store:
 | `OFL_AGENT_MODEL_BASE_URL` | Approved text-generation endpoint supporting chat/tools |
 | `OFL_AGENT_MODEL_API_KEY` | Generation endpoint credential |
 | `OFL_AGENT_MODEL_NAME` | Explicit model; no implicit paid default |
-| `OFL_AGENT_NO_THINK` | `1` adds the Qwen `/no_think` instruction for CPU deployments; default off |
+| `OFL_AGENT_NO_THINK` | `1` disables thinking explicitly in native Ollama and adds the Qwen instruction; default off |
+| `OFL_AGENT_MODEL_PROTOCOL` | `ollama` selects native `/api/chat`; otherwise OpenAI compatible |
+| `OFL_AGENT_MODEL_TIMEOUT_MS` | Per-call budget, default 60000, maximum 180000 |
+| `OFL_AGENT_TURN_TIMEOUT_MS` | Whole-request deadline, default 110000, maximum 600000 |
 | `OFL_AGENT_HOST` / `OFL_AGENT_PORT` | Defaults `127.0.0.1:8082` |
 
 Run `bun start`. Missing configuration refuses startup. Existing BGE-M3 embeddings
@@ -103,3 +106,9 @@ the workbench remain available without a text-generation provider.
 See [the workbench operation guide](../docs/research/WORKBENCH.md) for ingestion,
 source restrictions and reproducible exports. The Python MCP exposes thirteen
 read-only tools, including `data_catalog`, `macro_series` and `passage`.
+
+Native Ollama uses the [documented chat API](https://docs.ollama.com/api/chat) with
+explicit `think:false`, bounded output, preserved argument strings and cancellation.
+Text instructions alone did not prevent thinking in the tested compatibility path.
+When increasing CPU budgets, set `OFL_AGENT_REQUEST_TIMEOUT_MS` on the private web
+proxy above the agent turn deadline. The UI supports canceling a running request.
