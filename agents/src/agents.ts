@@ -48,11 +48,12 @@ export function researchTools(source: ResearchSource): Record<Specialist, ToolDe
       order(args);
       const data = record(await source.read("search", args, ctx.signal));
       return table("Evidências documentais · datas do catálogo", rows(data.results).map(row => ({...row,
+        passage_id: row.id, item_id: row.item_id,
         citation: `item:${row.item_id};passage:${row.id};asset:${row.asset_id ?? ""};page:${row.page ?? ""}`,
         item_link: `/api/research/items/${encodeURIComponent(String(row.item_id))}`,
         original_link: row.asset_id ? `/api/research/assets/${encodeURIComponent(String(row.asset_id))}` : "",
         search_mode: data.mode, model_revision: data.model_revision,
-      })), ["title", "source", "snippet", "date_start", "date_end", "method", "citation", "item_link", "original_link", "search_mode", "model_revision", "date_precision", "epistemic_status", "content_tier"]);
+      })), ["passage_id", "item_id", "title", "source", "snippet", "date_start", "date_end", "method", "citation", "item_link", "original_link", "search_mode", "model_revision", "date_precision", "epistemic_status", "content_tier"]);
     }, observe,
   });
   const observations = defineTool({

@@ -202,7 +202,7 @@ def test_portfolio_exact_values_and_explicit_scenario():
 
 
 @pytest.mark.parametrize(
-    "failure", ["currency", "nan", "negative", "duplicates", "missing_shock", "float"]
+    "failure", ["currency", "nan", "negative", "duplicates", "missing_shock", "float", "exponent"]
 )
 def test_portfolio_rejects_unsupported_assumptions(failure):
     body = valued()
@@ -216,6 +216,8 @@ def test_portfolio_rejects_unsupported_assumptions(failure):
         body["positions"].append(body["positions"][0])
     if failure == "missing_shock":
         del body["scenarios"][0]["shocks"]["cash"]
+    if failure == "exponent":
+        body["positions"][0]["market_value"] = "1E999999999"
     if failure == "float":
         body["positions"][0]["market_value"] = 1.2
     with pytest.raises(ValueError):
@@ -426,3 +428,15 @@ def test_coverage_check_does_not_alert_on_its_own_job_count(research):
     result = load(db, "owner", saved["id"])["body"]["content"]
     assert result["comparison"]["changed"] is False
     assert result["result"]["jobs"]
+
+
+def test_difference_of_percentage_series_is_labeled_percentage_points(research):
+    db, store = research
+    sync_macro(db, store, source=snapshot())
+    result = prepare_dataset(
+        db,
+        store,
+        {"snapshot_id": "s1", "series": [{"series_id": "ipca", "operation": "difference"}]},
+    )
+    assert result["manifest"]["columns"][0]["output_unit"] == "percentage_points"
+    assert result["manifest"]["columns"][0]["source"]["unit"] == "%"

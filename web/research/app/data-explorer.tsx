@@ -17,7 +17,7 @@ function SeriesPlot({rows, unit}: {rows: Observation[]; unit: string}) {
   const first = valid[0].t, span = valid[valid.length - 1].t - first || 1;
   const points = valid.map(row => ({...row, x: 60 + (row.t - first) / span * 840, y: row.v === null ? null : 220 - (row.v / scale - low) / (high - low) * 190}));
   const path = points.map((point, i) => point.y === null ? "" : `${i > 0 && points[i - 1].y !== null ? "L" : "M"}${point.x},${point.y}`).join(" ");
-  const current = points[cursor ?? points.length - 1];
+  const current = points[Math.min(cursor ?? points.length - 1, points.length - 1)];
   return <figure className="series-plot"><svg viewBox="0 0 960 260" role="img" tabIndex={0} aria-label={`Série temporal em ${unit}. Use as setas para inspecionar observações; a tabela contém todos os valores exibidos.`}
     onKeyDown={e => {if (["ArrowLeft", "ArrowRight"].includes(e.key)) {e.preventDefault(); setCursor(Math.min(points.length - 1, Math.max(0, (cursor ?? points.length - 1) + (e.key === "ArrowLeft" ? -1 : 1))));}}}
     onPointerMove={e => {const rect = e.currentTarget.getBoundingClientRect(); const x = (e.clientX - rect.left) / rect.width * 960; setCursor(points.reduce((best, p, i) => Math.abs(p.x - x) < Math.abs(points[best].x - x) ? i : best, 0));}} onPointerLeave={() => setCursor(null)}>

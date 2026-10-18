@@ -223,6 +223,7 @@ function RegionImage({
 
 export default function Workspace() {
   const [tab, setTab] = useState("Início");
+  const [dossierDraft,setDossierDraft]=useState<{key:string;question:string;references:string[];scope:Record<string,unknown>}|null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -413,8 +414,8 @@ export default function Workspace() {
           </div>
         )}
         {tab === "Início" && <Workbench navigate={setTab} />}
-        {tab === "Pesquisa" && <ResearchDesk />}
-        {tab === "Dossiês" && <Projects />}
+        <div hidden={tab !== "Pesquisa"}><ResearchDesk onDossier={draft=>{setDossierDraft({...draft,key:crypto.randomUUID()});setTab("Dossiês");}}/></div>
+        <div hidden={tab !== "Dossiês"}><Projects key={dossierDraft?.key??"saved"} initial={dossierDraft??undefined}/></div>
         {tab === "Preparar dados" && <DatasetBuilder />}
         {tab === "Carteiras" && <Portfolio />}
         {tab === "Acompanhar" && <ResearchOperations />}

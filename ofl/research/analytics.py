@@ -22,7 +22,11 @@ def number(value):
         result = Decimal(str(value))
     except InvalidOperation:
         raise ValueError("invalid decimal") from None
-    if not result.is_finite() or abs(result) > Decimal("1e24") or result.as_tuple().exponent < -18:
+    if (
+        not result.is_finite()
+        or result.copy_abs() > Decimal("1e24")
+        or result.as_tuple().exponent < -18
+    ):
         raise ValueError("decimal exceeds supported bounds")
     return result
 
@@ -110,6 +114,10 @@ def prepare_dataset(db, store, specification):
                     if request.operation == "percent_change"
                     else "index"
                     if request.operation == "index_100"
+                    else "percentage_points"
+                    if request.operation == "difference"
+                    and str(source["series"].get("unit", "")).casefold()
+                    in {"%", "percent", "pct", "percentual"}
                     else source["series"].get("unit"),
                 }
             )
@@ -312,22 +320,9 @@ def release_diff(db, *, left, right, symbol, market, date_from, date_to):
     def keyed(rows):
         result = {}
         for row in rows:
-            key = tuple(
-                str(row.get(k))
-                for k in (
-                    "date",
-                    "isin",
-                    "distribution",
-                    "tpmerc",
-                    "symbol",
-                    "currency",
-                    "quotation_factor",
-                    "specification",
-                    "expiry_raw",
-                    "exercise_price",
-                    "forward_term",
-                )
-            )
+            from .cotahist import IDENTITY
+
+            key = tuple(str(row.get(k)) for k in IDENTITY)
             if key in result:
                 raise ValueError("ambiguous records within a release")
             result[key] = row

@@ -6,6 +6,7 @@ import type { ResearchSource } from "./source";
 import { evidencePlanner } from "./planner";
 export interface EdgeConfig {
   gatewayToken: string; origin: string; model: ModelPort; modelName: string;
+  noThinking?: boolean; modelTimeoutMs?:number; turnTimeoutMs?:number; modelMaxTokens?:number;
   source(identity: string): ResearchSource;
   conversations(kind: Specialist): ConversationStore;
   transcript?(kind: Specialist): TranscriptPort;
@@ -19,6 +20,7 @@ export function createOflEdge(config: EdgeConfig) {
   const servers = new Map<string, ReturnType<typeof createChatServer>>();
   const json = (value: unknown, status = 200) => Response.json(value, {status, headers: {"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"}});
   return async function handle(request: Request): Promise<Response> {
+    request = new Request(request,{signal:AbortSignal.any([request.signal,AbortSignal.timeout(config.turnTimeoutMs??110_000)])});
     const url = new URL(request.url);
     if (!equal(request.headers.get("x-ofl-gateway-token") ?? "", config.gatewayToken)) return json({detail: "Verified private gateway required"}, 401);
     const identity = actorId(request.headers.get("x-ofl-identity"));
@@ -39,8 +41,8 @@ export function createOflEdge(config: EdgeConfig) {
     if (!server) {
       // Bound memory without evicting active streamed turns or weakening durable ownership.
       if (servers.size >= 256) return json({detail: "Agent session capacity reached"}, 503);
-      const chat = createChat({agent: oflAgent(kind, source), model: evidencePlanner(config.model, kind, async (id, signal) => {const value = await source.read(`passages/${id}`, {}, signal) as {passage?:{text?:string}}; return value.passage?.text;}),
-        roles: {research: {model: config.modelName, maxTokens: 2048, timeoutMs: 60_000}},
+      const chat = createChat({agent: oflAgent(kind, source), model: evidencePlanner(config.model, kind, async (id, signal) => {const value = await source.read(`passages/${id}`, {}, signal) as {passage?:{text?:string}}; return value.passage?.text;}, config.noThinking ? "\n/no_think" : ""),
+        roles: {research: {model: config.modelName, maxTokens: config.modelMaxTokens??2048, timeoutMs: config.modelTimeoutMs??60_000}},
         conversations: config.conversations(kind), transcript: config.transcript?.(kind),
         // Bounded search/context/extractive synthesis; source values remain exact tables.
         policy: {maxModelSteps: 6, maxToolCallsPerTurn: 12, policyVersion: "ofl/grounded-excerpts/2"},

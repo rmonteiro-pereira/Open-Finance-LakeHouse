@@ -18,7 +18,7 @@ async function proxy(request: NextRequest, context: {params: Promise<{path: stri
   try {
     const result = await fetch(`${base.replace(/\/$/, "")}/api/agents${endpoint}${request.nextUrl.search}`, {
       method: request.method, headers, body: request.method === "GET" ? undefined : request.body,
-      ...({duplex: "half"} as Record<string, string>), cache: "no-store", redirect: "error", signal: AbortSignal.timeout(120_000),
+      ...({duplex: "half"} as Record<string, string>), cache: "no-store", redirect: "error", signal: AbortSignal.any([request.signal, AbortSignal.timeout(Math.min(600_000, Math.max(10_000, Number(process.env.OFL_AGENT_REQUEST_TIMEOUT_MS) || 120_000)))]),
     });
     return new Response(result.body, {status: result.status, headers: {"Content-Type": result.headers.get("content-type") ?? "application/json", "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"}});
   } catch { return Response.json({detail: "O agente está indisponível. Tente novamente."}, {status: 503}); }
