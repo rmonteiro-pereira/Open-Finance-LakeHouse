@@ -124,3 +124,7 @@ Mixed questions can discover macro series and read exact requested series IDs fr
 the returned catalog; ambiguous definitions remain a user choice. Numeric tables
 keep their own snapshot, units and qualifications. The GUI can create a dossier
 from conversation references and executed tool scopes directly.
+
+Remote CPU embedding indexing submits one complete passage per request and saves
+each result before proceeding. This bounds inference batches without truncating
+text, weakening model-digest checks or losing completed vectors on a retry.

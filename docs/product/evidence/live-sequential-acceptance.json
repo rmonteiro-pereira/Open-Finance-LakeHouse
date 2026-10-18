@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-18",
+  "application_merge": "89c4213f2bebe6498ca68a98eaa2b8b3eabb99b0",
+  "scope": "builder-operated production integration; not participant validation, market coverage certification, or financial reasoning quality",
+  "ci": {
+    "research_tests_passed": 247,
+    "agent_local_tests_passed": 19,
+    "agent_postgres_durability": true,
+    "agent_typecheck": true,
+    "private_dashboard_build": true
+  },
+  "production": {
+    "populated_macro_series": 37,
+    "news_items_observed": 366,
+    "manager_letter_items_observed": 26,
+    "letter_processing": "still progressing; item count is not completed OCR count",
+    "pinned_csv_checksum": true,
+    "prepared_dataset_rows": 8041,
+    "synthetic_portfolio_scenario": "10000.00 -> 8800.00; probe removed",
+    "unconfigured_identity_denied": true,
+    "scheduled_enqueue_completed": true,
+    "mcp": {
+      "tools": 13,
+      "data_catalog_succeeded": true,
+      "transport": "SSH stdio; no gateway secret distributed"
+    },
+    "browser": {
+      "gateway": "actual private Tailscale HTTPS access, no injected identity header",
+      "real_source_agent_to_dossier": true,
+      "question_and_references_preserved": true,
+      "mobile_overflow": false,
+      "client_errors": 0,
+      "note": "Initial attempt timed out during deployment; repeat on ready application passed. No dossier or portfolio saved by this browser check."
+    },
+    "semantic_indexing": {
+      "eight_passage_batch": "exceeded 120-second remote CPU deadline before any vector was persisted",
+      "mitigation": "one complete passage per remote request; retain completed progress, preserve digest and no-truncation checks",
+      "validation": "in progress"
+    }
+  },
+  "agent": {
+    "source_only": {
+      "http_status": 200,
+      "seconds": 5.06,
+      "tools": [
+        "search_archive",
+        "read_passage"
+      ],
+      "independent_excerpt_check": true,
+      "issues": 0,
+      "model_calls": 0
+    },
+    "natural_question": {
+      "http_status": 200,
+      "seconds": 47.53,
+      "tools": [
+        "search_archive",
+        "read_passage",
+        "read_passage"
+      ],
+      "verified_sources_retained": true,
+      "issues": 0,
+      "interpretation": "unavailable at bounded generation deadline; no generated hypothesis presented"
+    }
+  },
+  "limits": [
+    "Native small-model tool smoke did not predict end-to-end reliability; guided collection was introduced after actual premature or invented-reference responses.",
+    "Search excerpts are exact source matches, not validation of source claims or generated interpretations.",
+    "Historical B3 backfill and MUB3 corpus completeness remain open.",
+    "Corpus and indexing counts are point-in-time; ingestion continues.",
+    "Human trials and portfolio suitability were not evaluated."
+  ]
+}

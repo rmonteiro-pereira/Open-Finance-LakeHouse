@@ -9,7 +9,7 @@ those separate outcome gates.
 | # | Capability | Implemented scope |
 |---|---|---|
 | 1 | Unified coverage | Workbench macro/news/letter counts, unknown dates; existing coverage/review/failure operations |
-| 2 | Grounded research agent | Six-step Inkwell reads, context tools, independently re-read exact excerpts; interpretive hypotheses labeled for review |
+| 2 | Grounded research agent | Bounded Inkwell reads; guided document search and context reads before fresh canonical excerpts; optional interpretations separately labeled and bounded |
 | 3 | Editable execution scope | Question, audience and date scope before agent execution; direct source/mode/date filters |
 | 4 | Saved investigations | Owned dossiês with question, limitations, source captures, findings and optimistic revisions; saved conversations remain separate |
 | 5 | Identity-aware watchlists | ISIN/market/currency/distribution required; optional ticker never establishes continuity |
