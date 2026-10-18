@@ -426,3 +426,15 @@ def test_coverage_check_does_not_alert_on_its_own_job_count(research):
     result = load(db, "owner", saved["id"])["body"]["content"]
     assert result["comparison"]["changed"] is False
     assert result["result"]["jobs"]
+
+
+def test_difference_of_percentage_series_is_labeled_percentage_points(research):
+    db, store = research
+    sync_macro(db, store, source=snapshot())
+    result = prepare_dataset(
+        db,
+        store,
+        {"snapshot_id": "s1", "series": [{"series_id": "ipca", "operation": "difference"}]},
+    )
+    assert result["manifest"]["columns"][0]["output_unit"] == "percentage_points"
+    assert result["manifest"]["columns"][0]["source"]["unit"] == "%"

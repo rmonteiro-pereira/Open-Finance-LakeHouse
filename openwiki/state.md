@@ -192,3 +192,8 @@ rejects reversed date scopes before spending a model call.
 Dossier handoff preserves the executed scope for each selected passage, including
 selections accumulated across separate searches. Stored scope survives reopening
 and revision edits; source capture remains resolved by the server.
+
+Final data semantics checks: differencing a percentage series labels its output
+as percentage points while preserving original units in source metadata. Release
+diff keys now use the complete parser identity, including scaled exercise terms.
+Selected-reference exports retain each executed query scope.
