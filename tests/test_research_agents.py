@@ -4,8 +4,13 @@ import asyncio
 import json
 from datetime import date
 
-import httpx
 import pytest
+
+httpx = pytest.importorskip("httpx")
+pytest.importorskip("fastapi")
+pytest.importorskip("psycopg")
+pytest.importorskip("mcp")
+
 from fastapi.testclient import TestClient
 
 from ofl.research.api import create_app

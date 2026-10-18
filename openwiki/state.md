@@ -77,3 +77,8 @@ unauthenticated requests (401). Browser fixtures passed query → exact source t
 planning prose is replaced deterministically so an invented reading cannot be
 presented as financial evidence. Final local totals: 202 Python passes / 3 optional
 skips and 9 Inkwell passes. The root Docker context excludes the private agent tree.
+
+CI follow-up: specialist switches reset state in their action handler rather than
+synchronously in a React effect. The optional research/MCP tests skip cleanly in
+the core-only test lane. Web lint ignores the private research build output, so
+running lint after a production build does not inspect generated bundles.

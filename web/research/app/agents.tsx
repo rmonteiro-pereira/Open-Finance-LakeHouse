@@ -36,10 +36,15 @@ export default function Agents() {
   useEffect(() => {
     const current = ++generation.current;
     const controller = new AbortController();
-    setConversationId(""); setMessages([]); setConversations([]); setError("");
     api(`${specialist}/conversations`, undefined, controller.signal).then(data => {if (current === generation.current) setConversations(data.conversations ?? []);}).catch(e => {if (!controller.signal.aborted) setError(e.message);});
     return () => {controller.abort(); request.current?.abort();};
   }, [specialist]);
+  function selectSpecialist(target: string) {
+    ++generation.current;
+    request.current?.abort();
+    setConversationId(""); setMessages([]); setConversations([]); setError(""); setStatus("");
+    setSpecialist(target);
+  }
   async function run(action: () => Promise<void>) {
     setBusy(true); setError("");
     try {await action();} catch (e) {setError(e instanceof Error ? e.message : "Falha no agente");} finally {setBusy(false);}
@@ -66,7 +71,7 @@ export default function Agents() {
       ["citation", "evidence", "release", "symbol", "tpmerc", "currency", "quotation_factor", "date", "item_link"].filter(key => row[key] !== undefined).map(key => [key, row[key]]),
     )).filter(row => Object.keys(row).length).slice(-12);
     setQuestion(`Transferência do especialista ${specialist}. Pergunta: ${lastQuestion}\nReferências preservadas (revalide nas fontes): ${JSON.stringify(evidence)}`.slice(0, 8000));
-    setSpecialist(target); setStatus("Pergunta e referências transferidas. Confira antes de investigar.");
+    selectSpecialist(target); setStatus("Pergunta e referências transferidas. Confira antes de investigar.");
   }
   function downloadMarkdown() {
     const sections = messages.filter(m => m.role !== "system").map(m => {
@@ -83,7 +88,7 @@ export default function Agents() {
   }
   return <>
     <section className="card"><h2>Agentes de pesquisa OFL</h2><p>Investigações privadas, salvas por usuário. As consultas apresentam evidências da fonte; valores monetários mantêm sua precisão original.</p>
-      <div className="filters"><label>Especialista<select value={specialist} disabled={busy} onChange={e => setSpecialist(e.target.value)}>{specialists.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
+      <div className="filters"><label>Especialista<select value={specialist} disabled={busy} onChange={e => selectSpecialist(e.target.value)}>{specialists.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
       <label>Investigação salva<select value={conversationId} disabled={busy} onChange={e => e.target.value ? void open(e.target.value) : (setConversationId(""), setMessages([]))}><option value="">Nova investigação</option>{conversations.map(c => {const id = c.conversationId ?? c.id ?? ""; return <option key={id} value={id}>{c.title ?? id}</option>;})}</select></label>
       <button disabled={!messages.length} onClick={download}>Exportar evidências JSON</button><button disabled={!messages.length} onClick={downloadMarkdown}>Exportar relatório</button></div>
       <p className="muted">Mercado: informe ativo, código do mercado e período. Acervo: datas se referem ao catálogo. Qualidade: consultas não aprovam nem reprocessam dados.</p>
