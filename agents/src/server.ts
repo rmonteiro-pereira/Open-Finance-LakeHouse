@@ -20,10 +20,12 @@ const model = process.env.OFL_AGENT_MODEL_PROTOCOL === "ollama"
   ? ollamaModel(required("OFL_AGENT_MODEL_BASE_URL"), process.env.OFL_AGENT_NO_THINK === "1")
   : openAiCompatibleModel({baseUrl: required("OFL_AGENT_MODEL_BASE_URL"), apiKey: required("OFL_AGENT_MODEL_API_KEY")});
 function budget(name:string, fallback:number, maximum:number){const value=Number(process.env[name]??fallback);if(!Number.isInteger(value)||value<10_000||value>maximum)throw Error(`${name} outside supported bounds`);return value;}
+const outputTokens=Number(process.env.OFL_AGENT_MAX_TOKENS??2048);
+if(!Number.isInteger(outputTokens)||outputTokens<128||outputTokens>2048)throw Error("OFL_AGENT_MAX_TOKENS outside supported bounds");
 const [database] = await sql`SELECT to_regclass('public.dag_run') AS airflow`;
 if (database?.airflow) throw new Error("Refusing to migrate an Airflow metadata database");
 for (const kind of SPECIALISTS) await migratePostgres(sql, {schema: `ofl_agent_${kind}`});
-const fetch = createOflEdge({gatewayToken: token, origin, model, modelName, noThinking: process.env.OFL_AGENT_NO_THINK === "1", modelTimeoutMs:budget("OFL_AGENT_MODEL_TIMEOUT_MS",60_000,180_000), turnTimeoutMs:budget("OFL_AGENT_TURN_TIMEOUT_MS",110_000,600_000),
+const fetch = createOflEdge({gatewayToken: token, origin, model, modelName, noThinking: process.env.OFL_AGENT_NO_THINK === "1", modelMaxTokens:outputTokens, modelTimeoutMs:budget("OFL_AGENT_MODEL_TIMEOUT_MS",60_000,180_000), turnTimeoutMs:budget("OFL_AGENT_TURN_TIMEOUT_MS",110_000,600_000),
   source: identity => oflSource(api, token, identity),
   conversations: kind => postgresConversationStore(sql, {schema: `ofl_agent_${kind}`}),
   transcript: kind => postgresTranscript(sql, {schema: `ofl_agent_${kind}`}),

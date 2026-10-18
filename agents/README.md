@@ -112,3 +112,7 @@ explicit `think:false`, bounded output, preserved argument strings and cancellat
 Text instructions alone did not prevent thinking in the tested compatibility path.
 When increasing CPU budgets, set `OFL_AGENT_REQUEST_TIMEOUT_MS` on the private web
 proxy above the agent turn deadline. The UI supports canceling a running request.
+
+CPU deployments may set `OFL_AGENT_MAX_TOKENS` (128–2048, default 2048).
+Task routing advertises only relevant registered read tools to reduce prefill
+latency; it is not an authorization boundary and does not enable writes.

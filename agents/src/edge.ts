@@ -6,7 +6,7 @@ import type { ResearchSource } from "./source";
 import { evidencePlanner } from "./planner";
 export interface EdgeConfig {
   gatewayToken: string; origin: string; model: ModelPort; modelName: string;
-  noThinking?: boolean; modelTimeoutMs?:number; turnTimeoutMs?:number;
+  noThinking?: boolean; modelTimeoutMs?:number; turnTimeoutMs?:number; modelMaxTokens?:number;
   source(identity: string): ResearchSource;
   conversations(kind: Specialist): ConversationStore;
   transcript?(kind: Specialist): TranscriptPort;
@@ -42,7 +42,7 @@ export function createOflEdge(config: EdgeConfig) {
       // Bound memory without evicting active streamed turns or weakening durable ownership.
       if (servers.size >= 256) return json({detail: "Agent session capacity reached"}, 503);
       const chat = createChat({agent: oflAgent(kind, source), model: evidencePlanner(config.model, kind, async (id, signal) => {const value = await source.read(`passages/${id}`, {}, signal) as {passage?:{text?:string}}; return value.passage?.text;}, config.noThinking ? "\n/no_think" : ""),
-        roles: {research: {model: config.modelName, maxTokens: 2048, timeoutMs: config.modelTimeoutMs??60_000}},
+        roles: {research: {model: config.modelName, maxTokens: config.modelMaxTokens??2048, timeoutMs: config.modelTimeoutMs??60_000}},
         conversations: config.conversations(kind), transcript: config.transcript?.(kind),
         // Bounded search/context/extractive synthesis; source values remain exact tables.
         policy: {maxModelSteps: 6, maxToolCallsPerTurn: 12, policyVersion: "ofl/grounded-excerpts/2"},
