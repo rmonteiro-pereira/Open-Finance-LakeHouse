@@ -110,3 +110,17 @@ queued/running/terminal transitions prospectively, without inventing old history
 and can mark evaluation candidates. Candidates are not passing evaluations.
 Search results disclose keyword/vector ranks, raw scores and RRF contributions;
 these describe ordering, not truth probabilities.
+
+
+## Guided source agents
+
+Enable `OFL_AGENT_GUIDED_DOCUMENTS=1` on the private Inkwell service. Document
+research uses mandatory bounded source searches and context reads, independent
+canonical verification, then an optional qualitative interpretation. This is an
+explicit workflow, not a claim that model inference performed the collection.
+Source-only requests skip generation. Interpretations have a separate 45-second
+budget and may fail without replacing real source evidence with invented text.
+Mixed questions can discover macro series and read exact requested series IDs from
+the returned catalog; ambiguous definitions remain a user choice. Numeric tables
+keep their own snapshot, units and qualifications. The GUI can create a dossier
+from conversation references and executed tool scopes directly.
