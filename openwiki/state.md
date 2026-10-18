@@ -50,3 +50,35 @@ updated: 2026-10-08T12:30Z
   network) is not built.
 - **Worth doing here:** task timeouts; pin image builds to `uv.lock`; vacuum old Delta
   versions (each silver run leaves one behind, about 20 MB).
+
+## OFL Inkwell research agents (implementation branch, 2026-10-18)
+
+`agents/` adds market/archive/quality specialists using approved private Inkwell
+packages, PostgreSQL conversations and separate specialist schemas. Private
+packages are ignored and must never be published with this public repo. Read-only
+tools call the existing private API; monetary values stay strings. One planning
+call delivers source evidence tables without claiming a verified model narrative.
+The private dashboard adds Pesquisa, saved investigations, evidence links,
+specialist handoff and Markdown/JSON exports.
+
+REST adds private OpenAPI discovery, storage-path-free release listings and
+read-only per-principal bearer access. `ofl research mcp` provides five bounded
+stdio read tools. Gateway and exact-origin checks remain in place.
+
+Local verification covers Inkwell tool/ownership/security tests, a disposable
+PostgreSQL restart/ownership test, actual stdio MCP initialization, backend tests
+and a production research dashboard build. Live rollout and generation-model
+validation remain pending; existing BGE-M3 is embeddings-only. This does not claim
+the 20-item backlog or full historical/archive ingestion is complete.
+
+The local agent image also bootstrapped against disposable PostgreSQL and rejected
+unauthenticated requests (401). Browser fixtures passed query → exact source table
+→ save/reopen → JSON export → specialist handoff and rendered on mobile. Model
+planning prose is replaced deterministically so an invented reading cannot be
+presented as financial evidence. Final local totals: 202 Python passes / 3 optional
+skips and 9 Inkwell passes. The root Docker context excludes the private agent tree.
+
+CI follow-up: specialist switches reset state in their action handler rather than
+synchronously in a React effect. The optional research/MCP tests skip cleanly in
+the core-only test lane. Web lint ignores the private research build output, so
+running lint after a production build does not inspect generated bundles.

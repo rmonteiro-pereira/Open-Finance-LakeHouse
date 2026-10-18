@@ -67,21 +67,43 @@ def create_app(settings=None):
     app.state.db, app.state.store = db, store
 
     def identity(request: Request):
-        token = request.headers.get("x-ofl-gateway-token", "")
-        if not settings.gateway_token or not hmac.compare_digest(token, settings.gateway_token):
-            raise HTTPException(401, "verified private gateway required")
-        actor = request.headers.get("x-ofl-identity", "")
+        authorization = request.headers.get("authorization", "")
+        machine = authorization.startswith("Bearer ")
+        if not machine:
+            token = request.headers.get("x-ofl-gateway-token", "")
+            if not settings.gateway_token or not hmac.compare_digest(
+                token.encode(), settings.gateway_token.encode()
+            ):
+                raise HTTPException(401, "verified private gateway required")
         try:
             roles = json.loads(settings.roles)
+            service_tokens = json.loads(settings.service_tokens)
         except (ValueError, TypeError):
-            raise HTTPException(503, "roles are not configured") from None
+            raise HTTPException(503, "research access is not configured") from None
+        if machine:
+            supplied = authorization[7:].encode()
+            actor = None
+            if isinstance(service_tokens, dict):
+                for principal, secret in service_tokens.items():
+                    if (
+                        isinstance(secret, str)
+                        and len(secret) >= 32
+                        and hmac.compare_digest(supplied, secret.encode())
+                    ):
+                        actor = principal
+            if actor is None:
+                raise HTTPException(401, "invalid service credential")
+            if request.method not in {"GET", "HEAD"}:
+                raise HTTPException(403, "service credentials are read-only")
+        else:
+            actor = request.headers.get("x-ofl-identity", "")
         role = roles.get(actor) if isinstance(roles, dict) else None
         if role not in {"reader", "reviewer", "admin"}:
             raise HTTPException(403, "identity has no research access")
-        if request.method not in {"GET", "HEAD"}:
+        if not machine and request.method not in {"GET", "HEAD"}:
             if request.headers.get("origin") != settings.origin:
                 raise HTTPException(403, "same-origin request required")
-        return actor, role
+        return actor, "reader" if machine else role
 
     def admin(user=Depends(identity)):
         if user[1] != "admin":
@@ -141,6 +163,26 @@ def create_app(settings=None):
                 (actor, key, fingerprint, Jsonb(result)),
             )
             return result
+
+    @app.get("/api/v1/openapi", include_in_schema=False)
+    def private_schema(_user=Depends(identity)):
+        schema = app.openapi()
+        schema.setdefault("components", {})["securitySchemes"] = {
+            "ResearchBearer": {"type": "http", "scheme": "bearer"},
+            "GatewayToken": {"type": "apiKey", "in": "header", "name": "X-OFL-Gateway-Token"},
+            "GatewayIdentity": {"type": "apiKey", "in": "header", "name": "X-OFL-Identity"},
+        }
+        schema["security"] = [{"ResearchBearer": []}, {"GatewayToken": [], "GatewayIdentity": []}]
+        return response(schema)
+
+    @app.get("/api/v1/releases")
+    def releases(limit: int = Query(30, ge=1, le=100), _user=Depends(identity)):
+        return response(
+            db.rows(
+                "SELECT id,kind,delta_version,metadata,created_at FROM releases ORDER BY created_at DESC,id LIMIT %s",
+                (limit,),
+            )
+        )
 
     @app.get("/api/v1/coverage")
     def get_coverage(_user=Depends(identity)):

@@ -14,7 +14,17 @@ def configure(subparsers):
             "action",
             choices=("import", "coverage", "reprocess")
             if name != "research"
-            else ("migrate", "worker", "serve", "coverage", "embed", "pilot", "index", "build"),
+            else (
+                "migrate",
+                "worker",
+                "serve",
+                "coverage",
+                "embed",
+                "pilot",
+                "index",
+                "build",
+                "mcp",
+            ),
         )
         parser.add_argument("path", nargs="?", type=Path)
         parser.add_argument("--source", choices=("b3_cotahist", "b3_bulletin", "mub3"))
@@ -35,6 +45,11 @@ def dispatch(args):
     from .db import Database
 
     settings = ResearchSettings()
+    if args.action == "mcp":
+        from .mcp import create_mcp
+
+        create_mcp(settings).run(transport="stdio")
+        return 0
     db = Database(settings)
     store = Store.from_settings(settings)
     if args.action == "migrate":

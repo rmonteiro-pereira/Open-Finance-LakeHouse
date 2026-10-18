@@ -1,0 +1,56 @@
+# Apply only after approving the private image and supplying generation credentials.
+# Do not publish an image embedding private Inkwell packages to a public registry.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: research-agents
+  namespace: ofl-research
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: research-agents}
+  template:
+    metadata:
+      labels: {app: research-agents}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+      - name: agents
+        image: localhost/ofl-research-agents:REPLACE_WITH_VERIFIED_COMMIT
+        imagePullPolicy: Never
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities: {drop: [ALL]}
+          readOnlyRootFilesystem: true
+        envFrom:
+        - secretRef: {name: research-config}
+        - secretRef: {name: research-agent-model}
+        env:
+        - {name: OFL_RESEARCH_API_URL, value: 'http://research-api.ofl-research.svc:8081'}
+        - {name: OFL_AGENT_HOST, value: '0.0.0.0'}
+        - {name: OFL_AGENT_PORT, value: '8082'}
+        resources:
+          requests: {cpu: 100m, memory: 128Mi}
+          limits: {cpu: '1', memory: 512Mi}
+        readinessProbe:
+          tcpSocket: {port: 8082}
+          initialDelaySeconds: 5
+        livenessProbe:
+          tcpSocket: {port: 8082}
+          initialDelaySeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: research-agents
+  namespace: ofl-research
+spec:
+  type: ClusterIP
+  selector: {app: research-agents}
+  ports:
+  - {name: http, port: 8082, targetPort: 8082}

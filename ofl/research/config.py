@@ -13,6 +13,9 @@ class ResearchSettings(BaseSettings):
     # Empty means the API fails closed. Secrets belong in environment/Secrets.
     gateway_token: str = ""
     roles: str = ""  # JSON mapping verified gateway identities to reader/reviewer/admin
+    service_tokens: str = "{}"  # JSON principal -> read-only bearer token (minimum 32 characters)
+    api_url: str = "http://127.0.0.1:8081"
+    api_token: str = ""  # MCP client credential; never distribute the gateway secret
     origin: str = "http://localhost:3000"
     batch_rows: int = Field(50_000, ge=1, le=100_000)
     publication_days: int = Field(1, ge=1, le=31)

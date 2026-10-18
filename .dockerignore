@@ -28,3 +28,6 @@ mlruns
 docs
 tests
 scripts
+
+# Inkwell is private. Its service uses agents/ as a separate private build context.
+agents
