@@ -100,5 +100,5 @@ specialists also receive the macro tools. These connections support bounded mult
 the workbench remain available without a text-generation provider.
 
 See [the workbench operation guide](../docs/research/WORKBENCH.md) for ingestion,
-source restrictions and reproducible exports. The Python MCP exposes eleven
+source restrictions and reproducible exports. The Python MCP exposes thirteen
 read-only tools, including `data_catalog`, `macro_series` and `passage`.

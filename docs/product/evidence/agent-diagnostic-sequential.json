@@ -46,6 +46,7 @@
         "read_data_catalog",
         "read_macro_series",
         "compare_prices",
+        "prepare_dataset",
         "read_saved_work",
         "read_coverage",
         "read_item",

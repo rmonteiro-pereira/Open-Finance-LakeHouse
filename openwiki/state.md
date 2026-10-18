@@ -139,7 +139,7 @@ workspace revisions/findings, snapshot-pinned multiseries preparation, descripti
 valued portfolios/scenarios, complete-contract price comparisons, scoped release
 diffs, identity watchlists, scheduled checks with owner revalidation, prospective
 job events and diagnostic triage/history. Private dashboard exposes these journeys;
-MCP now has eleven read-only tools. Inkwell permits six model steps/twelve tool
+MCP now has thirteen read-only tools. Inkwell permits six model steps/twelve tool
 calls and independently re-reads cited passages rather than trusting user-side
 model observations. Exact excerpts and draft interpretations are labeled distinctly.
 
@@ -155,3 +155,8 @@ Real-source bridge rerun passed with the shipped news policy file: snapshot
 one news batch/two news items, one original letter. The isolated schema was
 removed; no production corpus/pointer changed. Evidence is sanitized in
 `docs/product/evidence/source-bridge-sequential.json`.
+
+Interface parity follow-up: MCP can list/read caller-owned work (including portfolio
+versions), and the data specialist can execute typed read-only dataset preparation.
+Thirteen MCP tools total. Source-context verification remains independent of model
+messages. Malformed finding/check tags reject as invalid input.

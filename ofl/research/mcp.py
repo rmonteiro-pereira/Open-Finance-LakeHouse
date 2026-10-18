@@ -168,4 +168,22 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
             raise ValueError("invalid release comparison scope")
         return read("releases/diff", locals())
 
+    @server.tool()
+    def saved_work(workspace_id: str, revision: int | None = None) -> dict:
+        """Read a caller-owned dossier, portfolio, dataset recipe or check. Credentials must represent the artifact owner. No edit capability."""
+        import re
+
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", workspace_id) or (
+            revision is not None and revision < 1
+        ):
+            raise ValueError("invalid owned artifact reference")
+        return read(f"workspaces/{workspace_id}", {"revision": revision})
+
+    @server.tool()
+    def list_saved_work(
+        kind: Literal["investigation", "portfolio", "dataset", "watchlist", "check"] | None = None,
+    ) -> list:
+        """List only work owned by the authenticated credential principal."""
+        return read("workspaces", {"kind": kind})
+
     return server

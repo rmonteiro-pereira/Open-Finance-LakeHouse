@@ -106,11 +106,16 @@ export function researchTools(source: ResearchSource): Record<Specialist, ToolDe
     args: z.object({symbol:z.string().min(1).max(32), market:z.string().regex(/^\d{3}$/), date_from:z.iso.date(),date_to:z.iso.date(),release:identifier}),
     async run(args,ctx){order(args);return table("Comparação de preços observados",[record(await source.read("quotes/compare",args,ctx.signal))]);},observe,
   });
+  const preparation = defineTool({
+    name:"prepare_dataset",description:"Prepare a snapshot-pinned descriptive dataset using discovered series IDs, explicit date alignment and transformations. No imputation, arbitrary SQL or strategy return claims.",
+    args:z.object({snapshot_id:identifier,series:z.array(z.object({series_id:identifier,operation:z.enum(["level","difference","percent_change","index_100","rolling_mean"]).default("level"),window:z.number().int().min(2).max(365).default(3),lag:z.number().int().min(1).max(365).default(1)})).min(1).max(8),alignment:z.enum(["outer","inner"]).default("outer"),...interval}),
+    async run(args,ctx){order(args);const data=record(await source.read("datasets/preview",{specification:JSON.stringify(args)},ctx.signal));return table("Dataset reproduzível · amostra e manifesto",[{manifest:data.manifest,preview:data.preview}]);},observe,
+  });
   const saved = defineTool({
     name: "read_saved_work", description: "Read an owned investigation, portfolio, watchlist, dataset recipe or check by explicit ID. Portfolio inputs remain user supplied. Cannot modify work.",args:z.object({workspace_id:identifier,revision:z.number().int().positive().optional()}),
     async run(args,ctx){return table("Trabalho salvo · versão e premissas",[record(await source.read(`workspaces/${args.workspace_id}`,{revision:args.revision},ctx.signal))]);},observe,
   });
-  return {market: [quotes, search, passage, observations, dataCatalog, macro, comparison, saved, coverage], archive: [search, passage, item, observations, dataCatalog, macro, saved, coverage], quality: [coverage, processing, review]};
+  return {market: [quotes, search, passage, observations, dataCatalog, macro, comparison, preparation, saved, coverage], archive: [search, passage, item, observations, dataCatalog, macro, preparation, saved, coverage], quality: [coverage, processing, review]};
 }
 const COMMON = [
   "Você é um especialista de pesquisa do OFL. Responda em português, salvo pedido diferente.",

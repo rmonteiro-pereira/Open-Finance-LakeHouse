@@ -106,6 +106,8 @@ def test_mcp_tools_preserve_exact_values_and_bound_network_access():
             "prepare_dataset",
             "compare_prices",
             "compare_releases",
+            "saved_work",
+            "list_saved_work",
         }
         result = await server.call_tool(
             "quotes",

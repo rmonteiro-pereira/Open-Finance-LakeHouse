@@ -53,18 +53,25 @@ def validate(con, kind, body, *, generated=False):
             raise ValueError("at most 50 findings")
         source = {r["id"]: r for r in captured}
         for finding in findings:
-            if not isinstance(finding, dict) or finding.get("kind") not in {
-                "observation",
-                "interpretation",
-                "counterpoint",
-                "limitation",
-            }:
+            if (
+                not isinstance(finding, dict)
+                or not isinstance(finding.get("kind"), str)
+                or finding.get("kind")
+                not in {
+                    "observation",
+                    "interpretation",
+                    "counterpoint",
+                    "limitation",
+                }
+            ):
                 raise ValueError("finding kind required")
             text = finding.get("text", "")
             if not isinstance(text, str) or not 1 <= len(text) <= 4000:
                 raise ValueError("finding text required")
             citations = finding.get("references", [])
-            if not isinstance(citations, list) or any(ref not in source for ref in citations):
+            if not isinstance(citations, list) or any(
+                not isinstance(ref, str) or ref not in source for ref in citations
+            ):
                 raise ValueError("finding cites uncaptured evidence")
             if finding["kind"] == "observation" and (
                 not citations or not any(text in source[r]["text"] for r in citations)
@@ -95,7 +102,7 @@ def validate(con, kind, body, *, generated=False):
                 )
         return body
     if kind == "check":
-        if body.get("type") not in {"search", "coverage"}:
+        if not isinstance(body.get("type"), str) or body.get("type") not in {"search", "coverage"}:
             raise ValueError("check type must be search or coverage")
         if body["type"] == "search" and (
             not isinstance(body.get("q"), str) or not 1 <= len(body["q"]) <= 1000
