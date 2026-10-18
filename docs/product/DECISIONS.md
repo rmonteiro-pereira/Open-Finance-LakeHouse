@@ -17,3 +17,8 @@ a commitment to build every feature, or a claim that a live agent is already rea
 After actual trials, append dated decisions with artifact IDs, disagreements,
 measured task denominators, next owner/action and a reversal condition. Do not
 silently rewrite an early hypothesis into a retrospectively certain decision.
+
+
+2026-10-18 user direction: proceed through the whole approved shape sequentially,
+including the inherited backlog as scoped in `../research/PRODUCT-BACKLOG.md`.
+This authorizes implementation; demand and outcome hypotheses still require trials.

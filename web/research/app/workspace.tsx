@@ -2,6 +2,10 @@
 
 import { useRef, useState } from "react";
 import Workbench from "./workbench";
+import Projects from "./projects";
+import Portfolio from "./portfolio";
+import DatasetBuilder from "./dataset-builder";
+import ResearchOperations, {QuoteComparison} from "./research-operations";
 import ResearchDesk from "./research-desk";
 import DataExplorer from "./data-explorer";
 import { sha256 } from "@noble/hashes/sha2.js";
@@ -385,7 +389,7 @@ export default function Workspace() {
           no mesmo lugar.
         </p>
         <nav aria-label="Áreas">
-          {["Início", "Pesquisa", "Dados", "Mercados", "Acervo", "Revisão", "Operações"].map((t) => (
+          {["Início", "Pesquisa", "Dossiês", "Dados", "Preparar dados", "Carteiras", "Acompanhar", "Comparações", "Mercados", "Acervo", "Revisão", "Operações"].map((t) => (
             <button
               key={t}
               aria-current={tab === t}
@@ -410,6 +414,11 @@ export default function Workspace() {
         )}
         {tab === "Início" && <Workbench navigate={setTab} />}
         {tab === "Pesquisa" && <ResearchDesk />}
+        {tab === "Dossiês" && <Projects />}
+        {tab === "Preparar dados" && <DatasetBuilder />}
+        {tab === "Carteiras" && <Portfolio />}
+        {tab === "Acompanhar" && <ResearchOperations />}
+        {tab === "Comparações" && <QuoteComparison />}
         {tab === "Dados" && <DataExplorer />}
         {tab === "Mercados" && (
           <>

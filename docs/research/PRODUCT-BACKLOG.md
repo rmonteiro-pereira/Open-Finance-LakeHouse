@@ -1,41 +1,47 @@
-# OFL research product backlog
+# OFL research product backlog — sequential implementation
 
-Product review note (2026-10-18): this list is an unvalidated feature inventory,
-not a selected product roadmap. The whole-OFL [evaluation workflow](../product/WORKFLOW.md)
-and [adversarial review](../product/REVIEW.md) take precedence for prioritization.
-Finance/data workers, assessores/consultores and lay market/portfolio users need
-outcome validation; source-specialist implementation tests do not establish that.
+The user authorized the whole direction on 2026-10-18. Finance/data workers,
+assessores/consultores and people learning about markets/portfolios remain the
+primary audience. This ledger records implemented contracts, not adoption,
+production rollout or successful customer trials. See the product workflow for
+those separate outcome gates.
 
-Scope: the private OFL research backend and dashboard. This ledger distinguishes
-implemented capabilities from remaining work; it is not a deployment claim.
+| # | Capability | Implemented scope |
+|---|---|---|
+| 1 | Unified coverage | Workbench macro/news/letter counts, unknown dates; existing coverage/review/failure operations |
+| 2 | Grounded research agent | Six-step Inkwell reads, context tools, independently re-read exact excerpts; interpretive hypotheses labeled for review |
+| 3 | Editable execution scope | Question, audience and date scope before agent execution; direct source/mode/date filters |
+| 4 | Saved investigations | Owned dossiês with question, limitations, source captures, findings and optimistic revisions; saved conversations remain separate |
+| 5 | Identity-aware watchlists | ISIN/market/currency/distribution required; optional ticker never establishes continuity |
+| 6 | Exact comparisons | Decimal endpoint comparison with complete COTAHIST contract/basis checks; unadjusted price changes only |
+| 7 | Release comparison | Explicit release/symbol/market/date record differences, bounded to 10,000 rows |
+| 8 | Explainable semantic search | Keyword/vector ranks and raw scores, RRF contributions, model revision and method; no truth-probability claim |
+| 9 | Evidence viewer/bundles | Context inspection, preserved originals, selection for server-resolved dossier captures and exports |
+| 10 | Readable/inspection views | Agent table inspection toggle; artifact reading/JSON inspection; typed data preview |
+| 11 | OCR history | Existing versioned review flow and read-only specialist; imported text is not approved numerical data |
+| 12 | Processing timeline | Prospective queued/running/terminal event journal; recent job attempt/progress view and export |
+| 13 | Coverage monitoring | Owned coverage/search checks, versioned reruns/content comparisons, worker-driven schedules and role revalidation |
+| 14 | Date qualifications | Publication precision/unknown intervals, separate observed dates/snapshot versions, no invented historical availability |
+| 15 | Guided investigation | Audience/scope → search → context/selection → dossier → observations/interpretations/counterpoints → versioned export |
+| 16 | Handoff | Existing specialist transfer preserves question/reference context; references must be revalidated |
+| 17 | Finding cards | Exact source observations versus user interpretations, counterpoints and limitations, each with references |
+| 18 | Research exports | Revision-pinned Markdown/JSON dossiers, source evidence, checksums, limitations; existing agent evidence export |
+| 19 | Diagnostic feedback | Categorized reports, role-restricted triage, immutable review history and evaluation-candidate export |
+| 20 | Saved research checks | Append-only runs, explicit prior/current content hashes and revision differences; periodic schedules can be paused |
 
-| # | Improvement | State after Inkwell integration |
-| --- | --- | --- |
-| 1 | Overview of coverage, gaps, reviews and failures | Existing coverage/operations; unified overview pending |
-| 2 | Grounded research agent | Three Inkwell specialists return source evidence tables; live generation endpoint pending |
-| 3 | Editable scope before execution | Required quote tool fields and existing market filters; explicit agent scope editor pending |
-| 4 | Saved investigations | PostgreSQL conversations per owner/specialist, reopen in dashboard; workspace annotations pending |
-| 5 | Identity-aware instrument watchlists | Pending; ticker equality must not imply continuity |
-| 6 | Exact price comparisons | Existing exact decimal/basis query; guarded comparison workflow pending |
-| 7 | Immutable release comparisons | Release discovery added; record-level diff workflow pending |
-| 8 | Explainable semantic search | Existing hybrid results retain model/revision/method; rank contribution UI pending |
-| 9 | Evidence viewer/bundles | Existing originals/pages plus agent item/passage/asset/page links and evidence exports; consolidated viewer pending |
-| 10 | Readable and inspection views | Research evidence tables and existing operations/review views; explicit display toggle pending |
-| 11 | OCR review history | Existing versioned reviews; quality specialist can inspect within reviewer permissions |
-| 12 | Processing timeline | Existing attempts/progress/retry operations and specialist inspection; visual timeline pending |
-| 13 | Coverage monitoring | Existing recorded coverage; saved watch rules and gap detection pending |
-| 14 | Historical date qualifications | Tools label publication intervals versus quote dates; unknown/approximate timeline UI pending |
-| 15 | Guided investigation workflow | Question → source tables → saved conversation/export; reviewable finding/brief stages pending |
-| 16 | Specialist handoff | Market/archive/quality handoff carries question and source references into a new investigation |
-| 17 | Finding cards | Pending; distinguish source observation from interpretation and limitations |
-| 18 | Research exports | Markdown and JSON evidence exports; reviewed narrative brief template pending |
-| 19 | Diagnostic feedback | Pending classification, review and evaluation-candidate workflow |
-| 20 | Saved research checks | Saved conversations retain tool results but can be revised/deleted; immutable artifact and versioned rerun comparisons pending |
+The data journey additionally implements eight-series pinned recipes, explicit
+alignment and five descriptive transformations, no imputation, CSV checksums and
+reopening saved recipes. The portfolio journey accepts valued long-only holdings
+in one currency, computes weights/concentration and explicit class-shock scenarios,
+and preserves inputs/results in owned versions. These are not backtests,
+automatic market valuations or personal suitability recommendations.
 
-Additional interfaces: existing authenticated REST extended with private OpenAPI
-and release discovery, plus issued read-only service credentials. Stdio MCP
-provides five bounded read tools. No gateway secret is distributed to MCP clients.
+The Python MCP now provides eleven read-only tools. Owned edits remain in the
+same-origin private REST/dashboard flow; agents cannot write, approve or publish.
+Inkwell is private and must not enter public image contexts. Model-provider
+readiness and live-model quality are separate from deterministic integration tests.
 
-Remaining work must retain the dedicated research database, source validation,
-private original files, release identities, exact decimal prices, quotation basis,
-user ownership and trusted private gateway. No public snapshot app proxy is added.
+Unverified outcomes: actual participant task completion, comprehension, repeat use
+and advantage over existing workarounds. These require the planned user trials;
+software tests are not substitutes. Historical B3 backfill/data completeness and
+MUB3 access remain source-ingestion questions rather than invented coverage.

@@ -131,3 +131,27 @@ Private Next build passed and ESLint reported no errors (two existing warnings).
 Python fatal/syntax Ruff rules passed; the full broad Ruff policy is not clean in
 this lane and is not claimed as a passing check. Live-source acceptance and rollout
 remain outstanding.
+
+## Sequential product workflows — 2026-10-18
+
+User authorized all remaining shape/backlog stages sequentially. Added owned
+workspace revisions/findings, snapshot-pinned multiseries preparation, descriptive
+valued portfolios/scenarios, complete-contract price comparisons, scoped release
+diffs, identity watchlists, scheduled checks with owner revalidation, prospective
+job events and diagnostic triage/history. Private dashboard exposes these journeys;
+MCP now has eleven read-only tools. Inkwell permits six model steps/twelve tool
+calls and independently re-reads cited passages rather than trusting user-side
+model observations. Exact excerpts and draft interpretations are labeled distinctly.
+
+Local: PostgreSQL product contracts, thirteen Inkwell tests, Next build/lint and
+Chromium with real local API+database/synthetic inputs. The original diagnostic
+artifact remains intact; sequential diagnostic is a separate file. Live macro and
+one letter registered on an isolated disposable schema; no production pointer
+changed. News rerun/live rollout and model acceptance remain separately tracked.
+No claim of participant validation or historical completeness follows from this.
+
+Real-source bridge rerun passed with the shipped news policy file: snapshot
+20261018T040612Z, 38 open catalog entries/37 with data, two sampled series rows,
+one news batch/two news items, one original letter. The isolated schema was
+removed; no production corpus/pointer changed. Evidence is sanitized in
+`docs/product/evidence/source-bridge-sequential.json`.

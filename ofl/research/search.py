@@ -179,6 +179,15 @@ def search(
                 ann=db.settings.approximate_search,
             )
         )
+    labels = ["keyword", "vector"] if mode == "hybrid" else [mode]
+    contributions = {}
+    for label, ranking in zip(labels, rankings, strict=True):
+        for position, row in enumerate(ranking, 1):
+            contributions.setdefault(row["id"], {})[label] = {
+                "rank": position,
+                "raw_score": float(row["score"]),
+                "rrf_contribution": 1 / (60 + position) if mode == "hybrid" else None,
+            }
     combined = fuse(rankings) if len(rankings) > 1 else rankings[0]
     # Group by document without allowing one long scanned volume to occupy every hit.
     results = []
@@ -187,7 +196,14 @@ def search(
         if row["item_id"] in seen:
             continue
         seen.add(row["item_id"])
-        results.append({**row, "snippet": row["text"][:600]})
+        results.append(
+            {
+                **row,
+                "snippet": row["text"][:600],
+                "ranking": contributions.get(row["id"], {}),
+                "search_mode": mode,
+            }
+        )
         if len(results) >= limit:
             break
     return {

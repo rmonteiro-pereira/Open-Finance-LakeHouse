@@ -92,3 +92,17 @@ uma pessoa de dados consegue selecionar e reproduzir uma série numa versão;
 fontes sem data, conteúdo restrito e cobertura parcial continuam explícitos.
 Em seguida aplicam-se as tarefas e gates de WORKFLOW.md/cases.json, medindo também
 clareza para assessores/consultores/leigos e o valor adicional de usar um agente.
+
+
+## Continuação sequencial implementada
+
+Direção autorizada integralmente em 2026-10-18. A implementação agora inclui
+revisões imutáveis por dono e achados de pesquisa; preparação multissérie com
+transformações e ausências explícitas; carteiras avaliadas e cenários; Inkwell em
+múltiplos passos com releitura de citações; listas por identidade, comparações de
+preços/releases, verificações periódicas e diagnósticos com triagem versionada.
+
+São estados de código e testes, não adoção ou implantação. O agente distingue
+trechos conferidos de hipóteses interpretativas para revisão. A carteira usa
+avaliações informadas pelo usuário. Não se comprova causalidade ou adequação
+pessoal. Consulte IMPLEMENTATION.md e o backlog para os contratos e seus limites.

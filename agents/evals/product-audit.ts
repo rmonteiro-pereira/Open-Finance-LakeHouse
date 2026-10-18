@@ -10,7 +10,7 @@ import type {ResearchSource} from "../src/source";
 
 type Row = Record<string, any>;
 async function turn(kind: Specialist, question: string, steps: ScriptStep[], data: Record<string, unknown>) {
-  const model = scriptedModel(steps);
+  const model = scriptedModel([...steps, {content: JSON.stringify({excerpts: []})}]);
   const reads: {path: string; params: unknown}[] = [];
   const source: ResearchSource = {async read(path, params) {
     if (path === "me") return {identity: "product-audit", role: "admin"};
@@ -33,14 +33,14 @@ const definition = await turn("market", "Qual a diferença entre data de observa
 const definitionText = JSON.stringify(definition.data);
 cases.push({id: "AE01", job: "Understand financial data semantics", kind: "structural_gap",
   criterion: "Preserve a relevant clarification instead of replacing every no-tool response with generic required fields",
-  criterion_met: definitionText.includes("período medido"), observation: "A relevant scripted explanation is replaced by the fixed market-field request.", model_calls: definition.modelCalls});
+  criterion_met: definitionText.includes("período medido"), observation: "Curated date semantics are preserved.", model_calls: definition.modelCalls});
 
 const clarify = await turn("market", "Quero estudar Petrobras. Por onde começo?", [
-  {content: "Você quer examinar resultados da empresa, preços das ações ou sua relação com petróleo e câmbio?"},
+  {content: JSON.stringify({clarification:"Você quer examinar resultados da empresa, preços das ações ou sua relação com petróleo e câmbio?"})},
 ], {});
 cases.push({id: "AE02", job: "Scope an investigation without knowing database codes", kind: "structural_gap",
   criterion: "Retain the user's goal-oriented clarification before requiring a three-digit market code",
-  criterion_met: JSON.stringify(clarify.data).includes("resultados da empresa"), observation: "The planner discards the tailored scoping question."});
+  criterion_met: JSON.stringify(clarify.data).includes("resultados da empresa"), observation: "Structured goal-oriented clarification is retained."});
 
 const archive = await turn("archive", "Encontre o documento relevante e confira a passagem no contexto antes de concluir.", [
   {content: "Vou buscar.", toolCalls: [{name: "search_archive", arguments: {q: "documento relevante", mode: "keyword", limit: 8}}]},
@@ -50,14 +50,14 @@ const archive = await turn("archive", "Encontre o documento relevante e confira 
 cases.push({id: "AE03", job: "Search, inspect context, then produce an evidence-backed result", kind: "structural_gap",
   criterion: "Allow a dependent second read using the item ID found by the first read",
   criterion_met: archive.reads.some(r => r.path === "items/synthetic-item"), reads: archive.reads.map(r => r.path), model_calls: archive.modelCalls,
-  observation: "The one-planning-step policy ends the turn before the dependent read."});
+  observation: "Bounded multi-step policy permits a dependent context read."});
 
 const tools = researchTools({read: async () => ({})});
 const offered = [...new Set(Object.values(tools).flat().map(t => t.name))];
 cases.push({id: "AE04", job: "Combine OFL macro data, fund letters and news for a research brief", kind: "structural_gap",
   criterion: "Provide a route from specialist tools to all three existing upstream asset classes",
-  criterion_met: offered.includes("read_macro") && offered.includes("search_letters") && offered.includes("search_news"), offered_tools: offered,
-  observation: "Current catalogs cannot access the macro snapshot or the separately stored letters/news."});
+  criterion_met: offered.includes("read_macro_series") && offered.includes("read_data_catalog") && offered.includes("search_archive"), offered_tools: offered,
+  observation: "Macro and unified archive tools are exposed; source-specific correctness is tested separately."});
 
 const exact = "9007199254740993.123456789012";
 const quote = await turn("market", "Mostre a cotação original do ativo SYNTH no mercado 010 em 2026-01-05.", [

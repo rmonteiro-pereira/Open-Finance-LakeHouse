@@ -30,7 +30,7 @@ export default function Workbench({navigate}: {navigate: (tab: string) => void})
       <div className="journey-grid">
         <article><h3>Investigar mercados</h3><p>Localize notícias, cartas e documentos por tema e período. Inspecione o trecho e abra sua origem.</p><button onClick={() => navigate("Pesquisa")}>Encontrar evidências</button></article>
         <article><h3>Explorar dados</h3><p>Confira definições e cobertura, selecione uma série e exporte dados presos à versão consultada.</p><button onClick={() => navigate("Dados")}>Explorar séries</button></article>
-        <article><h3>Preparar uma pergunta sobre carteira</h3><p>Comece pelo tema que quer entender. Para avaliar sua carteira, serão necessárias posições e premissas; esses dados ainda não são coletados nesta etapa.</p><button onClick={() => navigate("Pesquisa")}>Pesquisar o contexto</button></article>
+        <article><h3>Entender uma carteira</h3><p>Informe posições avaliadas, examine a composição e teste choques explícitos por classe. Preserve valores, premissas e versões.</p><button onClick={() => navigate("Carteiras")}>Examinar carteira</button></article>
       </div>
     </section>
     {error && <p role="alert" className="status error">{error}</p>}

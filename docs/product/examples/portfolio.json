@@ -1,0 +1,9 @@
+{
+  "currency": "BRL",
+  "valuation_date": "2026-10-18",
+  "positions": [
+    {"instrument_id": "synthetic-equity", "market": "synthetic", "currency": "BRL", "asset_class": "equity", "market_value": "6000.00"},
+    {"instrument_id": "synthetic-cash", "market": "account", "currency": "BRL", "asset_class": "cash", "market_value": "4000.00"}
+  ],
+  "scenarios": [{"name": "Synthetic shock, not a forecast", "shocks": {"equity": "-20", "cash": "0"}}]
+}

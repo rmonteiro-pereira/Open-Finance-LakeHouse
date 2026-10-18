@@ -114,3 +114,35 @@ CREATE TABLE IF NOT EXISTS macro_pointer (
  singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
  snapshot_id text NOT NULL REFERENCES macro_snapshots(id)
 );
+
+-- User work is separate from collector content and immutable source versions.
+CREATE TABLE IF NOT EXISTS workspaces (
+ id text PRIMARY KEY, owner text NOT NULL, kind text NOT NULL,
+ title text NOT NULL, current_revision integer NOT NULL DEFAULT 0,
+ created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS workspaces_owner ON workspaces(owner,kind);
+CREATE TABLE IF NOT EXISTS workspace_revisions (
+ workspace_id text NOT NULL REFERENCES workspaces(id), revision integer NOT NULL,
+ body jsonb NOT NULL, sha256 text NOT NULL, created_at timestamptz NOT NULL DEFAULT now(),
+ PRIMARY KEY(workspace_id,revision)
+);
+CREATE TABLE IF NOT EXISTS research_feedback (
+ id text PRIMARY KEY, owner text NOT NULL, category text NOT NULL, detail text NOT NULL,
+ artifact_id text, state text NOT NULL DEFAULT 'new', created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS feedback_reviews (
+ feedback_id text NOT NULL REFERENCES research_feedback(id), revision integer NOT NULL,
+ actor text NOT NULL, state text NOT NULL, note text NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(feedback_id,revision)
+);
+CREATE TABLE IF NOT EXISTS check_schedules (
+ workspace_id text PRIMARY KEY REFERENCES workspaces(id), owner text NOT NULL,
+ interval_minutes integer NOT NULL CHECK(interval_minutes BETWEEN 15 AND 10080),
+ enabled boolean NOT NULL DEFAULT true, next_run_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS job_events (
+ id bigserial PRIMARY KEY, job_id text NOT NULL REFERENCES jobs(id),
+ state text NOT NULL, detail jsonb NOT NULL DEFAULT '{}', created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS job_events_job ON job_events(job_id,id);

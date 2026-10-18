@@ -68,6 +68,14 @@ def build_observations(db, store):
 
 
 def execute(db, store, job, heartbeat):
+    if job["kind"] == "research_check":
+        import json
+        from .workspaces import rerun
+
+        actor = job["payload"]["owner"]
+        if json.loads(db.settings.roles or "{}").get(actor) not in {"reader", "reviewer", "admin"}:
+            raise ValueError("scheduled check owner has no research access")
+        return rerun(db, store, actor, job["payload"]["workspace_id"])
     payload = job["payload"]
     if job["kind"] == "import":
         rows = db.rows("SELECT source FROM imports WHERE id=%s", (payload["import_id"],))
@@ -169,6 +177,9 @@ def _run_claimed(db, store):
 
 def run(db, store, *, once=False, drain=False):
     while True:
+        from .workspaces import schedule_due
+
+        schedule_due(db)
         found = run_once(db, store)
         if once or (drain and not found):
             return

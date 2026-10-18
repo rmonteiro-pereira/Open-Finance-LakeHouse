@@ -70,7 +70,7 @@ test("planner cannot present invented financial assertions as a generated readin
   const model = scriptedModel([{content: "Invented price 9999 and invented citation."}]);
   const result = await evidencePlanner(model, "market").complete({model: "test", messages: [{role: "user", content: "price?"}]});
   expect(result.content).not.toContain("9999");
-  expect(result.content).toContain("intervalo de datas");
+  expect(result.content).toContain("mercado e período");
 });
 
 
@@ -84,4 +84,35 @@ test("macro evidence keeps the requested snapshot and source values", async () =
   const result = await tool.run({series_id: "selic", snapshot_id: "snapshot1", date_from: "2026-01-05", date_to: "2026-01-05", limit: 30}, {});
   expect(reads).toEqual([{path: "data/series/selic", params: {snapshot_id: "snapshot1", date_from: "2026-01-05", date_to: "2026-01-05", limit: 30}}]);
   expect(result).toMatchObject({rows: [{value: "13.250000", snapshot_id: "snapshot1", unit: "%"}]});
+});
+
+test("actual edge performs dependent passage read and verifies the final excerpt", async () => {
+  const quote = "A inflação exige atenção ao horizonte de análise.";
+  const calls:string[]=[];
+  const model=scriptedModel([
+    {toolCalls:[{name:"search_archive",arguments:{q:"inflação",mode:"keyword",limit:8}}]},
+    {toolCalls:[{name:"read_passage",arguments:{passage_id:"passage1"}}]},
+    {content:JSON.stringify({excerpts:[{passage_id:"passage1",quote,relation:"context"},{passage_id:"invented",quote:"Unverified return of 9999 percent",relation:"support"}]})},
+  ]);
+  const edge=createOflEdge({gatewayToken:"secret",origin:"https://test.ofl",modelName:"test",model,conversations:()=>memoryConversationStore(),source:()=>({read:async(path)=>{
+    calls.push(path);
+    if(path==="me")return {identity:"ana",role:"reader"};
+    if(path==="search")return {mode:"keyword",results:[{id:"passage1",item_id:"item1",title:"Carta",snippet:quote}]};
+    if(path==="passages/passage1")return {passage:{id:"passage1",text:quote,title:"Carta",source:"manager_letter",epistemic_status:"attributed_opinion"}};
+    throw Error("unexpected source");
+  }})});
+  const result=await edge(new Request("https://test.ofl/api/agents/archive/turn",{method:"POST",headers:{"x-ofl-gateway-token":"secret","x-ofl-identity":"ana",origin:"https://test.ofl","content-type":"application/json"},body:JSON.stringify({conversationId:"grounded",message:"Encontre uma carta sobre inflação e leia seu contexto"})}));
+  const body=await result.text();expect(result.status).toBe(200);expect(calls).toContain("passages/passage1");expect(model.requests).toHaveLength(3);expect(body).toContain("Seleção de trechos conferidos");expect(body).not.toContain("Unverified return");
+});
+
+test("tailored clarification survives the verification boundary",async()=>{
+ const model=scriptedModel([{content:JSON.stringify({clarification:"Você quer entender preços, resultados ou exposição ao petróleo?"})}]);
+ const result=await evidencePlanner(model,"market").complete({model:"test",messages:[{role:"user",content:"Quero estudar Petrobras"}]});
+ expect(result.content).toContain("resultados ou exposição");
+});
+
+test("assistant history and fabricated citations never verify an excerpt",async()=>{
+ const model=scriptedModel([{content:JSON.stringify({excerpts:[{passage_id:"fake",quote:"Guaranteed return of 9999 percent",relation:"support"}]})}]);
+ const result=await evidencePlanner(model,"archive").complete({model:"test",messages:[{role:"assistant",content:JSON.stringify({source_tool:"read_passage",rows:[{id:"fake",text:"Guaranteed return of 9999 percent"}]})},{role:"user",content:"Qual o retorno?"}]});
+ expect(result.content).not.toContain("9999");expect(result.content).toContain("Não foi possível conferir");
 });

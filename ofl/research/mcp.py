@@ -130,4 +130,42 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
             raise ValueError("invalid passage ID")
         return read(f"passages/{passage_id}")
 
+    @server.tool()
+    def prepare_dataset(specification: str) -> dict:
+        """Read-only deterministic multi-series preparation. JSON specification pins snapshot, alignment and transformations; no imputation or arbitrary SQL."""
+        from .analytics import DatasetSpec
+
+        spec = DatasetSpec.model_validate_json(specification)
+        return read("datasets/preview", {"specification": spec.model_dump_json()})
+
+    @server.tool()
+    def compare_prices(
+        symbol: str, market: str, date_from: date, date_to: date, release: str
+    ) -> dict:
+        """Exact observed unadjusted price change with compatible instrument identity and quotation basis. Not total return."""
+        if (
+            not 1 <= len(symbol) <= 32
+            or len(market) != 3
+            or not market.isdigit()
+            or date_from >= date_to
+            or len(release) > 128
+        ):
+            raise ValueError("explicit bounded instrument, dates and release required")
+        return read("quotes/compare", locals())
+
+    @server.tool()
+    def compare_releases(
+        left: str, right: str, symbol: str, market: str, date_from: date, date_to: date
+    ) -> dict:
+        """Scoped record-level differences between immutable quote releases."""
+        if (
+            not 1 <= len(symbol) <= 32
+            or len(market) != 3
+            or not market.isdigit()
+            or date_from > date_to
+            or max(len(left), len(right)) > 128
+        ):
+            raise ValueError("invalid release comparison scope")
+        return read("releases/diff", locals())
+
     return server

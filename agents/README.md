@@ -1,6 +1,6 @@
 # OFL research agents using Inkwell
 
-Three actual Inkwell specialists: **market history**, **archive research**, and
+Three actual Inkwell specialists: **financial research**, **data and methods**, and
 **data quality**. Tools read OFL's private REST API; no SQL, shell, arbitrary URL,
 filesystem, upload, approval, retry or publication tool is available.
 
@@ -10,8 +10,12 @@ item/passage/asset/page references and embedding revision. Catalog dates are
 publication intervals. OCR is not approved numerical data. Review-history reads
 still require the caller's reviewer/admin role at the OFL API.
 
-Each turn makes one planning call and delivers evidence tables. There is no
-allegedly verified generated narrative or production scripted-data fallback.
+Each turn allows six model steps and twelve tool calls. Dependent reads receive
+bounded source observations. Final excerpts are independently re-read through
+the authenticated API and checked as exact substrings. Optional qualitative
+interpretations are model hypotheses for human review; citation validation does
+not verify entailment. Unmatched numerical claims are excluded. There is no
+production scripted-data fallback.
 
 ## Install and test
 
@@ -92,10 +96,9 @@ handoff. Browser model/source data were scripted fixtures, not live generation.
 The archive tool catalog now includes indexed news and manager letters through
 `search_archive`, cited passage inspection through `read_passage`, and macro
 catalog/series reads through `read_data_catalog` and `read_macro_series`. Market
-specialists also receive the macro tools. These connections do not remove the
-single-planning-step limitation described above. Direct search and CSV export in
+specialists also receive the macro tools. These connections support bounded multi-step research. Direct search and CSV export in
 the workbench remain available without a text-generation provider.
 
 See [the workbench operation guide](../docs/research/WORKBENCH.md) for ingestion,
-source restrictions and reproducible exports. The Python MCP exposes eight
+source restrictions and reproducible exports. The Python MCP exposes eleven
 read-only tools, including `data_catalog`, `macro_series` and `passage`.

@@ -2,7 +2,8 @@
 
 Product direction: [SHAPE.md](../product/SHAPE.md). Finance and data work are both
 primary. This first slice connects existing assets to research and data journeys;
-it does not yet implement portfolio holdings analysis or evidence-bound synthesis.
+it also implements owned research revisions, descriptive dataset preparation,
+valued long-only portfolios/scenarios and bounded grounded agent reads.
 
 ## Operation
 
@@ -42,8 +43,9 @@ The private dashboard starts with Início, Pesquisa and Dados. Search can be use
 without a generation provider. Users inspect cited passages and original assets,
 export references, discover macro series by name, preview observations and export
 a version-pinned CSV plus its JSON manifest and Python verification recipe.
-Portfolio guidance currently helps frame a research question; holdings are not
-collected or analyzed in this slice.
+Carteiras accepts explicitly valued positions in one currency, computes weights
+and linear hypothetical shocks, and preserves inputs/results as owned revisions.
+It does not infer prices, FX conversions or suitability.
 
 Authenticated REST endpoints under `/api/v1`:
 
@@ -75,3 +77,36 @@ fixtures, API authentication, source restrictions, immutable versions and export
 hashes. They do not establish real-user research quality or production deployment.
 Real-source validation, browser acceptance and deployment must be recorded
 separately before being claimed.
+
+
+## Research artifacts and analytics
+
+`/api/v1/workspaces` lists/creates only the caller's work. Kinds: investigation,
+dataset, portfolio, watchlist, check. POST `/workspaces/{id}` requires the expected
+revision; stale writes return 409. Revisions are append-only. GET endpoints expose
+history, revision-pinned JSON/Markdown exports and explicit differences. Source
+observations must quote actual captured passages; interpretations remain hypotheses.
+Saved source captures honor subsequent news restrictions when read/exported, with
+redactions distinguished from the original stored checksum.
+
+POST `/datasets/prepare` and `/datasets/export` accept typed snapshot-pinned specs;
+GET `/datasets/preview` exposes the read-only computation to MCP. Up to eight series,
+outer/inner observation-date alignment, level/difference/percent-change/index-100/
+rolling-mean, explicit lag/window, no filling. CSV hashes and full specifications
+appear in manifests. Saved recipes reopen against their original snapshot.
+
+GET `/quotes/compare` rejects ambiguous identities/bases and calculates exact
+observed endpoint price changes. GET `/releases/diff` returns bounded record-level
+differences. Neither implies total returns or continuity through corporate actions.
+
+Saved checks rerun with POST `/workspaces/{id}/run`, append results and compare
+content hashes. POST/GET `/workspaces/{id}/schedule` controls periodic checks from
+15 minutes to one week. The worker leases jobs, avoids concurrent queued duplicates
+and disables revoked owners. Results stay in-app; no external messages are sent.
+Watchlists require ISIN, market, currency and distribution. Job events record
+queued/running/terminal transitions prospectively, without inventing old history.
+
+`/feedback` supports categorized reports; reviewer/admin triage appends history
+and can mark evaluation candidates. Candidates are not passing evaluations.
+Search results disclose keyword/vector ranks, raw scores and RRF contributions;
+these describe ordering, not truth probabilities.

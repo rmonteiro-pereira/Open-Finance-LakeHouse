@@ -65,6 +65,32 @@ class LibrarySyncBody(BaseModel):
     collection: str | None = Field(None, pattern=r"^[A-Za-z0-9_-]{1,80}$")
 
 
+class WorkspaceBody(BaseModel):
+    kind: Literal["investigation", "portfolio", "dataset", "watchlist", "check"]
+    title: str = Field(min_length=1, max_length=200)
+    content: dict
+    expected_revision: int = Field(0, ge=0)
+
+
+class ScheduleBody(BaseModel):
+    interval_minutes: int = Field(60, ge=15, le=10080)
+    enabled: bool = True
+
+
+class FeedbackBody(BaseModel):
+    category: Literal[
+        "wrong_source", "wrong_number", "missing_context", "coverage", "usability", "other"
+    ]
+    detail: str = Field(min_length=1, max_length=4000)
+    artifact_id: str | None = Field(None, max_length=128)
+
+
+class FeedbackReview(BaseModel):
+    expected_revision: int = Field(0, ge=0)
+    state: Literal["triaged", "evaluation_candidate", "resolved", "dismissed"]
+    note: str = Field(min_length=1, max_length=2000)
+
+
 def create_app(settings=None):
     settings = settings or ResearchSettings()
     db = Database(settings)
@@ -706,6 +732,287 @@ def create_app(settings=None):
             raise LookupError()
         return FileResponse(
             path, filename=f"quotes-{job_id}.parquet", media_type="application/vnd.apache.parquet"
+        )
+
+    from .analytics import DatasetSpec
+
+    @app.get("/api/v1/datasets/preview")
+    def dataset_preview(specification: str = Query(max_length=8000), _user=Depends(identity)):
+        from .analytics import prepare_dataset
+
+        data = prepare_dataset(db, store, DatasetSpec.model_validate_json(specification))
+        return response({"manifest": data["manifest"], "preview": data["preview"]})
+
+    @app.post("/api/v1/datasets/prepare")
+    def dataset_prepare(body: DatasetSpec, _user=Depends(identity)):
+        from .analytics import prepare_dataset
+
+        data = prepare_dataset(db, store, body)
+        return response({"manifest": data["manifest"], "preview": data["preview"]})
+
+    @app.post("/api/v1/datasets/export")
+    def dataset_export(body: DatasetSpec, _user=Depends(identity)):
+        from .analytics import prepare_dataset
+
+        data = prepare_dataset(db, store, body)
+        return Response(
+            data["csv"],
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="ofl-dataset.csv"'},
+        )
+
+    @app.get("/api/v1/quotes/compare")
+    def comparison(
+        symbol: str = Query(min_length=1, max_length=32),
+        market: str = Query(pattern=r"^\d{3}$"),
+        date_from: date = Query(),
+        date_to: date = Query(),
+        release: str = Query(max_length=128),
+        _user=Depends(identity),
+    ):
+        from .analytics import compare_quotes
+
+        return response(
+            compare_quotes(
+                db,
+                symbol=symbol,
+                market=market,
+                date_from=date_from,
+                date_to=date_to,
+                release=release,
+            )
+        )
+
+    @app.get("/api/v1/releases/diff")
+    def release_comparison(
+        left: str = Query(max_length=128),
+        right: str = Query(max_length=128),
+        symbol: str = Query(min_length=1, max_length=32),
+        market: str = Query(pattern=r"^\d{3}$"),
+        date_from: date = Query(),
+        date_to: date = Query(),
+        _user=Depends(identity),
+    ):
+        from .analytics import release_diff
+
+        return response(
+            release_diff(
+                db,
+                left=left,
+                right=right,
+                symbol=symbol,
+                market=market,
+                date_from=date_from,
+                date_to=date_to,
+            )
+        )
+
+    @app.get("/api/v1/workspaces")
+    def workspace_list(kind: str | None = Query(None, max_length=30), user=Depends(identity)):
+        return response(
+            db.rows(
+                "SELECT id,kind,title,current_revision,created_at FROM workspaces WHERE owner=%s AND (%s::text IS NULL OR kind=%s) ORDER BY created_at DESC LIMIT 200",
+                (user[0], kind, kind),
+            )
+        )
+
+    @app.post("/api/v1/workspaces")
+    def workspace_create(body: WorkspaceBody, user=Depends(identity)):
+        from .workspaces import save
+
+        return response(
+            save(
+                db,
+                user[0],
+                body.kind,
+                body.title,
+                body.content,
+                expected_revision=body.expected_revision,
+            ),
+            201,
+        )
+
+    @app.post("/api/v1/workspaces/{workspace_id}")
+    def workspace_save(workspace_id: str, body: WorkspaceBody, user=Depends(identity)):
+        from .workspaces import save
+
+        return response(
+            save(
+                db,
+                user[0],
+                body.kind,
+                body.title,
+                body.content,
+                workspace_id=workspace_id,
+                expected_revision=body.expected_revision,
+            )
+        )
+
+    @app.get("/api/v1/workspaces/{workspace_id}")
+    def workspace_read(
+        workspace_id: str, revision: int | None = Query(None, ge=1), user=Depends(identity)
+    ):
+        from .workspaces import load
+
+        return response(load(db, user[0], workspace_id, revision))
+
+    @app.get("/api/v1/workspaces/{workspace_id}/revisions")
+    def workspace_history(workspace_id: str, user=Depends(identity)):
+        from .workspaces import load
+
+        load(db, user[0], workspace_id)
+        return response(
+            db.rows(
+                "SELECT revision,sha256,created_at FROM workspace_revisions WHERE workspace_id=%s ORDER BY revision DESC LIMIT 200",
+                (workspace_id,),
+            )
+        )
+
+    @app.get("/api/v1/workspaces/{workspace_id}/export")
+    def workspace_export(
+        workspace_id: str,
+        revision: int = Query(ge=1),
+        format: Literal["json", "markdown"] = "json",
+        user=Depends(identity),
+    ):
+        from .workspaces import export_markdown, load
+
+        data = load(db, user[0], workspace_id, revision)
+        if format == "markdown":
+            return Response(
+                export_markdown(data),
+                media_type="text/markdown",
+                headers={"Content-Disposition": 'attachment; filename="ofl-research.md"'},
+            )
+        return response(data)
+
+    @app.post("/api/v1/workspaces/{workspace_id}/run")
+    def workspace_run(workspace_id: str, user=Depends(identity)):
+        from .workspaces import rerun
+
+        return response(rerun(db, store, user[0], workspace_id))
+
+    @app.get("/api/v1/workspaces/{workspace_id}/diff")
+    def workspace_diff(
+        workspace_id: str, left: int = Query(ge=1), right: int = Query(ge=1), user=Depends(identity)
+    ):
+        from .workspaces import load
+
+        a, b = load(db, user[0], workspace_id, left), load(db, user[0], workspace_id, right)
+        old, new = a["body"]["content"], b["body"]["content"]
+        return response(
+            {
+                "left": {"revision": left, "sha256": a["sha256"]},
+                "right": {"revision": right, "sha256": b["sha256"]},
+                "changed_fields": [
+                    k for k in sorted(old.keys() | new.keys()) if old.get(k) != new.get(k)
+                ],
+                "before": old,
+                "after": new,
+            }
+        )
+
+    @app.post("/api/v1/feedback")
+    def feedback_create(body: FeedbackBody, user=Depends(identity)):
+        if body.artifact_id:
+            from .workspaces import load
+
+            load(db, user[0], body.artifact_id)
+        feedback_id = uid()
+        with db.connect() as con:
+            con.execute(
+                "INSERT INTO research_feedback(id,owner,category,detail,artifact_id) VALUES (%s,%s,%s,%s,%s)",
+                (feedback_id, user[0], body.category, body.detail, body.artifact_id),
+            )
+        return response({"id": feedback_id, "state": "new"}, 201)
+
+    @app.get("/api/v1/feedback")
+    def feedback_list(user=Depends(identity)):
+        if user[1] in {"reviewer", "admin"}:
+            return response(
+                db.rows("SELECT * FROM research_feedback ORDER BY created_at DESC LIMIT 200")
+            )
+        return response(
+            db.rows(
+                "SELECT * FROM research_feedback WHERE owner=%s ORDER BY created_at DESC LIMIT 200",
+                (user[0],),
+            )
+        )
+
+    @app.post("/api/v1/feedback/{feedback_id}/review")
+    def feedback_review(feedback_id: str, body: FeedbackReview, user=Depends(reviewer)):
+        with db.connect() as con:
+            item = con.execute(
+                "SELECT * FROM research_feedback WHERE id=%s FOR UPDATE", (feedback_id,)
+            ).fetchone()
+            if not item:
+                raise LookupError("feedback not found")
+            current = con.execute(
+                "SELECT COALESCE(max(revision),0) AS revision FROM feedback_reviews WHERE feedback_id=%s",
+                (feedback_id,),
+            ).fetchone()["revision"]
+            if current != body.expected_revision:
+                raise FileExistsError("feedback review changed")
+            con.execute(
+                "INSERT INTO feedback_reviews(feedback_id,revision,actor,state,note) VALUES (%s,%s,%s,%s,%s)",
+                (feedback_id, current + 1, user[0], body.state, body.note),
+            )
+            con.execute(
+                "UPDATE research_feedback SET state=%s WHERE id=%s", (body.state, feedback_id)
+            )
+        return response({"id": feedback_id, "revision": current + 1, "state": body.state})
+
+    @app.get("/api/v1/feedback/{feedback_id}/history")
+    def feedback_history(feedback_id: str, user=Depends(identity)):
+        items = db.rows("SELECT owner FROM research_feedback WHERE id=%s", (feedback_id,))
+        if not items or (items[0]["owner"] != user[0] and user[1] not in {"reviewer", "admin"}):
+            raise LookupError("feedback not found")
+        return response(
+            db.rows(
+                "SELECT revision,actor,state,note,created_at FROM feedback_reviews WHERE feedback_id=%s ORDER BY revision",
+                (feedback_id,),
+            )
+        )
+
+    @app.post("/api/v1/workspaces/{workspace_id}/schedule")
+    def check_schedule(workspace_id: str, body: ScheduleBody, user=Depends(identity)):
+        from .workspaces import owned
+
+        with db.connect() as con:
+            item = owned(con, user[0], workspace_id)
+            if item["kind"] != "check":
+                raise ValueError("only saved checks can be scheduled")
+            con.execute(
+                "INSERT INTO check_schedules(workspace_id,owner,interval_minutes,enabled) VALUES (%s,%s,%s,%s) ON CONFLICT(workspace_id) DO UPDATE SET interval_minutes=excluded.interval_minutes,enabled=excluded.enabled,next_run_at=now()",
+                (workspace_id, user[0], body.interval_minutes, body.enabled),
+            )
+        return response(
+            {
+                "workspace_id": workspace_id,
+                "interval_minutes": body.interval_minutes,
+                "enabled": body.enabled,
+            }
+        )
+
+    @app.get("/api/v1/workspaces/{workspace_id}/schedule")
+    def schedule_read(workspace_id: str, user=Depends(identity)):
+        from .workspaces import load
+
+        load(db, user[0], workspace_id)
+        return response(
+            db.rows(
+                "SELECT interval_minutes,enabled,next_run_at FROM check_schedules WHERE workspace_id=%s",
+                (workspace_id,),
+            )
+        )
+
+    @app.get("/api/v1/jobs/{job_id}/events")
+    def job_events(job_id: str, _user=Depends(identity)):
+        return response(
+            db.rows(
+                "SELECT state,detail,created_at FROM job_events WHERE job_id=%s ORDER BY id LIMIT 500",
+                (job_id,),
+            )
         )
 
     return app
