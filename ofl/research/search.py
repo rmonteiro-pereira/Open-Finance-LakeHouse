@@ -108,21 +108,7 @@ def embed_pending(db, limit=1000, heartbeat=lambda _: None):
     return len(rows)
 
 
-def search(
-    db,
-    text,
-    *,
-    mode="keyword",
-    source=None,
-    item_type=None,
-    collection=None,
-    date_from=None,
-    date_to=None,
-    limit=20,
-    vector=None,
-):
-    if mode not in {"keyword", "vector", "hybrid"}:
-        raise ValueError("unknown search mode")
+def scope_conditions(*, source=None, item_type=None, collection=None, date_from=None, date_to=None):
     conditions = [
         "p.active",
         "(p.asset_id IS NULL OR EXISTS(SELECT 1 FROM assets a WHERE a.id=p.asset_id AND a.active))",
@@ -138,7 +124,67 @@ def search(
     if date_to:
         conditions.append("i.date_start<=%s")
         params.append(date_to)
-    where = " AND ".join(conditions)
+    return " AND ".join(conditions), params
+
+
+def index_coverage(db, *, where=None, params=()):
+    """Point-in-time eligible passage coverage, never a relevance or truth score."""
+    if where is None:
+        where, params = scope_conditions()
+    settings = db.settings
+    configured = bool(settings.embedding_revision)
+    row = db.rows(
+        f"""SELECT count(*) AS eligible_passages, count(e.passage_id) AS indexed_passages
+        FROM passages p JOIN items i ON i.id=p.item_id LEFT JOIN embeddings e
+        ON e.passage_id=p.id AND e.model=%s AND e.revision=%s WHERE {where}""",
+        (settings.embedding_model, settings.embedding_revision or "", *params),
+    )[0]
+    total, indexed = (
+        int(row["eligible_passages"]),
+        int(row["indexed_passages"]) if configured else 0,
+    )
+    return {
+        "configured": configured,
+        "model": settings.embedding_model if configured else None,
+        "model_revision": settings.embedding_revision if configured else None,
+        "eligible_passages": total,
+        "indexed_passages": indexed,
+        "pending_passages": total - indexed,
+        "fraction": indexed / total if configured and total else None,
+        "status": "disabled"
+        if not configured
+        else "empty"
+        if not total
+        else "complete"
+        if indexed == total
+        else "partial",
+        "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth.",
+    }
+
+
+def search(
+    db,
+    text,
+    *,
+    mode="keyword",
+    source=None,
+    item_type=None,
+    collection=None,
+    date_from=None,
+    date_to=None,
+    limit=20,
+    vector=None,
+):
+    if mode not in {"keyword", "vector", "hybrid"}:
+        raise ValueError("unknown search mode")
+    where, params = scope_conditions(
+        source=source,
+        item_type=item_type,
+        collection=collection,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    coverage = index_coverage(db, where=where, params=params)
     projection = """p.id,p.item_id,p.asset_id,p.page,p.text,p.method,p.evidence,
         i.title,i.source,i.item_type,i.collection,i.date_start,i.date_end,i.date_precision,
         i.metadata->>'url' AS source_url,i.metadata->>'content_tier' AS content_tier,
@@ -156,7 +202,11 @@ def search(
                 (text, text, *params, text, text, candidates),
             )
         )
-    if mode in {"vector", "hybrid"}:
+    if mode in {"vector", "hybrid"} and not coverage["configured"]:
+        raise ValueError("semantic search requires a pinned embedding model")
+    if mode in {"vector", "hybrid"} and not coverage["indexed_passages"]:
+        rankings.append([])
+    if mode in {"vector", "hybrid"} and coverage["indexed_passages"]:
         if vector is None:
             vector = embed(db.settings, [text])[0]
         literal = vector_literal(vector, db.settings.embedding_dimensions)
@@ -214,6 +264,7 @@ def search(
         "model": db.settings.embedding_model if mode != "keyword" else None,
         "model_revision": db.settings.embedding_revision if mode != "keyword" else None,
         "approximate": db.settings.approximate_search if mode != "keyword" else False,
+        "index_coverage": coverage,
         "results": results,
     }
 

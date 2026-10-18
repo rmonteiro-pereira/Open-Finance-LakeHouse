@@ -253,11 +253,10 @@ def rerun(db, store, actor, workspace_id):
     def comparable(value):
         # Running this check creates jobs; do not report its own changing job count
         # as a source-coverage change. Preserve the full result for inspection.
-        return (
-            {k: v for k, v in value.items() if k != "jobs"}
-            if body["type"] == "coverage" and isinstance(value, dict)
-            else value
-        )
+        if isinstance(value, dict):
+            excluded = {"jobs"} if body["type"] == "coverage" else {"index_coverage"}
+            return {k: v for k, v in value.items() if k not in excluded}
+        return value
 
     before, after = comparable(previous), comparable(body["result"])
     body["comparison"] = {
@@ -266,7 +265,7 @@ def rerun(db, store, actor, workspace_id):
         "changed": before != after if previous is not None else None,
         "comparison_scope": "source coverage excluding self-generated job counts"
         if body["type"] == "coverage"
-        else "bounded retrieved evidence",
+        else "bounded retrieved evidence excluding vector indexing progress",
     }
     return save(
         db,

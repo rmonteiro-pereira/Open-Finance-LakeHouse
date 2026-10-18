@@ -118,19 +118,44 @@ def execute(db, store, job, heartbeat):
     raise ValueError("job kind not allowlisted")
 
 
-def run_once(db, store):
+LANES = {
+    "all": None,
+    "default": [
+        "import",
+        "library_sync",
+        "process_asset",
+        "build_observations",
+        "export",
+        "pipeline",
+    ],
+    "embedding": ["embed"],
+    "checks": ["research_check"],
+}
+
+
+def run_once(db, store, *, lane="all"):
+    if lane not in LANES:
+        raise ValueError("unknown worker lane")
     with db.connect() as guard:
+        # Legacy/all workers exclude all named lanes. Named lanes may run together,
+        # with one worker per lane; Delta/import work remains serial in default.
+        lock = "pg_try_advisory_xact_lock" if lane == "all" else "pg_try_advisory_xact_lock_shared"
         acquired = guard.execute(
-            "SELECT pg_try_advisory_xact_lock(hashtext('ofl-research-worker')) AS acquired"
+            f"SELECT {lock}(hashtext('ofl-research-worker')) AS acquired"
         ).fetchone()["acquired"]
+        if acquired:
+            acquired = guard.execute(
+                "SELECT pg_try_advisory_xact_lock(hashtext(%s)) AS acquired",
+                ("ofl-research-worker:" + lane,),
+            ).fetchone()["acquired"]
         if not acquired:
             return False
-        return _run_claimed(db, store)
+        return _run_claimed(db, store, LANES[lane], guard=guard)
 
 
-def _run_claimed(db, store):
+def _run_claimed(db, store, kinds=None, *, guard=None):
     owner = uid()
-    job = db.claim(owner)
+    job = db.claim(owner, kinds)
     if not job:
         return False
     stop = threading.Event()
@@ -139,12 +164,14 @@ def _run_claimed(db, store):
     def heartbeat(progress=None):
         if lease_errors:
             raise RuntimeError("lease heartbeat failed") from lease_errors[0]
+        if guard is not None:
+            guard.execute("SELECT 1")  # keep the advisory-lock transaction alive
         db.heartbeat(job["id"], owner, progress)
 
     def keep_lease():
         while not stop.wait(db.settings.lease_seconds / 3):
             try:
-                db.heartbeat(job["id"], owner)
+                heartbeat()
             except Exception as exc:
                 lease_errors.append(exc)
                 return
@@ -175,12 +202,15 @@ def _run_claimed(db, store):
     return True
 
 
-def run(db, store, *, once=False, drain=False):
+def run(db, store, *, once=False, drain=False, lane="all"):
+    if lane not in LANES:
+        raise ValueError("unknown worker lane")
     while True:
         from .workspaces import schedule_due
 
-        schedule_due(db)
-        found = run_once(db, store)
+        if lane in {"all", "checks"}:
+            schedule_due(db)
+        found = run_once(db, store, lane=lane)
         if once or (drain and not found):
             return
         if not found:

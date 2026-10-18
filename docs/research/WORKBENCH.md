@@ -128,3 +128,7 @@ from conversation references and executed tool scopes directly.
 Remote CPU embedding indexing submits one complete passage per request and saves
 each result before proceeding. This bounds inference batches without truncating
 text, weakening model-digest checks or losing completed vectors on a retry.
+
+Scoped semantic-index coverage, fair worker pools and judged retrieval evaluation
+are documented in [RETRIEVAL-EVALUATION.md](RETRIEVAL-EVALUATION.md). Coverage is
+reported independently of ranking relevance and source completeness.
