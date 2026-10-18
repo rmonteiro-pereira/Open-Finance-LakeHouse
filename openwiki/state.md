@@ -165,3 +165,10 @@ Real-source letter processing also passed: one actual PDF processed into fourtee
 active passages in the disposable schema. Coverage-check comparisons exclude
 self-generated job counts, preventing every scheduled run from producing a false
 source-coverage change; the full operational snapshot remains inspectable.
+
+CPU generation deployment follow-up: optional OFL_AGENT_NO_THINK appends the Qwen
+non-thinking instruction without changing provider defaults for other models.
+Real Qwen 4B completed structured JSON and a tool call but took approximately
+103/108 seconds on this host, exceeding the agent's per-call budget. A smaller
+local model is being evaluated; native-tool smoke success alone is not a claim
+that the complete agent workflow is ready.

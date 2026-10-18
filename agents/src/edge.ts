@@ -6,6 +6,7 @@ import type { ResearchSource } from "./source";
 import { evidencePlanner } from "./planner";
 export interface EdgeConfig {
   gatewayToken: string; origin: string; model: ModelPort; modelName: string;
+  noThinking?: boolean;
   source(identity: string): ResearchSource;
   conversations(kind: Specialist): ConversationStore;
   transcript?(kind: Specialist): TranscriptPort;
@@ -39,7 +40,7 @@ export function createOflEdge(config: EdgeConfig) {
     if (!server) {
       // Bound memory without evicting active streamed turns or weakening durable ownership.
       if (servers.size >= 256) return json({detail: "Agent session capacity reached"}, 503);
-      const chat = createChat({agent: oflAgent(kind, source), model: evidencePlanner(config.model, kind, async (id, signal) => {const value = await source.read(`passages/${id}`, {}, signal) as {passage?:{text?:string}}; return value.passage?.text;}),
+      const chat = createChat({agent: oflAgent(kind, source), model: evidencePlanner(config.model, kind, async (id, signal) => {const value = await source.read(`passages/${id}`, {}, signal) as {passage?:{text?:string}}; return value.passage?.text;}, config.noThinking ? "\n/no_think" : ""),
         roles: {research: {model: config.modelName, maxTokens: 2048, timeoutMs: 60_000}},
         conversations: config.conversations(kind), transcript: config.transcript?.(kind),
         // Bounded search/context/extractive synthesis; source values remain exact tables.

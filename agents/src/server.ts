@@ -19,7 +19,7 @@ const model = openAiCompatibleModel({baseUrl: required("OFL_AGENT_MODEL_BASE_URL
 const [database] = await sql`SELECT to_regclass('public.dag_run') AS airflow`;
 if (database?.airflow) throw new Error("Refusing to migrate an Airflow metadata database");
 for (const kind of SPECIALISTS) await migratePostgres(sql, {schema: `ofl_agent_${kind}`});
-const fetch = createOflEdge({gatewayToken: token, origin, model, modelName,
+const fetch = createOflEdge({gatewayToken: token, origin, model, modelName, noThinking: process.env.OFL_AGENT_NO_THINK === "1",
   source: identity => oflSource(api, token, identity),
   conversations: kind => postgresConversationStore(sql, {schema: `ofl_agent_${kind}`}),
   transcript: kind => postgresTranscript(sql, {schema: `ofl_agent_${kind}`}),
