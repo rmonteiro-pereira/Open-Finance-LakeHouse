@@ -290,3 +290,14 @@ a compact response took 40.61 seconds and failed draft validation. Production
 model selection and configuration remain unchanged. Detailed acceptance evidence
 is in docs/product/evidence/retrieval-capacity-acceptance.json. Useful supported
 synthesis and independent user task outcomes remain open gates.
+
+
+GPU follow-up: use the available local RTX 4090 with the exact pinned BGE-M3
+manifest/weights, verified by digest and 100% GPU residency. Observed synthetic
+indexing times for twenty documents: CPU 423.48 s, GPU batch-one 67.32 s including
+first model load, GPU batch-eight warm 7.62 s. Database location, inference
+versions and load differ; this is operational evidence rather than a controlled
+hardware benchmark. Aggregate retrieval metrics agreed across all three runs;
+vector/hybrid failed the absent-topic case. Add configurable bounded remote
+batches (default one, GPU opt-in up to 32) and pipelined inserts, with a real
+PostgreSQL interruption/retry test. Local suite: 253 passed, three optional skips.
