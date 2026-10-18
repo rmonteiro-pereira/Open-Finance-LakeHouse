@@ -197,3 +197,6 @@ Final data semantics checks: differencing a percentage series labels its output
 as percentage points while preserving original units in source metadata. Release
 diff keys now use the complete parser identity, including scaled exercise terms.
 Selected-reference exports retain each executed query scope.
+
+Final edge checks bound extreme decimal exponents without context overflow and
+keep chart keyboard selection in range when a date query returns fewer points.

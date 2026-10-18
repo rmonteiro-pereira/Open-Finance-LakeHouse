@@ -22,7 +22,11 @@ def number(value):
         result = Decimal(str(value))
     except InvalidOperation:
         raise ValueError("invalid decimal") from None
-    if not result.is_finite() or abs(result) > Decimal("1e24") or result.as_tuple().exponent < -18:
+    if (
+        not result.is_finite()
+        or result.copy_abs() > Decimal("1e24")
+        or result.as_tuple().exponent < -18
+    ):
         raise ValueError("decimal exceeds supported bounds")
     return result
 
