@@ -136,3 +136,28 @@ interpretation. Source-only requests perform no model call. There is a separate
 and an agent-to-dossier handoff carrying executed scope. Nineteen local Inkwell
 tests/typecheck and private Next build/lint pass. Deployment acceptance remains a
 separate gate, with prior real small-model premature-answer failures preserved.
+
+Production sequential acceptance after #67: all five research deployments ready
+and GitOps reconciliation succeeded. API acceptance observed 37 populated macro
+series, 366 news and 26 letter items (processing continues), pinned CSV checksums,
+8,041-row dataset preparation, exact synthetic portfolio scenario and denial of
+unconfigured identity. The probe was removed. Scheduled enqueue completed.
+Real source-only agent: search + context read + verified excerpt, 5.06 s. Natural
+question: two context reads and source retention, 47.53 s; optional generation
+exceeded its budget and no interpretation was presented. This is integration
+evidence, not reasoning-quality, customer-adoption or full historical-coverage
+validation. Preserve earlier failed small-model diagnostics.
+
+Live semantic acceptance found an eight-passage remote CPU batch exceeded its
+120-second deadline before persisting any vectors. Use one complete passage per
+remote request, saving progress independently; local SentenceTransformer batch
+behavior remains unchanged. Model digest and no-truncation checks remain intact.
+
+Actual Tailscale HTTPS browser acceptance passed agent-source-to-dossier handoff
+(question and references), mobile width and zero client errors, with no injected
+identity headers. An initial attempt timed out during rollout; repeat on ready
+services passed. SSH stdio MCP connected: thirteen tools and successful catalog.
+
+Single-complete-passage live embedding succeeded; hybrid search returned a real
+vector contribution with the pinned model revision (39.6 s combined probe). This
+validates the smaller-batch path, not complete indexing or retrieval relevance.

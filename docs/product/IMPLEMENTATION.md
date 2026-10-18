@@ -34,3 +34,27 @@ captures without rewriting their immutable checksums.
 The source bridge was separately exercised on an isolated schema with real private
 macro and letter objects. The live corpus/pointer was unchanged. Deployment and
 live-model acceptance are recorded separately; participant outcomes remain open.
+
+## Production acceptance — 2026-10-18
+
+The six groups were merged through OFL #65–#67 and deployed. The current source
+acceptance observed 37 populated macro series, 366 news items and 26 letter items;
+letter extraction and vector indexing continue independently of item counts.
+Pinned CSV checksums, an 8,041-row prepared dataset, exact synthetic portfolio
+scenario and denied unconfigured identity passed against the private API. The
+synthetic portfolio probe was removed. The scheduled enqueue completed.
+
+A real private-agent request searched and read a passage, then returned a freshly
+verified excerpt in 5.06 seconds without model inference. A natural question read
+two passages and preserved verified evidence when optional interpretation exceeded
+its budget (47.53 seconds total). This demonstrates useful source collection and
+honest failure behavior; it does not establish generative analytical quality.
+The original agent diagnostic remains intact. See
+`evidence/live-sequential-acceptance.json` for sanitized observations.
+
+Actual Tailscale HTTPS browser acceptance also completed agent → dossier handoff
+with question and references, mobile layout and no JavaScript errors. SSH stdio MCP
+listed thirteen tools and read the catalog. A complete real passage was embedded
+and retrieved with a vector contribution in hybrid search (39.6 seconds for the
+small indexing/search probe); digest verification remained enabled. The corpus is
+not fully indexed and retrieval relevance has not been established by this probe.

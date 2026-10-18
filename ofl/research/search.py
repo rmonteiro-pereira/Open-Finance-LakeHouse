@@ -86,8 +86,11 @@ def embed_pending(db, limit=1000, heartbeat=lambda _: None):
         ORDER BY p.id LIMIT %s""",
         (settings.embedding_model, settings.embedding_revision, limit),
     )
-    for start in range(0, len(rows), 8):
-        batch = rows[start : start + 8]
+    # CPU-backed remote models can exceed the request deadline on eight long
+    # passages. Persist each result independently so retries retain progress.
+    batch_size = 1 if settings.embedding_url else 8
+    for start in range(0, len(rows), batch_size):
+        batch = rows[start : start + batch_size]
         vectors = embed(settings, [row["text"] for row in batch])
         with db.connect() as con:
             for row, vector in zip(batch, vectors, strict=True):
@@ -101,7 +104,7 @@ def embed_pending(db, limit=1000, heartbeat=lambda _: None):
                         vector_literal(vector, settings.embedding_dimensions),
                     ),
                 )
-        heartbeat({"embedded": min(start + 8, len(rows)), "total": len(rows)})
+        heartbeat({"embedded": min(start + batch_size, len(rows)), "total": len(rows)})
     return len(rows)
 
 
