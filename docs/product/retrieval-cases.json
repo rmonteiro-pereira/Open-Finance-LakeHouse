@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "cases": [
+    {"id": "R01", "query": "inflação Brasil", "filters": {"source": "news"}},
+    {"id": "R02", "query": "custo de vida das famílias", "filters": {"source": "news"}},
+    {"id": "R03", "query": "juros política monetária", "filters": {"source": "manager_letter"}},
+    {"id": "R04", "query": "inflação Estados Unidos", "filters": {"source": "news"}},
+    {"id": "R05", "query": "riscos contrapontos cenário econômico", "filters": {"source": "manager_letter"}},
+    {"id": "R06", "query": "quarks supercondutores mecânica quântica", "filters": {}}
+  ]
+}

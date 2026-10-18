@@ -5,6 +5,8 @@ market/investment-portfolio users are explicitly considered. The engineering
 portfolio project is secondary.
 
 - [Shape definido e primeira fatia de implementação](SHAPE.md).
+- [Delivery gaps and acceptance priorities](DELIVERY-GAPS.md).
+- [Real-corpus relevance review](RETRIEVAL-REVIEW.md).
 - [Repeatable evaluation workflow](WORKFLOW.md): process, evidence, baselines,
   adversarial cases, outcome gates and decision cadence.
 - [First adversarial review](REVIEW.md): findings across the whole OFL, leading
@@ -18,6 +20,8 @@ portfolio project is secondary.
 - [Proposed decisions and reversal conditions](DECISIONS.md).
 - [Outcome case bank](cases.json): planned paired user-task and adversarial trials.
 
-This is an initial evidence-based assessment. It contains no invented interviews,
-real-model benchmark results, adoption, willingness-to-pay or product-market-fit
-claims. Subjective rankings are reproducible prioritization aids, not measurements.
+The initial assessment and persona rankings remain hypotheses. Later production
+rehearsals and their limitations are recorded in [OUTCOME-TRIALS.md](OUTCOME-TRIALS.md)
+and the evidence directory. There are no participant interviews, adoption,
+willingness-to-pay or product-market-fit results. Subjective persona rankings are
+reproducible prioritization aids, not measurements.

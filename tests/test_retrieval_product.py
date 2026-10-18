@@ -261,7 +261,9 @@ def test_remote_embedding_batches_keep_committed_progress_on_retry(research, mon
     db.settings.embedding_batch_size = 2
     with db.connect() as con:
         for number in range(5):
-            upsert_item(con, "news", {"source_id": str(number), "title": f"Documento {number}"}, str(number))
+            upsert_item(
+                con, "news", {"source_id": str(number), "title": f"Documento {number}"}, str(number)
+            )
     calls, progress = [], []
 
     def interrupted(_settings, texts):
@@ -283,3 +285,59 @@ def test_remote_embedding_batches_keep_committed_progress_on_retry(research, mon
     assert embed_pending(db, 5, progress.append) == 3
     assert calls == [2, 1]
     assert index_coverage(db)["status"] == "complete"
+
+
+def test_real_candidate_pool_freezes_sources_and_reuses_query_vector(research, monkeypatch):
+    from ofl.research.retrieval_review import assess, collect, worksheet
+
+    db, _ = research
+    first, second, _ = seed(db)
+    calls = []
+    monkeypatch.setattr(
+        "ofl.research.retrieval_review.embed",
+        lambda _settings, texts: calls.append(texts) or [[1, 0, 0]],
+    )
+    before = corpus_manifest(db)["sha256"]
+    pool = collect(db, {"version": 1, "cases": [{"id": "inflation", "query": "inflação"}]})
+    assert calls == [["inflação"]]
+    assert corpus_manifest(db)["sha256"] == before
+    case = pool["cases"][0]
+    assert {c["item_id"] for c in case["candidates"]} == {first, second}
+    assert all(r["status"] == "ok" for r in case["rankings"].values())
+    # Simulate JSON export and later grading on a machine with no database.
+    pool = json.loads(json.dumps(pool, default=str))
+    reviews = worksheet(pool)
+    reviews["reviewer"] = "synthetic fixture"
+    for candidate in reviews["cases"][0]["candidates"]:
+        candidate.update(verdict="relevant", rationale="Both fixture titles discuss inflation")
+    measured = assess(pool, reviews)
+    assert measured["summary"]["keyword"]["precision_returned_at_10"]["mean"] == 1
+
+
+def test_candidate_pool_records_failures_and_isolates_concurrent_changes(research, monkeypatch):
+    from ofl.research.retrieval_review import collect
+
+    db, _ = research
+    first, _, _ = seed(db)
+    specification = {"version": 1, "cases": [{"id": "inflation", "query": "inflação"}]}
+
+    def unavailable(*_):
+        raise RuntimeError("private provider details")
+
+    monkeypatch.setattr("ofl.research.retrieval_review.embed", unavailable)
+    pool = collect(db, specification)
+    assert pool["cases"][0]["rankings"]["keyword"]["status"] == "ok"
+    assert pool["cases"][0]["rankings"]["hybrid"]["status"] == "error"
+    assert "private provider details" not in json.dumps(pool, default=str)
+
+    def mutate(*_):
+        with db.connect() as con:
+            con.execute("UPDATE items SET revision='pool-drift' WHERE id=%s", (first,))
+        return [[1, 0, 0]]
+
+    monkeypatch.setattr("ofl.research.retrieval_review.embed", mutate)
+    before = corpus_manifest(db)["sha256"]
+    frozen = collect(db, specification)
+    assert frozen["corpus"]["sha256"] == before
+    assert corpus_manifest(db)["sha256"] != before
+    assert frozen["collection"]["isolation"] == "repeatable_read_read_only"
