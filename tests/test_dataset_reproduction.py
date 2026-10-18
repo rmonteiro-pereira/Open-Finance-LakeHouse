@@ -177,6 +177,9 @@ def test_mcp_downloads_reproduction_resource_without_embedding_zip_in_tool_text(
         assert replay(tmp_path) == (tmp_path / "dataset.csv").read_bytes()
         templates = await server.list_resource_templates()
         assert len(templates) == 1
+        db.settings.service_tokens = "{}"
+        with pytest.raises(Exception, match="bundle request failed"):
+            await server.read_resource(result[0].uri)
 
     asyncio.run(exercise())
-    assert len(calls) == 2
+    assert len(calls) == 3
