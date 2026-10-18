@@ -69,6 +69,29 @@ def collect(db, specification):
     prepared = _prepare(specification)
     if not db.settings.embedding_revision or db.settings.approximate_search:
         raise ValueError("pinned embedding revision and exact retrieval required")
+    # A changing live corpus cannot yield comparable sequential rankings. Use one
+    # MVCC snapshot without stopping writers or copying/modifying production tables.
+    with db.connect() as connection:
+        connection.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
+
+        class Snapshot:
+            settings = db.settings
+
+            def rows(self, query, params=(), *, ann=False):
+                if ann:
+                    raise ValueError("approximate retrieval is not supported in evaluation")
+                return connection.execute(query, params).fetchall()
+
+        began = connection.execute("SELECT CURRENT_TIMESTAMP AS started_at").fetchone()
+        pool = _collect(Snapshot(), prepared)
+        pool["collection"] = {
+            "started_at": began["started_at"],
+            "isolation": "repeatable_read_read_only",
+        }
+        return pool
+
+
+def _collect(db, prepared):
     before = corpus_manifest(db)
     results = []
     for case, filters in prepared:

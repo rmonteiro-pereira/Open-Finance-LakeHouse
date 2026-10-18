@@ -12,8 +12,9 @@ python tools/review_retrieval.py collect docs/product/retrieval-cases.json \
 
 The configured database must be the private research database with a pinned
 embedding model and exact search. Collection reads at most six queries and ten
-documents per method, shares each query embedding across modes, and rejects corpus
-drift. Source/body/date/model digests bind the snapshot. Provider errors are
+documents per method and shares each query embedding across modes. A PostgreSQL
+repeatable-read, read-only transaction freezes the corpus while ingestion continues;
+source/body/date/model digests bind that snapshot. Provider errors are
 recorded without private exception strings; they do not become empty successful
 results. No writes are made to the database, corpus or serving configuration.
 

@@ -314,7 +314,7 @@ def test_real_candidate_pool_freezes_sources_and_reuses_query_vector(research, m
     assert measured["summary"]["keyword"]["precision_returned_at_10"]["mean"] == 1
 
 
-def test_candidate_pool_records_embedding_failures_and_rejects_drift(research, monkeypatch):
+def test_candidate_pool_records_failures_and_isolates_concurrent_changes(research, monkeypatch):
     from ofl.research.retrieval_review import collect
 
     db, _ = research
@@ -336,5 +336,8 @@ def test_candidate_pool_records_embedding_failures_and_rejects_drift(research, m
         return [[1, 0, 0]]
 
     monkeypatch.setattr("ofl.research.retrieval_review.embed", mutate)
-    with pytest.raises(ValueError, match="corpus changed"):
-        collect(db, specification)
+    before = corpus_manifest(db)["sha256"]
+    frozen = collect(db, specification)
+    assert frozen["corpus"]["sha256"] == before
+    assert corpus_manifest(db)["sha256"] != before
+    assert frozen["collection"]["isolation"] == "repeatable_read_read_only"
