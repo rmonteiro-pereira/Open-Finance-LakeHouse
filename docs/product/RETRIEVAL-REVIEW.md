@@ -51,3 +51,19 @@ results never prove correct abstention, even for the intentionally unrelated que
 Use independent reviewers and held-out task variants before claiming a retrieval
 winner or changing a production threshold. Source relevance does not establish
 claim support, analytical usefulness, savings, comprehension or participant success.
+
+## First real-corpus development run
+
+Six queries on a read-only snapshot of 11,294 active passages produced 107
+query/document candidates across the three methods, without provider errors.
+Builder review inspected all 31 candidates for R01 and R06: R01 has seven topical,
+eleven non-topical and three uncertain captures; R06 has two non-topical headlines
+and eight uncertain catalog-only originals. The other 76 candidates remain
+unassessed. This is not an independent financial review.
+
+No complete precision/recall/nDCG denominator exists for these partially uncertain
+judgments; the published report leaves those metrics null. The evidence identifies
+jurisdiction confusion, related-link contamination and catalog metadata entering
+vector results. It does not establish a winning method or whole-corpus absence.
+The sanitized receipt is `evidence/retrieval-review-development.json`; raw passages,
+worksheets and individual rationales remain in private research storage.

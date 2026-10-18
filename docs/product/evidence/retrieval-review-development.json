@@ -1,0 +1,351 @@
+{
+  "version": 1,
+  "status": "partial_builder_development_review",
+  "pool_sha256": "f4a1dc55bce89545adcd6721ea735e6760a6b1f76ca48a651fdebbd46524d05b",
+  "reviews_sha256": "42002f46aefc117d23c5cfd5d1151068bbf0d45ca5079aff2ff32f29f0acc1d3",
+  "corpus_passages": 11294,
+  "index_coverage": {
+    "configured": true,
+    "model": "bge-m3-cpu:latest",
+    "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+    "eligible_passages": 11294,
+    "indexed_passages": 10274,
+    "pending_passages": 1020,
+    "fraction": 0.909686559234992,
+    "status": "partial",
+    "qualification": "Current active passages within source/publication filters; query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+  },
+  "collection_isolation": "repeatable_read_read_only",
+  "planned_queries": 6,
+  "pooled_query_document_pairs": 107,
+  "inspected_cases": [
+    "R01",
+    "R06"
+  ],
+  "reviewer_independence": "not_verified",
+  "summary": {
+    "keyword": {
+      "planned_cases": 6,
+      "errors": 0,
+      "judgment_coverage": {
+        "mean": 0.225,
+        "assessed_cases": 4
+      },
+      "precision_returned_at_10": {
+        "mean": null,
+        "assessed_cases": 0
+      },
+      "pooled_recall_at_10": {
+        "mean": null,
+        "assessed_cases": 0
+      },
+      "pooled_ndcg_at_10": {
+        "mean": null,
+        "assessed_cases": 0
+      }
+    },
+    "vector": {
+      "planned_cases": 6,
+      "errors": 0,
+      "judgment_coverage": {
+        "mean": 0.18333333333333335,
+        "assessed_cases": 6
+      },
+      "precision_returned_at_10": {
+        "mean": null,
+        "assessed_cases": 0
+      },
+      "pooled_recall_at_10": {
+        "mean": null,
+        "assessed_cases": 0
+      },
+      "pooled_ndcg_at_10": {
+        "mean": null,
+        "assessed_cases": 0
+      }
+    },
+    "hybrid": {
+      "planned_cases": 6,
+      "errors": 0,
+      "judgment_coverage": {
+        "mean": 0.18333333333333335,
+        "assessed_cases": 6
+      },
+      "precision_returned_at_10": {
+        "mean": null,
+        "assessed_cases": 0
+      },
+      "pooled_recall_at_10": {
+        "mean": null,
+        "assessed_cases": 0
+      },
+      "pooled_ndcg_at_10": {
+        "mean": null,
+        "assessed_cases": 0
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "R01",
+      "pooled_candidates": 21,
+      "relevant_candidates": 7,
+      "uncertain_candidates": 3,
+      "unassessed_candidates": 0,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 9,
+          "judgment_coverage": 0.9,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        },
+        "vector": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 9,
+          "judgment_coverage": 0.9,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        },
+        "hybrid": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 9,
+          "judgment_coverage": 0.9,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        }
+      }
+    },
+    {
+      "id": "R02",
+      "pooled_candidates": 21,
+      "relevant_candidates": 0,
+      "uncertain_candidates": 0,
+      "unassessed_candidates": 21,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        },
+        "vector": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        },
+        "hybrid": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        }
+      }
+    },
+    {
+      "id": "R03",
+      "pooled_candidates": 16,
+      "relevant_candidates": 0,
+      "uncertain_candidates": 0,
+      "unassessed_candidates": 16,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        },
+        "vector": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        },
+        "hybrid": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        }
+      }
+    },
+    {
+      "id": "R04",
+      "pooled_candidates": 29,
+      "relevant_candidates": 0,
+      "uncertain_candidates": 0,
+      "unassessed_candidates": 29,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        },
+        "vector": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        },
+        "hybrid": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        }
+      }
+    },
+    {
+      "id": "R05",
+      "pooled_candidates": 10,
+      "relevant_candidates": 0,
+      "uncertain_candidates": 0,
+      "unassessed_candidates": 10,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "returned": 0,
+          "judged_returned": 0,
+          "judgment_coverage": null,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": true,
+          "correct_abstention": null
+        },
+        "vector": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        },
+        "hybrid": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 0,
+          "judgment_coverage": 0.0,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        }
+      }
+    },
+    {
+      "id": "R06",
+      "pooled_candidates": 10,
+      "relevant_candidates": 0,
+      "uncertain_candidates": 8,
+      "unassessed_candidates": 0,
+      "modes": {
+        "keyword": {
+          "status": "ok",
+          "returned": 0,
+          "judged_returned": 0,
+          "judgment_coverage": null,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": true,
+          "correct_abstention": null
+        },
+        "vector": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 2,
+          "judgment_coverage": 0.2,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        },
+        "hybrid": {
+          "status": "ok",
+          "returned": 10,
+          "judged_returned": 2,
+          "judgment_coverage": 0.2,
+          "precision_returned_at_10": null,
+          "pooled_recall_at_10": null,
+          "pooled_ndcg_at_10": null,
+          "empty_result": false,
+          "correct_abstention": null
+        }
+      }
+    }
+  ],
+  "findings": [
+    "Brazil inflation query mixes domestic prices, US inflation and unrelated related-link text.",
+    "Unrelated-topic vector/hybrid pools contain eight catalog-only private-original candidates; captured metadata cannot establish document relevance.",
+    "No source-level relevance or abstention cutoff is promoted."
+  ],
+  "qualification": "Recall/nDCG use only the judged candidate pool, not the whole corpus. Uncertain/unassessed documents are not negatives. Errors are separate from assessed metric denominators. Empty results do not establish correct abstention. No claim of citation support, synthesis quality or participant success.",
+  "collector_commit": "6a099f6",
+  "grader_commit": "1743be2",
+  "rubric": "R01 asks for Brazilian domestic inflation dynamics/outlook or explicitly named local price releases. US inflation alone or Brazilian market reactions do not qualify. R06 requires evidence about the specific physics topic; catalog-only captures are uncertain, not full-document negatives."
+}
