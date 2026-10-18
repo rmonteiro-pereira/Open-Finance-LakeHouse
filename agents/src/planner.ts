@@ -15,7 +15,7 @@ export function evidencePlanner(model: ModelPort, kind: Specialist, resolvePassa
     const explicit = request.tools?.filter(t=>question.includes(t.name))??[];
     let names:string[]=[];
     if(explicit.length) names=explicit.map(t=>t.name);
-    else if(/not[ií]ci|cartas?|document|acervo|evid[eê]ncia/i.test(question)) names=["search_archive","read_passage"];
+    else if(/not[ií]ci|cartas?|document|acervo|evid[eê]ncia/i.test(question)) names=["search_archive","read_passage",...(/s[eé]ries?|macro|dados|snapshot|indicadores|observa[cç]/i.test(question)?["read_data_catalog","read_macro_series"]:[])];
     else if(/carteira|portf[oó]lio|dossi[eê]|trabalho salvo|workspace/i.test(question)) names=["read_saved_work","read_data_catalog","read_macro_series"];
     else if(/s[eé]rie|macro|selic|ipca|juros|dados|dataset/i.test(question)) names=["read_data_catalog","read_macro_series","prepare_dataset","read_coverage"];
     else if(/cota[cç][aã]o|pre[cç]os?|read_quotes/i.test(question)) names=["read_quotes","compare_prices","read_coverage"];

@@ -116,3 +116,7 @@ proxy above the agent turn deadline. The UI supports canceling a running request
 CPU deployments may set `OFL_AGENT_MAX_TOKENS` (128–2048, default 2048).
 Task routing advertises only relevant registered read tools to reduce prefill
 latency; it is not an authorization boundary and does not enable writes.
+
+Mixed news/letter plus macro/data questions retain both source families in the
+routed tool set; routing reduces irrelevant schemas without removing the shared
+finance/data investigation path.
