@@ -10,7 +10,7 @@ function observations(step:ReplyStep){
 }
 function result(content:string,toolCalls:ModelResponse["toolCalls"]=[],usage:ModelResponse["usage"]={}):ModelResponse{return {content,toolCalls,usage,droppedToolCalls:[],provider:"ofl-source-workflow"};}
 function call(name:string,args:Row){return{id:crypto.randomUUID(),name,arguments:args};}
-const STOP=new Set("use encontre busque buscar pesquisar pesquisa noticias noticia notícias notícia cartas carta documentos documento evidências evidencia acervo sobre como para uma quero depois finalize trecho fontes fonte source mode keyword limit read_passage search_archive retornado hipóteses hipóteses apenas único unico literal curto json excerpts com sem que dos das por entre preciso informe analise análise contexto explique compare comparar identifique identificar gestoras gestores possível possivel contraponto concluir falta permitem usando revisão rascunho".split(" "));
+const STOP=new Set("use encontre busque buscar pesquisar pesquisa noticias noticia notícias notícia cartas carta documentos documento evidências evidencia acervo sobre como para uma quero depois finalize trecho fontes fonte source mode keyword limit read_passage search_archive retornado hipóteses hipóteses apenas único unico literal curto json excerpts entender compreender qual quais excerpts com sem que dos das por entre preciso informe analise análise contexto explique compare comparar identifique identificar gestoras gestores possível possivel contraponto concluir falta permitem usando revisão rascunho".split(" "));
 export function documentQuery(question:string){
  const explicit=/\bq=("(?:[^"\\]|\\.)*"|[^,;\n]+)/.exec(question);
  if(explicit){try{return String(JSON.parse(explicit[1])).slice(0,1000);}catch{return explicit[1].trim().slice(0,1000);}}
@@ -55,7 +55,7 @@ export async function guidedDataset(ctx:TurnContext,step:ReplyStep,question:stri
 /** Observations inform routing only. Canonical API re-reads establish evidence. */
 export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:string,resolve:(id:string,signal?:AbortSignal)=>Promise<string|undefined>):Promise<ModelResponse|undefined>{
  const request={tools:step.tools,signal:ctx.deadline.signal};
- if(!request.tools?.some(t=>t.name==="search_archive")||!/not[ií]ci|cartas?|document|acervo|evid[eê]ncia|search_archive/i.test(question))return;
+ if(!request.tools?.some(t=>t.name==="search_archive")||!/not[ií]ci|cartas?|document|acervo|evid[eê]ncia|search_archive|coletar e conferir fontes/i.test(question))return;
  const observed=observations(step);
  const dates=question.match(/\d{4}-\d{2}-\d{2}/g)??[];
  const scoped=/Escopo solicitado:\s*(\d{4}-\d{2}-\d{2}|início não definido)\s+a\s*(\d{4}-\d{2}-\d{2}|fim não definido)/.exec(question);

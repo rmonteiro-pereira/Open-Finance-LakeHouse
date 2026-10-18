@@ -186,3 +186,10 @@ test("excerpt window does not prefer a generic country mention over the main top
  const text='Brasil '+ 'contexto '.repeat(60)+'Inflação e Brasil aparecem neste trecho temático.';
  expect(excerptWindow(text,['Inflação','Brasil'])).toContain('trecho temático');
 });
+
+test("UI source-collection intent handles a bare topic without invoking interpretation",async()=>{
+ const model=scriptedModel([]);let query:unknown;
+ const edge=createOflEdge({gatewayToken:"secret",origin:"https://test.ofl",modelName:"test",model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async(path,args)=>{if(path==='me')return{identity:'ana',role:'reader'};query=args;return{mode:'keyword',results:[]};}})});
+ const response=await edge(new Request('https://test.ofl/api/agents/market/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'bare-topic',message:'Público: analista. Objetivo: coletar e conferir fontes, sem hipóteses. Escopo solicitado: início não definido a fim não definido. Pergunta: inflação'})}));
+ expect(response.status).toBe(200);expect(await response.text()).toContain('Não encontrei evidências neste recorte');expect(query).toMatchObject({q:'"inflação"'});expect(model.requests).toHaveLength(0);
+});
