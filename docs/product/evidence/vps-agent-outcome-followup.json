@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "study_kind": "builder_operated_development",
+  "summary": {
+    "ofl_agent": {
+      "planned": 4,
+      "unassessed": 0,
+      "assessed_eligible": 3,
+      "completed": 2,
+      "completion_rate_assessed_eligible": 0.6666666666666666,
+      "correct_abstentions": 1,
+      "execution_failures": 0,
+      "hard_gate_failures": 0,
+      "claim_support_failures": 0,
+      "review_gate_failures": 0
+    },
+    "ofl_without_agent": {
+      "planned": 4,
+      "unassessed": 4,
+      "assessed_eligible": 0,
+      "completed": 0,
+      "completion_rate_assessed_eligible": null,
+      "correct_abstentions": 0,
+      "execution_failures": 0,
+      "hard_gate_failures": 0,
+      "claim_support_failures": 0,
+      "review_gate_failures": 0
+    },
+    "baseline": {
+      "planned": 4,
+      "unassessed": 4,
+      "assessed_eligible": 0,
+      "completed": 0,
+      "completion_rate_assessed_eligible": null,
+      "correct_abstentions": 0,
+      "execution_failures": 0,
+      "hard_gate_failures": 0,
+      "claim_support_failures": 0,
+      "review_gate_failures": 0
+    }
+  },
+  "cases": [
+    {
+      "case_id": "T01",
+      "condition": "baseline",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T01",
+      "condition": "ofl_agent",
+      "outcome": "failed",
+      "eligibility": "eligible",
+      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation",
+      "hard_gate": "not_assessed",
+      "claim_support": "not_assessed",
+      "execution_failure": false
+    },
+    {
+      "case_id": "T01",
+      "condition": "ofl_without_agent",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T02",
+      "condition": "baseline",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T02",
+      "condition": "ofl_agent",
+      "outcome": "completed",
+      "eligibility": "eligible",
+      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation",
+      "hard_gate": "pass",
+      "claim_support": "pass",
+      "execution_failure": false
+    },
+    {
+      "case_id": "T02",
+      "condition": "ofl_without_agent",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T10",
+      "condition": "baseline",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T10",
+      "condition": "ofl_agent",
+      "outcome": "correct_abstention",
+      "eligibility": "unavailable",
+      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation",
+      "hard_gate": "pass",
+      "claim_support": "pass",
+      "execution_failure": false
+    },
+    {
+      "case_id": "T10",
+      "condition": "ofl_without_agent",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T21S",
+      "condition": "baseline",
+      "outcome": "unassessed"
+    },
+    {
+      "case_id": "T21S",
+      "condition": "ofl_agent",
+      "outcome": "completed",
+      "eligibility": "eligible",
+      "reviewer": "Builder-operated artifact review by Codex; not independent participant evaluation",
+      "hard_gate": "pass",
+      "claim_support": "pass",
+      "execution_failure": false
+    },
+    {
+      "case_id": "T21S",
+      "condition": "ofl_without_agent",
+      "outcome": "unassessed"
+    }
+  ],
+  "qualification": "Manual judgments on recorded artifacts. Reviewer identity is self-reported, not independently authenticated. Missing trials remain unassessed; runtime completion, synthetic runs and correct abstention do not establish requested artifact completion, user validation or population performance.",
+  "application_merge": "caa3eab5f5fd467ebe2329a422e42eadf1ef23f5",
+  "private_agent_source": "1f0eefa",
+  "execution": {
+    "infrastructure": "VPS CPU; no desktop backend",
+    "trials": [
+      {
+        "case_id": "T01",
+        "condition": "ofl_agent",
+        "artifact_sha256": "e17c3c2a00e69bc76cfa907c903c46690cbda3b3a122b2b54accfb31e23d74e6",
+        "elapsed_seconds": 29.888,
+        "http_status": 200,
+        "outcome": "unassessed"
+      },
+      {
+        "case_id": "T02",
+        "condition": "ofl_agent",
+        "artifact_sha256": "b89cd57be1676ad3683db94888711e2d65dd878660a1d241ab13c2b549af97dc",
+        "elapsed_seconds": 0.922,
+        "http_status": 200,
+        "outcome": "unassessed"
+      },
+      {
+        "case_id": "T10",
+        "condition": "ofl_agent",
+        "artifact_sha256": "4d01d3db756ba3704492847eca7999597a32cd817e818fb2ead5f9a29c8b494b",
+        "elapsed_seconds": 1.181,
+        "http_status": 200,
+        "outcome": "unassessed"
+      },
+      {
+        "case_id": "T21S",
+        "condition": "ofl_agent",
+        "artifact_sha256": "961273528e80383fc4547f4cd2b2cc22d5ad51fadb6448a3f6f5af86675c8d45",
+        "elapsed_seconds": 3.821,
+        "http_status": 200,
+        "outcome": "unassessed"
+      }
+    ],
+    "independent_review": false,
+    "participant_trials": 0
+  },
+  "interpretation": {
+    "T01": "Requested brief still failed: no valid generated interpretation or completed comparison. Source selection now contains inflation context, with a geographic ambiguity in a news headline still requiring review. Hard-gate/support assessment remains unassessed.",
+    "T02": "Completed only the defined catalog-backed preparation-scoping variant: period, frequency/alignment and missing-value rules. No dataset transformation or export.",
+    "T10": "Qualified evidence gap for the requested absent-topic scope; not a claim that no event occurred.",
+    "T21S": "Completed only the source-collection stage with inspectable references and explicitly unassessed relevance; not a completed analytical dossier or user trial."
+  },
+  "verification": {
+    "research_ci_passed": 263,
+    "local_passed": 260,
+    "local_optional_dependency_skips": 3,
+    "agent_tests_with_postgresql_passed": 26,
+    "agent_typecheck": true,
+    "structural_diagnostic_gaps": 0,
+    "private_web_build": true,
+    "local_browser_full_dossier_save_export": true,
+    "production_api_review": {
+      "source_review_bound_to_actor_question_and_capture": true,
+      "forged_verification_ignored": true,
+      "stale_question_rejected_without_new_revision": true,
+      "markdown_review_export": true,
+      "temporary_owned_dossier_removed": true
+    },
+    "production_browser": {
+      "application_access": "SSH loopback trusted application boundary; configured identity/origin injected, not Tailscale authentication",
+      "source_mode_default": true,
+      "source_only_request": true,
+      "actual_agent_to_dossier_handoff": true,
+      "source_inspection_and_review_controls": true,
+      "question_change_invalidates_review": true,
+      "explicit_citation_selection": true,
+      "unsaved_dossier": true,
+      "mobile": true,
+      "javascript_errors": 0,
+      "workflow_seconds": 3.918
+    }
+  }
+}

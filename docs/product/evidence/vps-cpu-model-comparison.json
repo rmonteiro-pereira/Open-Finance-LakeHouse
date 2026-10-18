@@ -1,0 +1,38 @@
+{
+  "kind": "builder-operated VPS CPU model comparison",
+  "source": "verified excerpts from source-collection rehearsal",
+  "budget_seconds": 45,
+  "max_output_tokens": 128,
+  "models": [
+    {
+      "model": "ofl-research-qwen3:small-cpu2",
+      "digest": "e3ddf3d5e04198d3b6de78084d030132721267e765eefadfc469317db0a6dcd0",
+      "load_seconds": 15.357,
+      "seconds": 42.943,
+      "mechanically_valid_drafts": 0,
+      "support_review": "unassessed"
+    },
+    {
+      "model": "qwen3:1.7b",
+      "digest": "8f68893c685c3ddff2aa3fffce2aa60a30bb2da65ca488b61fff134a4d1730e7",
+      "load_seconds": 18.44,
+      "seconds": 45.062,
+      "error": "ReadTimeout",
+      "mechanically_valid_drafts": 0
+    }
+  ],
+  "qualification": "Mechanical draft validation only; not independent support, usefulness, participant or full-brief evaluation. Request-local context settings differ from production. No model promotion from this exercise.",
+  "production_baseline_reloaded": true,
+  "excerpt_sha256": [
+    "f23ff8b62c759761fb3cdcb01b482cfb2b28e920e29a4b7bd5522e35f22ca9a3",
+    "f1391b0169512af9768c087026db09425a87ed2b3405b973a031e97ad7f4b725"
+  ],
+  "request_options": {
+    "num_ctx": 2048,
+    "num_thread": 2,
+    "num_batch": 64,
+    "num_predict": 128,
+    "temperature": 0.1
+  },
+  "decision": "Do not promote either model configuration: no mechanically valid draft under this CPU budget; usefulness and independent support remain unassessed."
+}
