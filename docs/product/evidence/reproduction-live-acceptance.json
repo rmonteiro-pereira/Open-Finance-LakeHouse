@@ -1,0 +1,136 @@
+{
+  "version": 1,
+  "application_merge": "4bb20334eb9ad26ea58c1743a926f6f395a90a71",
+  "scope": "builder-operated production integration; not participant success or independent financial relevance",
+  "snapshot_id": "20261018T040612Z",
+  "rows": 1536,
+  "columns": [
+    "date",
+    "ipca__level",
+    "selic__level",
+    "usd_brl__level",
+    "usd_brl__percent_change"
+  ],
+  "csv_sha256": "d224851c34b53b89de32d7742250488def155bef7803a60d014638ecd8eae303",
+  "zip_sha256": "a24ebf52e4c2f25f4481cd53a8d6871ccb6a50824316541e93190a10b69f268b",
+  "zip_bytes": 80999,
+  "null_cells_by_column": {
+    "ipca__level": 1464,
+    "selic__level": 29,
+    "usd_brl__level": 29,
+    "usd_brl__percent_change": 30
+  },
+  "export_seconds": 2.1561751080444083,
+  "isolated_stdlib_reproduction_on_vps": true,
+  "gateway_and_readonly_service_exports_match": true,
+  "unauthenticated_denied": true,
+  "wrong_origin_denied": true,
+  "service_post_still_denied": true,
+  "mcp": {
+    "transport": "native stdio",
+    "tools": 14,
+    "resource_download_matches_api": true,
+    "credential_not_in_uri": true
+  },
+  "vector_probe": {
+    "returned": 3,
+    "seconds": 16.50695933494717,
+    "catalog_only_originals": 0,
+    "relevance": "not_assessed"
+  },
+  "browser": {
+    "application_access": "SSH loopback trusted application boundary with configured identity/origin injected; not a Tailscale authentication test",
+    "real_catalog_and_preparation": true,
+    "portable_zip_download": true,
+    "download_bytes": 80999,
+    "saved_state_changed": false,
+    "mobile": true,
+    "javascript_errors": 0
+  },
+  "cross_environment": {
+    "status": "reproduced",
+    "environment": "separate temporary client runtime, Python -I -S; no OFL package, network, database or model required",
+    "browser_zip_matches_api_and_mcp": true,
+    "reproducer_matches_reviewed_repository_source": true,
+    "rows": 1536,
+    "csv_sha256": "d224851c34b53b89de32d7742250488def155bef7803a60d014638ecd8eae303",
+    "desktop_serving_dependency": false
+  },
+  "semantic_eligibility_development_probe": {
+    "version": 1,
+    "status": "current_corpus_contract_probe_not_quality_benchmark",
+    "code_commit": "fb13e95",
+    "corpus_passages": 11412,
+    "index_coverage": {
+      "configured": true,
+      "model": "bge-m3-cpu:latest",
+      "model_revision": "4cb0c770b7741ad01e56a6ce233e219b46e1e031b9829b8236fdb7f230665e97",
+      "eligible_passages": 11184,
+      "indexed_passages": 10113,
+      "pending_passages": 1071,
+      "fraction": 0.9042381974248928,
+      "status": "partial",
+      "qualification": "Current active semantic passages within source/publication filters; catalog-only private-original metadata is excluded. Query terms are not a coverage filter. This is not relevance, historical completeness or truth."
+    },
+    "cases": [
+      {
+        "id": "R03",
+        "modes": {
+          "keyword": {
+            "status": "ok",
+            "returned": 10,
+            "catalog_only_private_originals": 0
+          },
+          "vector": {
+            "status": "ok",
+            "returned": 10,
+            "catalog_only_private_originals": 0
+          },
+          "hybrid": {
+            "status": "ok",
+            "returned": 10,
+            "catalog_only_private_originals": 0
+          }
+        }
+      },
+      {
+        "id": "R06",
+        "modes": {
+          "keyword": {
+            "status": "ok",
+            "returned": 0,
+            "catalog_only_private_originals": 0
+          },
+          "vector": {
+            "status": "ok",
+            "returned": 10,
+            "catalog_only_private_originals": 0
+          },
+          "hybrid": {
+            "status": "ok",
+            "returned": 10,
+            "catalog_only_private_originals": 0
+          }
+        }
+      }
+    ]
+  },
+  "ci": {
+    "combined_main_research_tests_passed": 288,
+    "main_runtime_images": "all four passed",
+    "private_dashboard_production_build": true
+  },
+  "deployment": {
+    "services_ready": 7,
+    "agent_runtime_changed": false,
+    "model_configuration_changed": false,
+    "desktop_serving_dependency": false
+  },
+  "remaining": [
+    "Reliable complete analytical synthesis (T01 remains failed).",
+    "Independent relevance/claim-support review; remaining candidate judgments.",
+    "Complete dated dataset delivery through the agent, beyond direct dashboard/API/MCP.",
+    "Full source coverage/freshness and strategy-input eligibility.",
+    "Participant completion, comprehension, reproduction and repeat-use comparisons."
+  ]
+}
