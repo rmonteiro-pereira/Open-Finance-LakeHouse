@@ -82,3 +82,28 @@ CI follow-up: specialist switches reset state in their action handler rather tha
 synchronously in a React effect. The optional research/MCP tests skip cleanly in
 the core-only test lane. Web lint ignores the private research build output, so
 running lint after a production build does not inspect generated bundles.
+
+## Whole-product adversarial review (2026-10-18)
+
+`docs/product/` records a repeatable workflow, 20 persona hypotheses, weighted
+ranking/sensitivity, 24 planned outcome cases and an evidence-backed initial review.
+Finance workers and data workers are primary; assessores, consultores and lay
+market/investment-portfolio users are explicit cohorts. Engineering portfolio
+reviewers are secondary and must not be confused with investment portfolio users.
+No interviews, adoption findings or live-model quality measurements were invented.
+
+Read-only deployed metadata found 37 published macro series/97,101 observations,
+8 public marts, 4,183 collector-classified stored letter PDFs across 36 manifests,
+and 3,078 news JSONL batch objects. Batch/PDF counts are not independently verified
+article/opinion counts. 713 stored letter records lack publication dates. The new
+private research index still has one quote date (2026-01-05) and zero active archive
+passages/items/observations; this does not mean all OFL documents are absent.
+
+The current agent cannot access core macro data or the separate raw letters/news.
+`agents/evals/product-audit.ts` exercised the actual edge with synthetic sources
+and scripted models: four structural gaps (knowledge/scoping prose suppression,
+no dependent read after search, disconnected upstream assets) and two preserved
+safeguards (exact source values/provenance and read-only tools). These are diagnostic
+counterexamples, not real user-task or generation-model success-rate measurements.
+No runtime feature changes or production writes were made. The inherited backlog
+is labeled unvalidated; its inaccurate immutable-conversation claim is corrected.

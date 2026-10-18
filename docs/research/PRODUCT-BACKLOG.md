@@ -1,5 +1,11 @@
 # OFL research product backlog
 
+Product review note (2026-10-18): this list is an unvalidated feature inventory,
+not a selected product roadmap. The whole-OFL [evaluation workflow](../product/WORKFLOW.md)
+and [adversarial review](../product/REVIEW.md) take precedence for prioritization.
+Finance/data workers, assessores/consultores and lay market/portfolio users need
+outcome validation; source-specialist implementation tests do not establish that.
+
 Scope: the private OFL research backend and dashboard. This ledger distinguishes
 implemented capabilities from remaining work; it is not a deployment claim.
 
@@ -24,7 +30,7 @@ implemented capabilities from remaining work; it is not a deployment claim.
 | 17 | Finding cards | Pending; distinguish source observation from interpretation and limitations |
 | 18 | Research exports | Markdown and JSON evidence exports; reviewed narrative brief template pending |
 | 19 | Diagnostic feedback | Pending classification, review and evaluation-candidate workflow |
-| 20 | Saved research checks | Existing immutable conversations preserve earlier evidence; explicit versioned rerun comparisons pending |
+| 20 | Saved research checks | Saved conversations retain tool results but can be revised/deleted; immutable artifact and versioned rerun comparisons pending |
 
 Additional interfaces: existing authenticated REST extended with private OpenAPI
 and release discovery, plus issued read-only service credentials. Stdio MCP

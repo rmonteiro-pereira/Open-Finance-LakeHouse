@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-18",
+  "method": "Read-only deployed PostgreSQL aggregate queries and paginated S3 metadata/manifests. No production writes, new collection or user interviews.",
+  "code_baseline": "abcb973be40574d0f35a36b986ccc9f953668f07",
+  "public_snapshot": {
+    "generated_at": "2026-10-18T04:06:12+00:00",
+    "published_observation_series": 37,
+    "published_observation_rows": 97101,
+    "observation_date_min": "1990-01-01",
+    "observation_date_max": "2026-10-17",
+    "published_marts": 8,
+    "withheld_marts": ["mart_yield_curve", "mart_equity_daily"],
+    "qualification": "Dataset-wide min/max does not mean every series covers the full interval. Metadata and values were not independently reconciled against every source. Futures in the existing core lane are separate from the new no-futures COTAHIST scope."
+  },
+  "raw_documents": {
+    "stored_letter_pdf_objects": 4183,
+    "letter_manager_manifest_objects": 36,
+    "letter_manifest_records": 11824,
+    "letter_manifest_status_counts": {"stored": 4183, "not_a_letter": 7279, "duplicate": 343, "gone": 19},
+    "stored_records_with_publication_date": 3470,
+    "stored_records_without_publication_date": 713,
+    "letter_bytes": 3297783934,
+    "news_jsonl_batch_objects": 3078,
+    "news_source_state_objects": 29,
+    "news_batch_bytes": 27103074,
+    "newest_news_batch_object_write": "2026-10-18T04:38:01+00:00",
+    "qualification": "PDFs are classified by the collector, not manually verified documents. Object counts are not unique opinions, independent sources or article counts. News object write time is not publication time. No full-content quality/rights audit was performed."
+  },
+  "private_research_index": {
+    "published_quote_trading_dates": 1,
+    "quote_date_min": "2026-01-05",
+    "quote_date_max": "2026-01-05",
+    "quote_releases": 1,
+    "catalog_items": 0,
+    "active_assets": 0,
+    "active_passages": 0,
+    "active_reviewed_observations": 0,
+    "ocr_candidates": 0,
+    "qualification": "This is the new private research index, not the whole OFL collection. Existing raw letters/news have not become searchable through its passage catalog."
+  },
+  "agent": {
+    "state": "Implementation merged; live generation not established by this audit",
+    "macro_snapshot_tool": false,
+    "raw_letter_tool": false,
+    "raw_news_tool": false,
+    "max_planning_steps": 1,
+    "model_observation_of_tool_results": "row count and generic qualification; no actual retrieved values or passages",
+    "quality_validation": "See agent-diagnostic.json: deterministic counterexamples, not actual model benchmarking or user research."
+  }
+}
