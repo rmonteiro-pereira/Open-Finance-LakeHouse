@@ -262,3 +262,8 @@ a temporary schema and the real configured model; it does not establish held-out
 relevance, financial correctness or user outcomes. See
 docs/research/RETRIEVAL-EVALUATION.md. Browser checks exercised partial/complete/zero
 coverage against real local API/PostgreSQL, with mobile layout and no JS errors.
+
+Research CI passed all 255 tests including optional OCR/vector-pilot dependencies.
+The minimal unit lane initially could not collect the new integration module
+without FastAPI; align its dependency guard with the other research suites. The
+research lane continues to execute these tests against PostgreSQL.

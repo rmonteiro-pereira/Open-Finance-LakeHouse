@@ -6,6 +6,10 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
 import pytest
+
+pytest.importorskip("psycopg")
+pytest.importorskip("fastapi")
+
 from fastapi.testclient import TestClient
 from ofl.research.api import create_app
 from ofl.research.archive import upsert_item
