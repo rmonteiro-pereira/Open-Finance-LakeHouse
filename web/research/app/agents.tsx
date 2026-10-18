@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 type Row = Record<string, unknown>;
 type Table = {kind: string; title?: string; columns?: {key: string; label: string}[]; rows?: Row[]; truncated?: boolean};
-type Message = {id: string; role: string; content: string; toolResults?: {widget?: Table; refusal?: {explanation?: string}; error?: unknown}[]};
+type Message = {id: string; role: string; content: string; toolCalls?: {name:string;arguments:Row}[]; toolResults?: {widget?: Table; refusal?: {explanation?: string}; error?: unknown}[]};
 type Conversation = {conversationId?: string; id?: string; title?: string};
 const specialists = [{id: "market", title: "Pesquisa financeira"}, {id: "archive", title: "Dados e métodos"}, {id: "quality", title: "Qualidade dos dados"}];
 async function api(path: string, body?: unknown, signal?: AbortSignal) {
@@ -23,7 +23,7 @@ function Evidence({table}: {table: Table}) {
       </td>)}</tr>)}</tbody></table></div>}
   </section>;
 }
-export default function Agents() {
+export default function Agents({onDossier}:{onDossier?:(draft:{question:string;references:string[];scope:Record<string,unknown>})=>void} = {}) {
   const [specialist, setSpecialist] = useState("market");
   const [conversationId, setConversationId] = useState("");
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -85,6 +85,8 @@ export default function Agents() {
     const url = URL.createObjectURL(new Blob([text], {type: "text/markdown;charset=utf-8"}));
     const link = document.createElement("a"); link.href = url; link.download = `ofl-${specialist}-${conversationId}.md`; link.click(); URL.revokeObjectURL(url);
   }
+  const references=[...new Set(messages.flatMap(m=>m.toolResults??[]).flatMap(r=>r.widget?.rows??[]).flatMap(row=>typeof row.passage_id==="string"?[row.passage_id]:typeof row.id==="string"&&typeof row.text==="string"?[row.id]:[]))].filter(id=>/^[a-zA-Z0-9_-]{1,128}$/.test(id)).slice(0,50);
+  function dossier(){const question=([...messages].reverse().find(m=>m.role==="user")?.content??"").replace(/^[\s\S]*?Pergunta:\s*/,"");onDossier?.({question,references,scope:{conversation_id:conversationId,specialist,tool_calls:messages.flatMap(m=>m.toolCalls??[])}});}
   function download() {
     const blob = new Blob([JSON.stringify({specialist, conversationId, messages}, null, 2)], {type: "application/json"});
     const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `ofl-${specialist}-${conversationId || "pesquisa"}.json`; link.click(); URL.revokeObjectURL(url);
@@ -93,7 +95,7 @@ export default function Agents() {
     <section className="card"><h2>Agentes de pesquisa OFL</h2><p>Investigações privadas, salvas por usuário. As consultas apresentam evidências da fonte; valores monetários mantêm sua precisão original.</p>
       <div className="filters"><label>Especialista<select value={specialist} disabled={busy} onChange={e => selectSpecialist(e.target.value)}>{specialists.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
       <label>Investigação salva<select value={conversationId} disabled={busy} onChange={e => e.target.value ? void open(e.target.value) : (setConversationId(""), setMessages([]))}><option value="">Nova investigação</option>{conversations.map(c => {const id = c.conversationId ?? c.id ?? ""; return <option key={id} value={id}>{c.title ?? id}</option>;})}</select></label>
-      <button disabled={!messages.length} onClick={download}>Exportar evidências JSON</button><button disabled={!messages.length} onClick={downloadMarkdown}>Exportar relatório</button></div>
+      <button disabled={!references.length||busy} onClick={dossier}>Criar dossiê com estas fontes</button><button disabled={!messages.length} onClick={download}>Exportar evidências JSON</button><button disabled={!messages.length} onClick={downloadMarkdown}>Exportar relatório</button></div>
       <p className="muted">Para pesquisar um tema, comece pela pergunta. Cotações exigem ativo, mercado e período; datas dos documentos são de publicação. Hipóteses interpretativas precisam de revisão.</p>
     </section>
     {messages.length > 0 && <section className="card"><h3>Consultar outro especialista</h3><p>A pergunta e as referências serão copiadas para uma nova investigação. O histórico original permanece salvo.</p>{specialists.filter(s => s.id !== specialist).map(s => <button key={s.id} disabled={busy} onClick={() => handoff(s.id)}>{s.title}</button>)}</section>}

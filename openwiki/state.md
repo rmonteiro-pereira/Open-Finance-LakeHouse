@@ -117,6 +117,22 @@ CPU deployments may set `OFL_AGENT_MAX_TOKENS` (128–2048, default 2048).
 Task routing advertises only relevant registered read tools to reduce prefill
 latency; it is not an authorization boundary and does not enable writes.
 
-Mixed news/letter plus macro/data questions retain both source families in the
-routed tool set; routing reduces irrelevant schemas without removing the shared
-finance/data investigation path.
+
+## Guided document research
+
+`OFL_AGENT_GUIDED_DOCUMENTS=1` uses a source workflow for news, manager letters and
+document questions: bounded searches, context reads, independent canonical
+verification, then one optional model call for qualitative hypotheses. Code plans
+source collection; it does not invent source data or pretend these steps were
+model inference. Empty coverage and unusable generated interpretations are reported
+explicitly. The final output separates exact source excerpts from model drafts.
+Numeric/data/quality tools retain their read-only contracts. Conversation sources
+can be handed directly to an owned dossier without copying internal identifiers.
+
+Guided-document tests also cover a mixed macro/document question: real catalog
+lookup, version-pinned series read and document context precede the single optional
+interpretation. Source-only requests perform no model call. There is a separate
+45-second interpretation budget, no generated numerical claims in hypotheses,
+and an agent-to-dossier handoff carrying executed scope. Nineteen local Inkwell
+tests/typecheck and private Next build/lint pass. Deployment acceptance remains a
+separate gate, with prior real small-model premature-answer failures preserved.

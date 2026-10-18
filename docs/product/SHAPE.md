@@ -79,11 +79,10 @@ métodos testados. Síntese futura precisa de vínculo entre alegação e evidê
 4. Validar com fontes sintéticas e uma amostra privada real antes de ampliar a
    indexação. A avaliação distingue conexão funcionando de qualidade de pesquisa.
 
-Essa fatia entrega acesso útil aos ativos existentes. A síntese com contrapontos,
-transformações avançadas, artefatos de pesquisa versionados e avaliação de carteira
-com posições são próximas etapas explícitas; não serão declaradas prontas por
-existirem botões ou ferramentas. A geração continua exigindo um endpoint de modelo
-configurado; a consulta/exploração de dados não depende dele.
+Sobre essa base foram implementados os dossiês, transformações, carteiras e
+workflows descritos abaixo. Geração exige um endpoint configurado; pesquisa e
+exploração direta de dados funcionam sem ele. Uma implementação não comprova
+qualidade de interpretação ou resultados de uso.
 
 ## Critério de avanço
 
@@ -106,3 +105,13 @@ São estados de código e testes, não adoção ou implantação. O agente disti
 trechos conferidos de hipóteses interpretativas para revisão. A carteira usa
 avaliações informadas pelo usuário. Não se comprova causalidade ou adequação
 pessoal. Consulte IMPLEMENTATION.md e o backlog para os contratos e seus limites.
+
+
+A pesquisa documental guiada torna a coleta e a leitura de contexto obrigatórias,
+sem depender de o modelo decidir buscar. O código consulta fontes reais, relê os
+registros canônicos e entrega trechos. Um único passo opcional propõe uma hipótese
+qualitativa para revisão. Isso separa fatos recuperados de geração, reduz o custo
+na CPU e mantém uma entrega útil quando a interpretação falha. Perguntas mistas
+podem consultar o catálogo macro e séries identificadas, com versões/unidades
+nas tabelas; definições ambíguas devem ser escolhidas pelo usuário. O dossiê recebe
+as referências diretamente da conversa, sem exigir copiar códigos internos.
