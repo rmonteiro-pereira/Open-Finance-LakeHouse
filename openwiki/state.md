@@ -188,3 +188,7 @@ Research-to-dossier handoff now transfers the executed question and selected
 passage IDs directly; users need not copy internal identifiers. Research/dossier
 components retain state across tab switches. Agent UI supports cancellation and
 rejects reversed date scopes before spending a model call.
+
+Dossier handoff preserves the executed scope for each selected passage, including
+selections accumulated across separate searches. Stored scope survives reopening
+and revision edits; source capture remains resolved by the server.
