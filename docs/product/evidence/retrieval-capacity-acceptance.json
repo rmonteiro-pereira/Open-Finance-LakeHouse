@@ -1,0 +1,58 @@
+{
+  "date": "2026-10-18",
+  "application_merge": "6c9e44a398bc841c4f178232a4ceb747cd7d21b8",
+  "private_agent_source": "d2d990a",
+  "private_infrastructure_merge": "dcd06a40501cb27f2bd27a09379958e6ac8cfb95",
+  "deployment": {
+    "ready_deployments": 7,
+    "gitops_ready": true,
+    "application_image_revision_verified": true
+  },
+  "verification": {
+    "research_ci_passed": 255,
+    "agent_tests_with_postgresql_passed": 22,
+    "agent_typecheck": true,
+    "web_build": true,
+    "main_image_builds": "all passed"
+  },
+  "live_concurrency": {
+    "scheduled_check_finished_while_indexing": true,
+    "check_seconds": 4.03,
+    "indexing_batch": 64,
+    "embedded_at_observation": 1,
+    "temporary_owned_check_removed": true,
+    "scope": "Builder-operated integration check on real corpus; not a participant outcome."
+  },
+  "interpretation_experiments": {
+    "production_configuration_changed": false,
+    "structured_response_with_request_local_context_and_batch_changes": {
+      "seconds": 45.07,
+      "outcome": "timeout"
+    },
+    "short_compact_response": {
+      "seconds": 40.61,
+      "prompt_tokens": 207,
+      "completion_tokens": 54,
+      "valid_draft": false
+    },
+    "conclusion": "Neither experiment demonstrated useful valid synthesis; do not promote either tuning."
+  },
+  "limitations": [
+    "Index coverage does not establish source completeness, relevance or financial correctness.",
+    "Synthetic authored development judgments do not establish held-out or participant outcomes.",
+    "Useful source-supported model synthesis within the resource budget remains unproven.",
+    "Complete historical B3 and MUB3 coverage remains open."
+  ],
+  "browser": {
+    "production_application_over_ssh_loopback": true,
+    "configured_test_identity_injected_at_trusted_application_boundary": true,
+    "tailscale_authentication_retested": false,
+    "tailscale_attempt": "Unavailable local client state/route; DNS and direct route failed.",
+    "dashboard_and_search_coverage_visible": true,
+    "mobile": true,
+    "client_errors": 0,
+    "observed_active_passages": 9491,
+    "observed_indexed_passages": 358,
+    "counts_are_point_in_time": true
+  }
+}

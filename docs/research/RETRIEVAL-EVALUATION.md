@@ -99,3 +99,29 @@ Remaining gates: independently judged finance/data questions, source/date/curren
 ambiguities, relevant counterevidence and manager disagreement, unsupported-topic
 abstention, and actual artifact completion/comprehension by the intended users.
 Raw vector similarity is not a calibrated relevance threshold or confidence score.
+
+## GPU indexing workers
+
+Remote inference defaults to one passage per request, preserving the CPU path.
+A measured GPU worker can set `OFL_RESEARCH_EMBEDDING_BATCH_SIZE=8` (bounded 1–32).
+A batch is committed atomically with pipelined database inserts; a failed later
+batch leaves previous commits intact and retries skip those vectors. Input
+truncation remains disabled and the configured model digest must match exactly.
+Do not replace the pinned digest merely because two model tags share a name.
+
+A GPU worker can connect through a private database tunnel and a loopback inference
+endpoint. Use the embedding lane's shared global lock and exclusive lane lock,
+including for a one-time backfill; never bypass them with a second unguarded
+indexer. Existing source and checks workers can continue. The VPS worker remains
+a compatible CPU peer after the GPU releases its lock. Desktop availability is
+not a requirement for serving existing vectors or keyword search.
+
+The development exercise indexed twenty documents in 423.48 seconds on the shared
+VPS CPU and 67.32 seconds with the local RTX 4090, including the GPU's first model
+load and database access over SSH. These are observed integration timings across
+different Ollama versions and load conditions, not a controlled hardware-only
+benchmark. Both runs returned identical aggregate metrics: vector/hybrid found
+all five positive targets first, but both returned hits for the absent-topic case;
+keyword found one of five positive targets and correctly returned no hits for the
+absent topic. This identifies an abstention/calibration gap; it does not establish
+a general search winner. Keep the full reports under docs/product/evidence.

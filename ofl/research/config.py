@@ -26,6 +26,7 @@ class ResearchSettings(BaseSettings):
     embedding_model: str = "BAAI/bge-m3"
     embedding_url: str = ""  # private Ollama endpoint; empty uses local SentenceTransformer
     embedding_revision: str = ""  # pin a model commit before embedding a corpus
+    embedding_batch_size: int = Field(1, ge=1, le=32)  # remote GPU opt-in; CPU-safe default
     embedding_dimensions: int = Field(1024, ge=1, le=2000)
     approximate_search: bool = False  # enable only after a filtered-recall pilot
     lease_seconds: int = Field(300, ge=30)
