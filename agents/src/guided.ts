@@ -10,14 +10,48 @@ function observations(step:ReplyStep){
 }
 function result(content:string,toolCalls:ModelResponse["toolCalls"]=[],usage:ModelResponse["usage"]={}):ModelResponse{return {content,toolCalls,usage,droppedToolCalls:[],provider:"ofl-source-workflow"};}
 function call(name:string,args:Row){return{id:crypto.randomUUID(),name,arguments:args};}
-const STOP=new Set("use encontre busque buscar pesquisar pesquisa noticias noticia notícias notícia cartas carta documentos documento evidências evidencia acervo sobre como para uma quero depois finalize trecho fontes fonte source mode keyword limit read_passage search_archive retornado hipóteses hipóteses apenas único unico literal curto json excerpts com sem que dos das por entre preciso informe analise análise contexto explique".split(" "));
-function query(question:string){
+const STOP=new Set("use encontre busque buscar pesquisar pesquisa noticias noticia notícias notícia cartas carta documentos documento evidências evidencia acervo sobre como para uma quero depois finalize trecho fontes fonte source mode keyword limit read_passage search_archive retornado hipóteses hipóteses apenas único unico literal curto json excerpts com sem que dos das por entre preciso informe analise análise contexto explique compare comparar identifique identificar gestoras gestores possível possivel contraponto concluir falta permitem usando revisão rascunho".split(" "));
+export function documentQuery(question:string){
  const explicit=/\bq=("(?:[^"\\]|\\.)*"|[^,;\n]+)/.exec(question);
  if(explicit){try{return String(JSON.parse(explicit[1])).slice(0,1000);}catch{return explicit[1].trim().slice(0,1000);}}
- const topic=question.replace(/^.*?Pergunta:\s*/s,"");
+ const prompt=question.replace(/^.*?Pergunta:\s*/s,"");
+ const topic=(/\bsobre\s+([^.!?;\n]+)/i.exec(prompt)?.[1]??prompt.split(/[.!?\n]/)[0])??"";
  const terms=[...new Set((topic.match(/[\p{L}\p{N}]+/gu)??[]).filter(w=>w.length>=3&&!STOP.has(w.toLocaleLowerCase())))].slice(0,8);
- return terms.map(w=>`"${w}"`).join(" OR ");
+ return terms.map(w=>`"${w}"`).join(" ");
 }
+/** Prefer a topical window; an exact quote is still not a relevance judgment. */
+export function excerptWindow(text:string,terms:string[]){
+ const lower=text.toLocaleLowerCase();let start=0,best=0;
+ for(const term of terms){
+  let offset=0;
+  for(let n=0;n<32;n++){
+   const position=lower.indexOf(term.toLocaleLowerCase(),offset);if(position<0)break;
+   const candidate=Math.max(0,position-80),window=lower.slice(candidate,candidate+320);
+   const score=terms.filter(t=>window.includes(t.toLocaleLowerCase())).length;
+   if(score>best){best=score;start=candidate;}offset=position+term.length;
+  }
+ }
+ if(start>0){const boundary=text.indexOf(" ",start);if(boundary>=start&&boundary<start+40)start=boundary+1;}
+ let end=Math.min(start+320,text.length);if(end<text.length&&text.lastIndexOf(" ",end)>start+200)end=text.lastIndexOf(" ",end);
+ return text.slice(start,end).trim();
+}
+
+/** Catalog eligibility and clarification do not require generated planning. */
+export async function guidedDataset(ctx:TurnContext,step:ReplyStep,question:string):Promise<ModelResponse|undefined>{
+ if(!/dataset|prepar(?:ar|e|ação).*dados/i.test(question)||!step.tools.some(t=>t.name==="read_data_catalog")||(question.match(/\d{4}-\d{2}-\d{2}/g)??[]).length>=2)return;
+ const delivered=step.evidence.delivered.filter(d=>d.call.name==="read_data_catalog");
+ if(!delivered.length){
+  const topics=[...new Set(question.toLowerCase().match(/\b(?:ipca|selic|cdi|pib)\b/g)??[])];
+  return result('Vou conferir as séries, suas unidades, frequências e versões no catálogo antes de definir o preparo.',(topics.length?topics:[undefined]).map(q=>call("read_data_catalog",q?{q}:{})));
+ }
+ if(delivered.some(d=>row(d.result.widget).kind!=="result_table"))return result("Não foi possível conferir o catálogo nesta consulta. Não confirmei disponibilidade nem preparei um dataset; tente consultar Dados novamente.");
+ const catalogs=delivered.map(d=>({query:d.call.arguments.q,rows:row(d.result.widget).rows}));
+ const available=catalogs.flatMap(c=>Array.isArray(c.rows)?c.rows.map(row).filter(r=>Number(r.rows)>0):[]);
+ if(!available.length)return result('Não encontrei séries populadas correspondentes no catálogo consultado. Nenhum dataset foi preparado. Confira cobertura e nomes antes de definir a análise.');
+ const missing=catalogs.some(c=>!Array.isArray(c.rows)||!c.rows.some(r=>Number(row(r).rows)>0));
+ return result((missing?'Parte das séries solicitadas não apareceu com dados neste catálogo. ':'')+'As séries disponíveis estão nas tabelas, com unidade, frequência, versão e intervalo observado. Qual período você quer estudar e qual frequência comum pretende usar? Como devem ser tratados os valores ausentes? Defina essas regras em Preparar dados antes de executar. Não realizei transformação nem exportação. Datas de observação não comprovam disponibilidade histórica.');
+}
+
 /** Observations inform routing only. Canonical API re-reads establish evidence. */
 export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:string,resolve:(id:string,signal?:AbortSignal)=>Promise<string|undefined>):Promise<ModelResponse|undefined>{
  const request={tools:step.tools,signal:ctx.deadline.signal};
@@ -35,7 +69,7 @@ export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:st
  const searches=observed.filter(o=>o.source_tool==="search_archive");
  const passages=observed.filter(o=>o.source_tool==="read_passage").flatMap(o=>Array.isArray(o.rows)?o.rows.map(row):[]);
  if(!searches.length&&!passages.length){
-  const q=query(question);if(!q)return result('Qual tema você quer investigar nas notícias, cartas ou documentos?');
+  const q=documentQuery(question);if(!q)return result('Qual tema você quer investigar nas notícias, cartas ou documentos?');
   const explicit=/\bsource=(news|manager_letter|mub3|b3_bulletin)\b/.exec(question)?.[1];
   const news=/not[ií]ci|source=news/i.test(question),letters=/cartas?|source=manager_letter/i.test(question);
   const sources=explicit?[explicit]:news&&letters?["news","manager_letter"]:news?["news"]:letters?["manager_letter"]:/mub3/i.test(question)?["mub3"]:/boletim|b3/i.test(question)?["b3_bulletin"]:[undefined];
@@ -61,12 +95,8 @@ export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:st
  for(const id of ids){
   const original=passages.find(p=>p.id===id);const text=original?.text;
   if(typeof text!=="string"||text.trim().length<12)continue;
-  const terms=(query(question).match(/[\p{L}\p{N}]+/gu)??[]).filter(t=>t.length>=3);
-  const lower=text.toLocaleLowerCase();const matches=terms.map(t=>lower.indexOf(t.toLocaleLowerCase())).filter(n=>n>=0);
-  let start=matches.length?Math.max(0,Math.min(...matches)-80):0;
-  if(start>0){const boundary=text.indexOf(" ",start);if(boundary>=start&&boundary<start+40)start=boundary+1;}
-  let end=Math.min(start+320,text.length);if(end<text.length&&text.lastIndexOf(" ",end)>start+200)end=text.lastIndexOf(" ",end);
-  const quote=text.slice(start,end).trim();
+  const terms=(documentQuery(question).match(/[\p{L}\p{N}]+/gu)??[]).filter(t=>t.length>=3);
+  const quote=excerptWindow(text,terms);
   const binding=await verifyExcerpt({sourceId:id,revision:revision(text),quote},async(sourceId,signal)=>{const current=await resolve(sourceId,signal);return current?{id:sourceId,revision:revision(current),text:current}:undefined;},request.signal);
   const delivered=step.evidence.delivered.find(d=>d.call.name==="read_passage"&&d.call.arguments.passage_id===id);
   if(binding.status==="verified"&&delivered)canonical.push({id,quote:binding.quote,revision:binding.revision,toolCallId:delivered.call.id});
@@ -76,7 +106,7 @@ export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:st
  const evidence:TurnEvidence={...step.evidence,facts};
  const composed=composeDraft({sections:canonical.map((p,i)=>({id:`source${i}`,prose:[{kind:"claim" as const,ref:`quote${i}`}]})),claims:canonical.map((p,i)=>({id:`quote${i}`,key:`source.s${i}.quote`}))},evidence,{strict:true});
  if(!composed.ok)return result('Não foi possível vincular os trechos às evidências deste turno. Nenhuma conclusão foi validada.');
- let content='Seleção de trechos conferidos nas fontes. A coleta e a conferência seguem um workflow; interpretações do modelo são rascunhos separados.\n\n'+composed.composition.sections.map((section,i)=>`Fonte ${i+1} [${canonical[i].id}] · SHA-256 do texto ${canonical[i].revision}:\n${section.text.split("\n").map(line=>"> "+line).join("\n")}`).join("\n\n");
+ let content='Seleção de trechos conferidos nas fontes. A conferência é textual: não confirma pertinência nem apoio a uma interpretação. Interpretações do modelo são rascunhos separados.\n\n'+composed.composition.sections.map((section,i)=>`Fonte ${i+1} [${canonical[i].id}] · SHA-256 do texto ${canonical[i].revision}:\n${section.text.split("\n").map(line=>"> "+line).join("\n")}`).join("\n\n");
  let usage:ModelResponse['usage']={};let provider="ofl-source-workflow";
  const interpret=!/sem hip[oó]teses|apenas (?:os )?trechos|somente (?:as )?fontes|n[aã]o (?:gere|proponha) interpreta/i.test(question);
  if(interpret)try{

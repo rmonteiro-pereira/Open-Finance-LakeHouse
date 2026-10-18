@@ -35,7 +35,7 @@ def evidence(con, references):
     return result
 
 
-def validate(con, kind, body, *, generated=False):
+def validate(con, kind, body, *, generated=False, reviewer=None):
     if kind == "check" and not generated:
         body = {k: v for k, v in body.items() if k not in {"result", "comparison", "executed_at"}}
     if len(json.dumps(body, ensure_ascii=False)) > 500000:
@@ -82,8 +82,11 @@ def validate(con, kind, body, *, generated=False):
             finding["status"] = (
                 "source_excerpt" if finding["kind"] == "observation" else "user_authored_unverified"
             )
-        # Captures are server-resolved. Never accept caller-supplied provenance.
-        return {**body, "evidence": captured, "findings": findings}
+        from .reference_review import reference_reviews
+
+        reviews = reference_reviews(question, captured, body.get("reference_reviews", []), reviewer)
+        # Both capture and review attribution are resolved by the authenticated server.
+        return {**body, "evidence": captured, "findings": findings, "reference_reviews": reviews}
     if kind == "portfolio":
         from .analytics import portfolio
 
@@ -135,7 +138,7 @@ def save(db, actor, kind, title, body, *, workspace_id=None, expected_revision=0
             )
         if item["current_revision"] != expected_revision:
             raise FileExistsError("workspace revision changed; reload before saving")
-        body = validate(con, kind, body, generated=generated)
+        body = validate(con, kind, body, generated=generated, reviewer=actor)
         revision = expected_revision + 1
         checksum = digest({"kind": kind, "title": title, "body": body})
         con.execute(
@@ -189,6 +192,11 @@ def load(db, actor, workspace_id, revision=None):
                 else finding
                 for finding in content.get("findings", [])
             ]
+            content["reference_reviews"] = [
+                {**review, "rationale": "[source-linked review restricted by current source policy]"}
+                if review["passage_id"] in blocked else review
+                for review in content.get("reference_reviews", [])
+            ]
     return {
         **item,
         **record,
@@ -221,6 +229,11 @@ def export_markdown(record):
         "## Limitations",
         block(body.get("limitations", "No user outcome or suitability validation implied.")),
     ]
+    for review in body.get("reference_reviews", []):
+        lines += [
+            "## Reference review · author judgment, not independent verification",
+            block(json.dumps(review, ensure_ascii=False)),
+        ]
     for ref in body.get("evidence", []):
         lines += [
             f"## Evidence {ref['id']}",

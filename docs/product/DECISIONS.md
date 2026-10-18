@@ -22,3 +22,11 @@ silently rewrite an early hypothesis into a retrospectively certain decision.
 2026-10-18 user direction: proceed through the whole approved shape sequentially,
 including the inherited backlog as scoped in `../research/PRODUCT-BACKLOG.md`.
 This authorizes implementation; demand and outcome hypotheses still require trials.
+
+## 2026-10-18 — Desktop GPU is a one-time backfill resource
+
+The desktop is not a permanent inference backend or online fallback. Keep serving,
+search and agent execution on the VPS. Continue relevance assessment, source-to-
+dossier workflow work and VPS-budgeted agent evaluation. Retain the completed
+GPU backfill receipt without making desktop uptime a product requirement. See
+OUTCOME-TRIALS.md for development rehearsals and the participant study protocol.

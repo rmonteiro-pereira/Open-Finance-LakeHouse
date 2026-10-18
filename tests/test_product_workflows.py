@@ -440,3 +440,50 @@ def test_difference_of_percentage_series_is_labeled_percentage_points(research):
     )
     assert result["manifest"]["columns"][0]["output_unit"] == "percentage_points"
     assert result["manifest"]["columns"][0]["source"]["unit"] == "%"
+
+
+def test_reference_judgments_bind_actor_question_and_captured_source(research):
+    from ofl.research.workspaces import export_markdown
+
+    db, _ = research
+    hit = seed(research)
+    body = {"question": "Inflação?", "references": [hit["id"]], "reference_reviews": [{
+        "passage_id": hit["id"], "verdict": "uncertain", "rationale": "Falta o contexto da publicação.",
+        "reviewer": "independent-expert", "status": "verified",
+    }]}
+    saved = save(db, "owner", "investigation", "Revisão", body)
+    record = load(db, "owner", saved["id"])
+    review = record["body"]["content"]["reference_reviews"][0]
+    assert review["reviewer"] == "owner"
+    assert review["status"] == "author_judgment_not_independently_verified"
+    assert "Falta o contexto" in export_markdown(record)
+    for changed in ({**record["body"]["content"], "question": "Câmbio?"}, {**body, "reference_reviews": [body["reference_reviews"][0]] * 2}):
+        with pytest.raises(ValueError):
+            save(db, "owner", "investigation", "Revisão", changed)
+    with db.connect() as con:
+        con.execute("UPDATE items SET date_start='2026-01-01' WHERE id=%s", (hit["item_id"],))
+    with pytest.raises(ValueError, match="stale"):
+        save(db, "owner", "investigation", "Revisão", record["body"]["content"])
+    # Current source policy also redacts user-written review text linked to it.
+    with db.connect() as con:
+        con.execute("UPDATE items SET metadata=metadata || '{\"content_tier\":\"headline_only\"}'::jsonb WHERE id=%s", (hit["item_id"],))
+        con.execute("UPDATE passages SET active=false WHERE id=%s", (hit["id"],))
+    redacted = load(db, "owner", saved["id"])
+    assert "Falta o contexto" not in export_markdown(redacted)
+    assert load(db, "owner", saved["id"])["sha256"] == saved["sha256"]
+
+
+@pytest.mark.parametrize("review", [
+    {"passage_id": "unknown", "verdict": "relevant", "rationale": "Tema pertinente."},
+    {"passage_id": None, "verdict": "relevant", "rationale": "Tema pertinente."},
+    {"verdict": {}, "rationale": "Tema pertinente."},
+    {"verdict": "relevant", "rationale": "  "},
+])
+def test_invalid_reference_reviews_are_rejected(research, review):
+    db, _ = research
+    hit = seed(research)
+    with pytest.raises(ValueError):
+        save(db, "owner", "investigation", "Revisão", {
+            "question": "Inflação?", "references": [hit["id"]],
+            "reference_reviews": [{"passage_id": hit["id"], **review}],
+        })

@@ -50,7 +50,7 @@ export function researchTools(source: ResearchSource): Record<Specialist, ToolDe
       const coverage=record(data.index_coverage);
       const indexed=coverage.indexed_passages,total=coverage.eligible_passages;
       const scope=data.mode!=="keyword"&&Number.isSafeInteger(indexed)&&Number.isSafeInteger(total)?`${indexed} de ${total} passagens com vetores; não mede relevância`:undefined;
-      return table(`Evidências documentais · datas do catálogo${scope?" · "+scope:""}`, rows(data.results).map(row => ({...row,
+      return table(`Documentos candidatos · datas do catálogo${scope?" · "+scope:""}`, rows(data.results).map(row => ({...row,
         passage_id: row.id, item_id: row.item_id,
         citation: `item:${row.item_id};passage:${row.id};asset:${row.asset_id ?? ""};page:${row.page ?? ""}`,
         item_link: `/api/research/items/${encodeURIComponent(String(row.item_id))}`,
