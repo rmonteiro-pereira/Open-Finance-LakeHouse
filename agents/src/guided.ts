@@ -2,6 +2,7 @@
 import type {ModelResponse,ReplyStep,TurnContext} from "@inkwell/core";
 import {composeDraft, type TurnEvidence} from "@inkwell/core/evidence";
 import {verifyExcerpt} from "@inkwell/core/evidence";
+import {DATASET_MARKER,datasetRequest} from "./dataset-request";
 import {createHash} from "node:crypto";
 type Row=Record<string,unknown>;
 function row(value:unknown):Row{return value!==null&&typeof value==="object"&&!Array.isArray(value)?value as Row:{};}
@@ -38,18 +39,38 @@ export function excerptWindow(text:string,terms:string[]){
 
 /** Catalog eligibility and clarification do not require generated planning. */
 export async function guidedDataset(ctx:TurnContext,step:ReplyStep,question:string):Promise<ModelResponse|undefined>{
- if(!/dataset|prepar(?:ar|e|ação).*dados/i.test(question)||!step.tools.some(t=>t.name==="read_data_catalog")||(question.match(/\d{4}-\d{2}-\d{2}/g)??[]).length>=2)return;
+ if(!/dataset|prepar(?:ar|e|ação).*dados/i.test(question)||!step.tools.some(t=>t.name==="read_data_catalog"))return;
+ if(step.evidence.failed.some(d=>['read_data_catalog','prepare_dataset'].includes(d.call.name)))return result('A leitura necessária ao preparo falhou. Nenhum dataset foi confirmado. Tente novamente e confira acesso e disponibilidade da versão.');
+ const marker=question.indexOf(DATASET_MARKER);
+ let spec:ReturnType<typeof datasetRequest.parse>|undefined;
+ if(marker>=0){
+  try{spec=datasetRequest.parse(JSON.parse(question.slice(marker+DATASET_MARKER.length).trim()));}
+  catch{return result('A receita do dataset é inválida. Confirme séries, período, transformação e alinhamento no formulário do catálogo. Nenhum dataset foi preparado.');}
+ }
+ const prepared=step.evidence.delivered.find(d=>d.call.name==='prepare_dataset');
+ if(prepared){
+  const widget=row(prepared.result.widget),first=Array.isArray(widget.rows)?row(widget.rows[0]):{};
+  let manifest:Row={};try{manifest=typeof first.manifest==='string'?row(JSON.parse(first.manifest)):row(first.manifest);}catch{/* No validated result. */}
+  if(widget.kind!=='result_table'||!spec||JSON.stringify(datasetRequest.safeParse(manifest.specification).data)!==JSON.stringify(spec)||!/^[a-f0-9]{64}$/.test(String(manifest.csv_sha256))||!Number.isInteger(manifest.rows)||Number(manifest.rows)<=0)return result('Não foi possível validar um dataset com observações nesta consulta. Confira o erro ou ajuste o recorte. Nenhuma entrega foi confirmada.');
+  return result(`Dataset preparado: ${manifest.rows} linhas, versão ${spec.snapshot_id}. A amostra e o manifesto estão abaixo. Baixe o pacote reproduzível no cartão do resultado. Valores ausentes permanecem nulos; alinhamento por data não converte frequências. As transformações usam observações do intervalo escolhido, sem aquecimento anterior. SHA-256 do CSV: ${manifest.csv_sha256}. Datas de observação não comprovam disponibilidade histórica; este dataset descritivo não é um backtest.`);
+ }
  const delivered=step.evidence.delivered.filter(d=>d.call.name==="read_data_catalog");
  if(!delivered.length){
+  if(spec)return result("Vou conferir a versão e as séries escolhidas no catálogo.",[call("read_data_catalog",{snapshot_id:spec.snapshot_id})]);
   const topics=[...new Set(question.toLowerCase().match(/\b(?:ipca|selic|cdi|pib)\b/g)??[])];
   return result('Vou conferir as séries, suas unidades, frequências e versões no catálogo antes de definir o preparo.',(topics.length?topics:[undefined]).map(q=>call("read_data_catalog",q?{q}:{})));
  }
  if(delivered.some(d=>row(d.result.widget).kind!=="result_table"))return result("Não foi possível conferir o catálogo nesta consulta. Não confirmei disponibilidade nem preparei um dataset; tente consultar Dados novamente.");
  const catalogs=delivered.map(d=>({query:d.call.arguments.q,rows:row(d.result.widget).rows}));
  const available=catalogs.flatMap(c=>Array.isArray(c.rows)?c.rows.map(row).filter(r=>Number(r.rows)>0):[]);
+ if(spec){
+  if(!spec.series.every(s=>available.some(r=>r.key===s.series_id&&r.snapshot_id===spec!.snapshot_id)))return result('Uma série escolhida não está disponível com dados na versão conferida. Atualize o catálogo e confirme a receita; nenhum dataset foi preparado.');
+  if(!step.tools.some(t=>t.name==='prepare_dataset'))return result('Preparação indisponível para este especialista. Use Dados e métodos.');
+  return result('Vou preparar a receita confirmada, preservando valores ausentes e as frequências originais.',[call('prepare_dataset',spec)]);
+ }
  if(!available.length)return result('Não encontrei séries populadas correspondentes no catálogo consultado. Nenhum dataset foi preparado. Confira cobertura e nomes antes de definir a análise.');
  const missing=catalogs.some(c=>!Array.isArray(c.rows)||!c.rows.some(r=>Number(row(r).rows)>0));
- return result((missing?'Parte das séries solicitadas não apareceu com dados neste catálogo. ':'')+'As séries disponíveis estão nas tabelas, com unidade, frequência, versão e intervalo observado. Qual período você quer estudar e qual frequência comum pretende usar? Como devem ser tratados os valores ausentes? Defina essas regras em Preparar dados antes de executar. Não realizei transformação nem exportação. Datas de observação não comprovam disponibilidade histórica.');
+ return result((missing?'Parte das séries solicitadas não apareceu com dados neste catálogo. ':'')+'As séries disponíveis estão nas tabelas, com unidade, frequência, versão e intervalo observado. Confirme as séries, o período, a transformação e o alinhamento no formulário do catálogo abaixo. As frequências originais são preservadas e valores ausentes permanecem nulos; não há reamostragem ou preenchimento implícito. Não realizei transformação nem exportação. Datas de observação não comprovam disponibilidade histórica.');
 }
 
 /** Observations inform routing only. Canonical API re-reads establish evidence. */

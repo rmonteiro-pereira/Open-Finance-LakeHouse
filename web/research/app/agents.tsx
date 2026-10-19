@@ -1,4 +1,5 @@
 "use client";
+import {AgentDatasetChoices,AgentDatasetResult} from "./agent-dataset";
 import { useEffect, useRef, useState } from "react";
 type Row = Record<string, unknown>;
 type Table = {kind: string; title?: string; columns?: {key: string; label: string}[]; rows?: Row[]; truncated?: boolean};
@@ -16,6 +17,7 @@ function Evidence({table}: {table: Table}) {
   const [inspection,setInspection]=useState(false);
   if (table.kind !== "result_table") return null;
   return <section className="card"><h3>{table.title ?? "Evidência"}</h3><button onClick={()=>setInspection(!inspection)}>{inspection?"Voltar à leitura":"Inspecionar estrutura e valores"}</button>{inspection&&<pre>{JSON.stringify(table,null,2)}</pre>}
+    {table.title==='Dataset reproduzível · amostra e manifesto'&&table.rows?.map((row,i)=><AgentDatasetResult key={i} row={row}/>)}
     {table.truncated && <p className="muted">Recorte limitado. Estas linhas não representam todo o período.</p>}
     {!table.rows?.length ? <p>Nenhum registro encontrado neste recorte.</p> : <div style={{overflowX: "auto"}}><table><thead><tr>{table.columns?.map(c => <th key={c.key}>{c.label}</th>)}</tr></thead>
       <tbody>{table.rows.map((row, i) => <tr key={i}>{table.columns?.map(c => <td key={c.key} style={{maxWidth: 420, whiteSpace: "pre-wrap", overflowWrap: "anywhere"}}>
@@ -55,14 +57,15 @@ export default function Agents({onDossier}:{onDossier?:(draft:{question:string;r
   async function open(id: string) {
     await run(async () => {const data = await api(`${specialist}/conversations/${encodeURIComponent(id)}`); setConversationId(id); setMessages(data.messages ?? []);});
   }
-  async function send() {
-    if (!question.trim() || busy) return;
+  async function send(explicitQuestion?:string) {
+    const submitted=explicitQuestion??question;
+    if (!submitted.trim() || busy) return;
     if(scopeFrom && scopeTo && scopeFrom>scopeTo){setError("A data inicial deve ser anterior à data final.");return;}
     await run(async () => {
       const controller = new AbortController(); request.current = controller;
       let id = conversationId;
       if (!id) {id = crypto.randomUUID(); await api(`${specialist}/conversations`, {conversationId: id}, controller.signal); setConversationId(id);}
-      const data = await api(`${specialist}/turn`, {conversationId: id, message: `Público: ${audience}. Objetivo: ${interpretation?"fontes e hipóteses para revisão":"coletar e conferir fontes, sem hipóteses"}. Escopo solicitado: ${scopeFrom||"início não definido"} a ${scopeTo||"fim não definido"}. Pergunta: ${question}`}, controller.signal);
+      const data = await api(`${specialist}/turn`, {conversationId: id, message: `Público: ${audience}. Objetivo: ${interpretation?"fontes e hipóteses para revisão":"coletar e conferir fontes, sem hipóteses"}. Escopo solicitado: ${scopeFrom||"início não definido"} a ${scopeTo||"fim não definido"}. Pergunta: ${submitted}`}, controller.signal);
       // Fetch the committed conversation, including earlier evidence, after each successful turn.
       const saved = await api(`${specialist}/conversations/${id}`, undefined, controller.signal);
       setMessages(saved.messages ?? []); setQuestion(""); setStatus(data.outcome === "degraded" ? "A consulta terminou com limitações; confira as evidências." : "Consulta salva.");
@@ -86,6 +89,7 @@ export default function Agents({onDossier}:{onDossier?:(draft:{question:string;r
     const url = URL.createObjectURL(new Blob([text], {type: "text/markdown;charset=utf-8"}));
     const link = document.createElement("a"); link.href = url; link.download = `ofl-${specialist}-${conversationId}.md`; link.click(); URL.revokeObjectURL(url);
   }
+  const catalogRows=[...new Map(messages.flatMap(m=>m.toolResults??[]).filter(r=>r.widget?.title==='Catálogo de dados macro').flatMap(r=>r.widget?.rows??[]).map(r=>[`${r.snapshot_id}-${r.key}`,r])).values()];
   const references=[...new Set(messages.flatMap(m=>m.toolResults??[]).flatMap(r=>r.widget?.rows??[]).flatMap(row=>typeof row.passage_id==="string"?[row.passage_id]:typeof row.id==="string"&&typeof row.text==="string"?[row.id]:[]))].filter(id=>/^[a-zA-Z0-9_-]{1,128}$/.test(id)).slice(0,50);
   function dossier(){const question=([...messages].reverse().find(m=>m.role==="user")?.content??"").replace(/^[\s\S]*?Pergunta:\s*/,"");onDossier?.({question,references,scope:{conversation_id:conversationId,specialist,tool_calls:messages.flatMap(m=>m.toolCalls??[])}});}
   function download() {
@@ -102,6 +106,7 @@ export default function Agents({onDossier}:{onDossier?:(draft:{question:string;r
     {messages.length > 0 && <section className="card"><h3>Consultar outro especialista</h3><p>A pergunta e as referências serão copiadas para uma nova investigação. O histórico original permanece salvo.</p>{specialists.filter(s => s.id !== specialist).map(s => <button key={s.id} disabled={busy} onClick={() => handoff(s.id)}>{s.title}</button>)}</section>}
     {error && <p role="alert" className="status error">{error}</p>}{status && <p role="status">{status}</p>}
     <div aria-live="polite">{messages.filter(m => m.role !== "system").map(m => <article className="card" key={m.id}><strong>{m.role === "user" ? "Você" : m.role === "tool" ? "Fonte OFL" : "Agente"}</strong><p style={{whiteSpace: "pre-wrap"}}>{m.content}</p>{m.toolResults?.map((result, i) => <div key={i}>{result.widget && <Evidence table={result.widget}/>} {result.refusal?.explanation && <p>{result.refusal.explanation}</p>}{result.error != null && <p>Uma leitura falhou. Não há evidência para essa parte da consulta.</p>}</div>)}</article>)}</div>
+    {specialist!=="quality"&&catalogRows.length>0&&<AgentDatasetChoices key={conversationId} rows={catalogRows} onPrepare={send} busy={busy}/>}
     <form className="card" onSubmit={e => {e.preventDefault(); void send();}}><label>Como trabalhar?<select value={interpretation?"interpretation":"sources"} disabled={busy} onChange={e=>setInterpretation(e.target.value==="interpretation")}><option value="sources">Coletar e conferir fontes</option><option value="interpretation">Fontes e rascunho interpretativo (experimental)</option></select></label><p className="muted">A coleta documental pode ser levada ao dossiê para sua análise. O rascunho interpretativo exige revisão e pode não produzir uma resposta utilizável.</p><div className="filters"><label>Para quem é a pesquisa?<select value={audience} onChange={e=>setAudience(e.target.value)}><option value="analista">Analista financeiro</option><option value="assessor ou consultor">Assessor ou consultor</option><option value="pessoa de dados">Pessoa de dados</option><option value="pessoa estudando mercados e sua carteira">Estou estudando mercados e minha carteira</option></select></label><label>Período a partir de<input type="date" value={scopeFrom} onChange={e=>setScopeFrom(e.target.value)}/></label><label>Período até<input type="date" value={scopeTo} onChange={e=>setScopeTo(e.target.value)}/></label></div><p className="muted">Confira pergunta, público e período antes de executar. O agente deve esclarecer o objetivo quando faltarem informações.</p><label htmlFor="research-question">Pergunta de pesquisa</label><textarea id="research-question" value={question} disabled={busy} maxLength={8000} rows={4} onChange={e => setQuestion(e.target.value)} placeholder={specialist === "market" ? "Consulte PETR4 no mercado 010 de 2026-01-05 a 2026-01-05" : "O que você quer investigar?"}/><button disabled={busy || !question.trim()} type="submit">{busy ? "Consultando fontes…" : "Investigar"}</button>{busy&&<button type="button" onClick={()=>request.current?.abort()}>Cancelar consulta</button>}</form>
   </>;
 }
