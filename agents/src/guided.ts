@@ -3,7 +3,7 @@ import type {ModelResponse,ReplyStep,TurnContext} from "@inkwell/core";
 import {composeDraft, type TurnEvidence} from "@inkwell/core/evidence";
 import {verifyExcerpt} from "@inkwell/core/evidence";
 import {DATASET_MARKER,datasetRequest} from "./dataset-request";
-import {BRIEF_PROMPT,briefSources,composeBrief,parseBriefDraft,qualitativeInput,type BriefSource} from "./brief";
+import {BRIEF_PROMPT,briefSources,composeBrief,parseBriefDraft,type BriefSource} from "./brief";
 import {createHash} from "node:crypto";
 type Row=Record<string,unknown>;
 function row(value:unknown):Row{return value!==null&&typeof value==="object"&&!Array.isArray(value)?value as Row:{};}
@@ -135,7 +135,7 @@ export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:st
  let draft:ReturnType<typeof parseBriefDraft>;
  let generation:'not_requested'|'valid'|'invalid'|'unavailable'='not_requested';
  if(interpret)try{
-  const generated=await ctx.call("interpretation",{maxTokens:48,responseFormat:"json",messages:[{role:"system",content:BRIEF_PROMPT},{role:"user",content:JSON.stringify({question:qualitativeInput(question.replace(/^[\s\S]*?Pergunta:\s*/,"")),sources:briefSources(canonical)})}]});
+  const generated=await ctx.call("interpretation",{maxTokens:48,responseFormat:"json",messages:[{role:"system",content:BRIEF_PROMPT},{role:"user",content:JSON.stringify({question:question.replace(/^[\s\S]*?Pergunta:\s*/,""),sources:briefSources(canonical)})}]});
   usage=generated.usage;provider=generated.provider??"model";
   draft=parseBriefDraft(generated.content,canonical);generation=draft?'valid':'invalid';
  }catch{if(request.signal?.aborted)throw Error('Research request interrupted');generation='unavailable';}

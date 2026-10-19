@@ -28,10 +28,11 @@ prose. A proposed contrast requires two distinct source items; references must
 exist, be unique and be in range. The displayed explanation comes from code.
 The relation is still a tentative machine judgment requiring source review.
 
-Only this optional qualitative classification sees numbers redacted from the
-question, titles and quote windows. Original quotes, source text, dates, inputs
-and financial values are preserved in the brief and evidence. This step cannot
-perform quantitative synthesis. Source-only mode performs no model call. A model
+The classification receives the original quote windows and publication metadata,
+so it can inspect actual indicators and horizons. Its output schema has no field
+for numbers or generated prose. Original quotes, source text, dates and financial
+values remain preserved in the brief and evidence. This step cannot perform
+quantitative synthesis. Source-only mode performs no model call. A model
 failure leaves the source-backed brief available with the failed classification
 explicit. The 45-second role deadline and VPS-only deployment remain unchanged;
 the request output ceiling is now 48 tokens. No model upgrade or desktop service
