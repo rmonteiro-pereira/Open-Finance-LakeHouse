@@ -118,11 +118,11 @@ test("assistant history and fabricated citations never verify an excerpt",async(
 });
 
 test("guided research reads real context before the single interpretation call",async()=>{
- const model=scriptedModel([{content:JSON.stringify({hypotheses:[{text:"Os trechos pedem conferir o horizonte antes de comparar interpretações.",references:[1]},{text:"A carteira oferece retorno garantido de 9999 por cento.",references:[1]}]})}]);
+ const model=scriptedModel([{content:JSON.stringify({references:[1],relation:"context"})}]);
  const reads:string[]=[];const text="A inflação exige atenção ao horizonte de análise. Esta é uma passagem de fonte para avaliação.";
  const edge=createOflEdge({gatewayToken:"secret",origin:"https://test.ofl",modelName:"test",model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async path=>{reads.push(path);if(path==="me")return{identity:"ana",role:"reader"};if(path==="search")return{mode:"keyword",results:[{id:"p1",item_id:"i1",source:"news",snippet:text}]};if(path==="passages/p1")return{passage:{id:"p1",text,source:"news"}};throw Error("unknown");}})});
  const response=await edge(new Request("https://test.ofl/api/agents/market/turn",{method:"POST",headers:{"x-ofl-gateway-token":"secret","x-ofl-identity":"ana",origin:"https://test.ofl","content-type":"application/json"},body:JSON.stringify({conversationId:"guided",message:"Busque notícias sobre inflação"})}));
- const body=await response.text();expect(response.status).toBe(200);expect(reads.filter(p=>p==="passages/p1")).toHaveLength(2);expect(model.requests).toHaveLength(1);expect(model.requests[0]?.tools).toBeUndefined();expect(model.requests[0]?.responseFormat).toBe("json");expect(body).toContain("Seleção de trechos conferidos");expect(body).toContain("horizonte antes de comparar");expect(body).not.toContain("9999");
+ const body=await response.text();expect(response.status).toBe(200);expect(reads.filter(p=>p==="passages/p1")).toHaveLength(2);expect(model.requests).toHaveLength(1);expect(model.requests[0]?.tools).toBeUndefined();expect(model.requests[0]?.responseFormat).toBe("json");expect(body).toContain("Seleção de trechos conferidos");expect(body).toContain("O modelo sugeriu uma leitura conjunta");expect(body).not.toContain("9999");
 });
 
 test("guided empty search reports coverage without asking the model to invent evidence",async()=>{
@@ -225,4 +225,25 @@ for(const scenario of ['invalid','missing','failure','mismatch'] as const)test(`
  }})});
  const response=await edge(new Request('https://test.ofl/api/agents/archive/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'bad-'+scenario,message:'OFL_DATASET_REQUEST:'+JSON.stringify(specification)})}));
  const body=await response.text();expect(response.status).toBe(200);expect(body).not.toContain('Dataset preparado:');expect(body).not.toContain('private backend failure');expect(model.requests).toHaveLength(0);if(scenario==='invalid')expect(reads).toEqual([]);if(scenario==='missing')expect(reads).toEqual(['data/catalog']);
+});
+
+test('research read failure stops rather than repeating tools until budget exhaustion',async()=>{
+ const model=scriptedModel([]);let reads=0;
+ const edge=createOflEdge({gatewayToken:'secret',origin:'https://test.ofl',modelName:'test',model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async path=>{if(path==='me')return{identity:'ana',role:'reader'};reads++;throw new ToolFailure('source_access');}})});
+ const response=await edge(new Request('https://test.ofl/api/agents/archive/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'failed-research',message:'Busque notícias sobre inflação, sem hipóteses'})}));
+ expect(response.status).toBe(200);expect(await response.text()).toContain('Uma leitura necessária');expect(reads).toBe(1);expect(model.requests).toHaveLength(0);
+});
+
+for(const revoked of [false,true])test(`brief uses freshly checked attribution and refuses inactive source (${revoked})`,async()=>{
+ let reads=0;const model=scriptedModel([]),text='A inflação depende do horizonte da pesquisa.';
+ const edge=createOflEdge({gatewayToken:'secret',origin:'https://test.ofl',modelName:'test',model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async path=>{
+  if(path==='me')return{identity:'ana',role:'reader'};
+  if(path==='search')return{mode:'keyword',results:[{id:'p1',item_id:'i1',source:'news',snippet:text}]};
+  reads++;return{passage:{id:'p1',text,source:'manager_letter',title:'Carta de análise',collection:reads===1?'stale-author':'current-author',date_start:reads===1?'2025-01-01':null,date_precision:reads===1?'day':'unknown',active:reads===1?true:!revoked}};
+ }})});
+ const response=await edge(new Request('https://test.ofl/api/agents/archive/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'metadata-'+revoked,message:'Busque notícias sobre inflação, sem hipóteses'})}));
+ const data=await response.json();expect(response.status).toBe(200);const answer=data.data.messages.filter((m:{role:string})=>m.role==='assistant').at(-1).content;
+ expect(reads).toBe(2);expect(model.requests).toHaveLength(0);
+ if(revoked){expect(answer).not.toContain('Brief de evidências');expect(answer).toContain('não estão disponíveis');}
+ else{expect(answer).toContain('current-author');expect(answer).not.toContain('stale-author');expect(answer).toContain('Publicação: não catalogada');expect(answer).toContain('Opinião atribuída');}
 });
