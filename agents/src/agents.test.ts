@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { actor, createChat, memoryConversationStore } from "@inkwell/core";
+import { actor, createChat, memoryConversationStore, ToolFailure } from "@inkwell/core";
 import { scriptedModel } from "@inkwell/core/testkit";
 import { oflAgent, researchTools, type Specialist } from "./agents";
 import { createOflEdge } from "./edge";
@@ -192,4 +192,37 @@ test("UI source-collection intent handles a bare topic without invoking interpre
  const edge=createOflEdge({gatewayToken:"secret",origin:"https://test.ofl",modelName:"test",model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async(path,args)=>{if(path==='me')return{identity:'ana',role:'reader'};query=args;return{mode:'keyword',results:[]};}})});
  const response=await edge(new Request('https://test.ofl/api/agents/market/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'bare-topic',message:'Público: analista. Objetivo: coletar e conferir fontes, sem hipóteses. Escopo solicitado: início não definido a fim não definido. Pergunta: inflação'})}));
  expect(response.status).toBe(200);expect(await response.text()).toContain('Não encontrei evidências neste recorte');expect(query).toMatchObject({q:'"inflação"'});expect(model.requests).toHaveLength(0);
+});
+
+test('explicit dataset recipe revalidates catalog, prepares actual values and completes without model',async()=>{
+ const model=scriptedModel([]),reads:string[]=[];
+ const specification={snapshot_id:'s1',series:[{series_id:'ipca',operation:'level',window:3,lag:1}],alignment:'outer',date_from:'2020-01-01',date_to:'2025-12-31'};
+ const edge=createOflEdge({gatewayToken:'secret',origin:'https://test.ofl',modelName:'test',model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async(path,args)=>{
+  if(path==='me')return{identity:'ana',role:'reader'};reads.push(path);
+  if(path==='data/catalog'){expect(args).toEqual({snapshot_id:'s1'});return{snapshot_id:'s1',series:[{key:'ipca',rows:72}]};}
+  if(path==='datasets/preview'){expect(JSON.parse(String(args?.specification))).toEqual(specification);return{manifest:{specification:{...specification,alignment:'outer'},rows:72,csv_sha256:'a'.repeat(64)},preview:[{date:'2020-01-01',ipca__level:'0.21'}]};}
+  throw Error('unexpected');
+ }})});
+ const response=await edge(new Request('https://test.ofl/api/agents/archive/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'dataset-complete',message:'OFL_DATASET_REQUEST:'+JSON.stringify(specification)})}));
+ const body=await response.text();expect(response.status).toBe(200);expect(reads).toEqual(['data/catalog','datasets/preview']);expect(body).toContain('Dataset preparado: 72 linhas');expect(body).toContain('0.21');expect(model.requests).toHaveLength(0);
+});
+
+test('dated dataset request remains guided and asks explicit confirmation instead of generation',async()=>{
+ const model=scriptedModel([]);
+ const edge=createOflEdge({gatewayToken:'secret',origin:'https://test.ofl',modelName:'test',model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async path=>path==='me'?{identity:'ana',role:'reader'}:{snapshot_id:'s1',series:[{key:'selic',rows:10},{key:'selic_meta',rows:10}]}})});
+ const response=await edge(new Request('https://test.ofl/api/agents/market/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'dated',message:'Prepare um dataset de Selic de 2020-01-01 a 2025-12-31'})}));
+ expect(await response.text()).toContain('Confirme as séries');expect(model.requests).toHaveLength(0);
+});
+
+for(const scenario of ['invalid','missing','failure','mismatch'] as const)test(`dataset ${scenario} never claims preparation`,async()=>{
+ const model=scriptedModel([]),reads:string[]=[];
+ const specification={snapshot_id:'s1',series:[{series_id:'ipca',operation:'level',window:3,lag:1}],alignment:'outer',date_from:scenario==='invalid'?'2025-12-31':'2020-01-01',date_to:'2020-12-31'};
+ const edge=createOflEdge({gatewayToken:'secret',origin:'https://test.ofl',modelName:'test',model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async path=>{
+  if(path==='me')return{identity:'ana',role:'reader'};reads.push(path);
+  if(path==='data/catalog')return{snapshot_id:'s1',series:scenario==='missing'?[]:[{key:'ipca',rows:10}]};
+  if(scenario==='failure')throw new ToolFailure('source_access');
+  return{manifest:{specification:{...specification,snapshot_id:'wrong'},rows:10,csv_sha256:'a'.repeat(64)},preview:[]};
+ }})});
+ const response=await edge(new Request('https://test.ofl/api/agents/archive/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'bad-'+scenario,message:'OFL_DATASET_REQUEST:'+JSON.stringify(specification)})}));
+ const body=await response.text();expect(response.status).toBe(200);expect(body).not.toContain('Dataset preparado:');expect(body).not.toContain('private backend failure');expect(model.requests).toHaveLength(0);if(scenario==='invalid')expect(reads).toEqual([]);if(scenario==='missing')expect(reads).toEqual(['data/catalog']);
 });
