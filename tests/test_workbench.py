@@ -313,3 +313,25 @@ def test_macro_manifest_hash_matches_csv_bytes(research):
     manifest = api.get(base + "manifest?snapshot_id=s1&date_to=2026-01-31", headers=headers).json()
     assert manifest["csv_sha256"] == hashlib.sha256(csv.content).hexdigest()
     assert manifest["matching_rows"] == 1 and manifest["scope"]["date_to"] == "2026-01-31"
+
+
+def test_passage_context_preserves_publisher_and_unknown_publication(research):
+    from fastapi.testclient import TestClient
+
+    from ofl.research.api import create_app
+
+    db, store = research
+    key = "news/items/official-source/2026-01-06/120000.jsonl"
+    source = LibraryFixture({key: json.dumps(news(published=None)).encode()})
+    sync_library(db, store, "news", source=source)
+    hit = search(db, "Indicadores documentados", mode="keyword")["results"][0]
+    api = TestClient(create_app(db.settings))
+    headers = {"X-OFL-Gateway-Token": "test-gateway", "X-OFL-Identity": "reader"}
+    assert api.get(f"/api/v1/passages/{hit['id']}").status_code == 401
+    result = api.get(f"/api/v1/passages/{hit['id']}", headers=headers)
+    assert result.status_code == 200
+    passage = result.json()["passage"]
+    assert passage["collection"] == "official-source"
+    assert passage["date_start"] is None and passage["date_precision"] == "unknown"
+    assert passage["active"] is True
+    assert "Indicadores documentados" in passage["text"]

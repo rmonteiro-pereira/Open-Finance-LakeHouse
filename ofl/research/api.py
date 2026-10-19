@@ -345,7 +345,7 @@ def create_app(settings=None):
     @app.get("/api/v1/passages/{passage_id}")
     def passage(passage_id: str, _user=Depends(identity)):
         rows = db.rows(
-            """SELECT p.*,i.title,i.source,i.date_start,i.date_end,i.date_precision,
+            """SELECT p.*,i.title,i.source,i.collection,i.date_start,i.date_end,i.date_precision,
             i.metadata->>'url' AS source_url,i.metadata->>'content_tier' AS content_tier,
             i.metadata->>'epistemic_status' AS epistemic_status FROM passages p JOIN items i ON i.id=p.item_id WHERE p.id=%s
             AND (i.source<>'news' OR i.metadata->>'content_tier'<>'headline_only' OR p.active)""",

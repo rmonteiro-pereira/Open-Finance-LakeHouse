@@ -44,9 +44,10 @@ export function createOflEdge(config: EdgeConfig) {
       // Bound memory without evicting active streamed turns or weakening durable ownership.
       if (servers.size >= 256) return json({detail: "Agent session capacity reached"}, 503);
       const resolvePassage=async (id:string,signal?:AbortSignal)=>{const value=await source.read(`passages/${id}`,{},signal) as {passage?:{text?:string}};return value.passage?.text;};
+      const resolveBriefPassage=async(id:string,signal?:AbortSignal)=>{const value=await source.read(`passages/${id}`,{},signal) as {passage?:Record<string,unknown>};return value.passage;};
       const definition=oflAgent(kind,source);
       definition.offer=(ctx,specs)=>researchOffer(kind,ctx.userProse,specs);
-      if(config.guidedDocuments)definition.replyStep=async(ctx,step)=>(await guidedDataset(ctx,step,ctx.userProse))??guidedDocuments(ctx,step,ctx.userProse,resolvePassage);
+      if(config.guidedDocuments)definition.replyStep=async(ctx,step)=>(await guidedDataset(ctx,step,ctx.userProse))??guidedDocuments(ctx,step,ctx.userProse,resolveBriefPassage);
       const chat = createChat({agent:definition, model:evidencePlanner(config.model,kind,resolvePassage,config.noThinking?"\n/no_think":""),
         roles:{research:{model:config.modelName,maxTokens:config.modelMaxTokens??2048,timeoutMs:config.modelTimeoutMs??60_000},interpretation:{model:config.modelName,maxTokens:128,timeoutMs:45_000}},
         ledger:config.ledger,conversations:config.conversations(kind),transcript:config.transcript?.(kind),
