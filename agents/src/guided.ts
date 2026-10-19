@@ -2,6 +2,7 @@
 import type {ModelResponse,ReplyStep,TurnContext} from "@inkwell/core";
 import {composeDraft, type TurnEvidence} from "@inkwell/core/evidence";
 import {verifyExcerpt} from "@inkwell/core/evidence";
+import {SOURCE_MARKER,sourceRequest} from "./source-request";
 import {DATASET_MARKER,datasetRequest} from "./dataset-request";
 import {BRIEF_PROMPT,briefSources,composeBrief,parseBriefDraft,type BriefSource} from "./brief";
 import {createHash} from "node:crypto";
@@ -40,6 +41,7 @@ export function excerptWindow(text:string,terms:string[]){
 
 /** Catalog eligibility and clarification do not require generated planning. */
 export async function guidedDataset(ctx:TurnContext,step:ReplyStep,question:string):Promise<ModelResponse|undefined>{
+ if(question.includes(SOURCE_MARKER))return;
  if(!/dataset|prepar(?:ar|e|ação).*dados/i.test(question)||!step.tools.some(t=>t.name==="read_data_catalog"))return;
  if(step.evidence.failed.some(d=>['read_data_catalog','prepare_dataset'].includes(d.call.name)))return result('A leitura necessária ao preparo falhou. Nenhum dataset foi confirmado. Tente novamente e confira acesso e disponibilidade da versão.');
  const marker=question.indexOf(DATASET_MARKER);
@@ -76,8 +78,17 @@ export async function guidedDataset(ctx:TurnContext,step:ReplyStep,question:stri
 
 /** Observations inform routing only. Canonical API re-reads establish evidence. */
 export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:string,resolve:(id:string,signal?:AbortSignal)=>Promise<Row|undefined>):Promise<ModelResponse|undefined>{
+ const marker=question.indexOf(SOURCE_MARKER);
+ let selected:ReturnType<typeof sourceRequest.parse>|undefined;
+ if(marker>=0){
+  try{selected=sourceRequest.parse(JSON.parse(question.slice(marker+SOURCE_MARKER.length).trim()));}
+  catch{return result('A seleção de fontes é inválida. Escolha de uma a quatro passagens distintas e informe a pergunta. Nenhuma fonte foi substituída por busca automática.');}
+ }
+ const modeQuestion=question;
+ if(selected)question=selected.question;
  const request={tools:step.tools,signal:ctx.deadline.signal};
- if(!request.tools?.some(t=>t.name==="search_archive")||!/not[ií]ci|cartas?|document|acervo|evid[eê]ncia|search_archive|coletar e conferir fontes/i.test(question))return;
+ if(!request.tools?.some(t=>t.name==="read_passage")){if(selected)return result("Este especialista não lê passagens. Use Pesquisa financeira ou Dados e métodos para investigar esta seleção.");return;}
+ if(!selected&&(!request.tools?.some(t=>t.name==="search_archive")||!/not[ií]ci|cartas?|document|acervo|evid[eê]ncia|search_archive|coletar e conferir fontes/i.test(question)))return;
  if(step.evidence.failed.some(d=>["search_archive","read_passage"].includes(d.call.name)))return result("Uma leitura necessária à pesquisa falhou. As tabelas disponíveis são parciais; não confirmei uma comparação. Tente novamente e confira acesso e disponibilidade das fontes.");
  const observed=observations(step);
  const dates=question.match(/\d{4}-\d{2}-\d{2}/g)??[];
@@ -91,6 +102,7 @@ export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:st
  const macroReads=!numeric&&requestedSeries.length===1&&request.tools?.some(t=>t.name==="read_macro_series")?[call("read_macro_series",{series_id:requestedSeries[0].key,snapshot_id:requestedSeries[0].snapshot_id,limit:30,...(date_from?{date_from}:!date_to&&requestedSeries[0].last_date?{date_from:requestedSeries[0].last_date}:{}),...(date_to?{date_to}:!date_from&&requestedSeries[0].last_date?{date_to:requestedSeries[0].last_date}:{})})]:[];
  const searches=observed.filter(o=>o.source_tool==="search_archive");
  const passages=observed.filter(o=>o.source_tool==="read_passage").flatMap(o=>Array.isArray(o.rows)?o.rows.map(row):[]);
+ if(selected&&!passages.length)return result('Vou reler as passagens escolhidas com suas origens e datas. A seleção é do autor e não comprova pertinência.',selected.passage_ids.map(passage_id=>call('read_passage',{passage_id})));
  if(!searches.length&&!passages.length){
   const q=documentQuery(question);if(!q)return result('Qual tema você quer investigar nas notícias, cartas ou documentos?');
   const explicit=/\bsource=(news|manager_letter|mub3|b3_bulletin)\b/.exec(question)?.[1];
@@ -112,7 +124,7 @@ export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:st
   if(!ids.length)return result('Não encontrei evidências neste recorte. Isso não demonstra que um evento não ocorreu. Revise o tema, as fontes e a cobertura disponível.');
   return result('Vou abrir o contexto das passagens encontradas. As séries identificadas usam a versão e as datas exibidas nas tabelas.',[...ids.map(passage_id=>call("read_passage",{passage_id})),...macroReads]);
  }
- const ids=[...new Set(passages.map(p=>p.id).filter((v):v is string=>typeof v==="string"&&/^[a-zA-Z0-9_-]{1,128}$/.test(v)))].slice(0,2);
+ const ids=[...new Set(passages.filter(p=>!selected||selected.passage_ids.includes(String(p.id))).map(p=>p.id).filter((v):v is string=>typeof v==="string"&&/^[a-zA-Z0-9_-]{1,128}$/.test(v)))].slice(0,selected?4:2);
  const canonical:BriefSource[]=[];
  const revision=(text:string)=>createHash("sha256").update(text).digest("hex");
  for(const id of ids){
@@ -131,7 +143,7 @@ export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:st
  const composed=composeDraft({sections:canonical.map((p,i)=>({id:`source${i}`,prose:[{kind:"claim" as const,ref:`quote${i}`}]})),claims:canonical.map((p,i)=>({id:`quote${i}`,key:`source.s${i}.quote`}))},evidence,{strict:true});
  if(!composed.ok)return result('Não foi possível vincular os trechos às evidências deste turno. Nenhuma conclusão foi validada.');
  let usage:ModelResponse['usage']={};let provider="ofl-source-workflow";
- const interpret=!/sem hip[oó]teses|apenas (?:os )?trechos|somente (?:as )?fontes|n[aã]o (?:gere|proponha) interpreta/i.test(question);
+ const interpret=!/sem hip[oó]teses|apenas (?:os )?trechos|somente (?:as )?fontes|n[aã]o (?:gere|proponha) interpreta/i.test((selected?modeQuestion.slice(0,marker)+"\n":"")+question);
  let draft:ReturnType<typeof parseBriefDraft>;
  let generation:'not_requested'|'valid'|'invalid'|'unavailable'='not_requested';
  if(interpret)try{
@@ -141,6 +153,7 @@ export async function guidedDocuments(ctx:TurnContext,step:ReplyStep,question:st
  }catch{if(request.signal?.aborted)throw Error('Research request interrupted');generation='unavailable';}
  const quotes=composed.composition.sections.map(section=>section.text.split("\n").map(line=>"> "+line).join("\n"));
  let content=composeBrief(question,canonical,quotes,draft,generation);
+ if(selected)content+='\n\nSeleção manual: foram solicitadas '+selected.passage_ids.length+' passagens e revalidadas '+canonical.length+'. Não fiz busca automática nem substituí as fontes escolhidas. A seleção do autor não confirma pertinência, apoio ou independência.';
  if(canonical.length<ids.length)content+="\n\nParte das fontes lidas não pôde ser revalidada e foi excluída deste brief.";
  if(wantsMacro&&!numeric)content+='\n\nO catálogo macro acompanha as fontes. Selecione a série e o período em Dados para completar a análise quantitativa.';
  return {...result(content,[],usage),provider};

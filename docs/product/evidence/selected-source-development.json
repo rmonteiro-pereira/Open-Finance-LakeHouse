@@ -1,0 +1,20 @@
+{
+  "scope": "synthetic browser integration, not live VPS or relevance validation",
+  "selected_four_passages_preserved": true,
+  "question_preserved": true,
+  "five_source_guard": true,
+  "reopen_restores_manual_selection": true,
+  "other_conversation_clears_manual_selection": true,
+  "old_agent_capability_guard": true,
+  "cross_specialist_selection_preserved": true,
+  "readable_markdown_question": true,
+  "mobile_390_no_overflow": true,
+  "javascript_errors": 0,
+  "version": 1,
+  "agent_tests_with_postgres": 48,
+  "ui_packet_tests": 2,
+  "dashboard_build_passed": true,
+  "live_vps_acceptance": false,
+  "original_T01_outcome": "failed_not_reassessed",
+  "automatic_relevance_promoted": false
+}

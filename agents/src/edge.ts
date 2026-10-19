@@ -34,7 +34,7 @@ export function createOflEdge(config: EdgeConfig) {
       const me = await source.read("me") as {identity?: string; role?: string};
       if (me.identity !== identity || !["reader", "reviewer", "admin"].includes(me.role ?? "")) return json({detail: "Research access denied"}, 403);
     } catch { return json({detail: "Research authorization unavailable"}, 503); }
-    if (url.pathname === "/api/agents" && request.method === "GET") return json({agents: CATALOG, mode: config.guidedDocuments ? "guided_source_research" : "grounded_excerpts", model: config.modelName});
+    if (url.pathname === "/api/agents" && request.method === "GET") return json({agents: CATALOG, mode: config.guidedDocuments ? "guided_source_research" : "grounded_excerpts", model: config.modelName, capabilities:{selected_sources:config.guidedDocuments===true,max_selected_passages:config.guidedDocuments?4:0}});
     const match = /^\/api\/agents\/(market|archive|quality)(?:\/|$)/.exec(url.pathname);
     if (!match || !SPECIALISTS.includes(match[1] as Specialist)) return json({detail: "Not found"}, 404);
     const kind = match[1] as Specialist;

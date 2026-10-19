@@ -32,6 +32,8 @@ jobs:
           bun-version: "1.4.0"
       - run: bun install --frozen-lockfile
         working-directory: web
+      - run: bun test research/app/source-selection.test.mjs
+        working-directory: web
       - name: Build public app against a synthetic snapshot
         run: |
           uv run python ../tools/build_web_fixture.py /tmp/ofl-web-fixture

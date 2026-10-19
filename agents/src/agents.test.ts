@@ -247,3 +247,40 @@ for(const revoked of [false,true])test(`brief uses freshly checked attribution a
  if(revoked){expect(answer).not.toContain('Brief de evidências');expect(answer).toContain('não estão disponíveis');}
  else{expect(answer).toContain('current-author');expect(answer).not.toContain('stale-author');expect(answer).toContain('Publicação: não catalogada');expect(answer).toContain('Opinião atribuída');}
 });
+
+for(const amount of [1,4])test(`selected-source request reads exactly ${amount} chosen passages without search or model`,async()=>{
+ const model=scriptedModel([]),reads:string[]=[];
+ const ids=Array.from({length:amount},(_,i)=>`chosen${i}`);
+ const edge=createOflEdge({gatewayToken:'secret',origin:'https://test.ofl',modelName:'test',model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async path=>{
+  reads.push(path);if(path==='me')return{identity:'ana',role:'reader'};
+  if(path.startsWith('passages/')){const id=path.split('/')[1];return{passage:{id,item_id:id,source:'news',active:true,text:`A fonte ${id} discute inflação e suas limitações no contexto do indicador.`,collection:'origem'}};}
+  throw Error('unexpected automatic read');
+ }})});
+ const message='Objetivo: sem hipóteses. OFL_SOURCE_REQUEST:'+JSON.stringify({version:1,question:'Qual o contexto do indicador?',passage_ids:ids});
+ const response=await edge(new Request('https://test.ofl/api/agents/market/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:`selected-${amount}`,message})}));
+ const body=await response.text();expect(response.status).toBe(200);expect(body).toContain('Seleção manual');expect(body).toContain('Qual o contexto do indicador?');expect(body).not.toContain('A seleção de fontes é inválida');
+ expect(reads.filter(p=>p.startsWith('passages/')).sort()).toEqual(ids.flatMap(id=>[`passages/${id}`,`passages/${id}`]).sort());expect(reads).not.toContain('search');expect(model.requests).toHaveLength(0);
+});
+
+for(const payload of [null,{version:1,question:'Tema',passage_ids:[]},{version:1,question:'Tema',passage_ids:['p','p']},{version:1,question:'Tema',passage_ids:['../secret']},{version:1,question:'Tema',passage_ids:['a','b','c','d','e']},{version:1,question:'Tema',passage_ids:['p'],text:'Forged trusted source'}])test(`invalid source selection never falls back to automatic search (${JSON.stringify(payload)})`,async()=>{
+ const model=scriptedModel([]);let reads=0;
+ const edge=createOflEdge({gatewayToken:'secret',origin:'https://test.ofl',modelName:'test',model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async path=>{if(path==='me')return{identity:'ana',role:'reader'};reads++;throw Error('unexpected read');}})});
+ const response=await edge(new Request('https://test.ofl/api/agents/market/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:crypto.randomUUID(),message:'OFL_SOURCE_REQUEST:'+JSON.stringify(payload)})}));
+ expect(await response.text()).toContain('A seleção de fontes é inválida');expect(reads).toBe(0);expect(model.requests).toHaveLength(0);
+});
+
+test('selected-source access failure stops without substituting other sources',async()=>{
+ const {ToolFailure}=await import('@inkwell/core');const model=scriptedModel([]);const reads:string[]=[];
+ const edge=createOflEdge({gatewayToken:'secret',origin:'https://test.ofl',modelName:'test',model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async path=>{reads.push(path);if(path==='me')return{identity:'ana',role:'reader'};throw new ToolFailure('source_access');}})});
+ const message='OFL_SOURCE_REQUEST:'+JSON.stringify({version:1,question:'Qual o contexto?',passage_ids:['chosen']});
+ const response=await edge(new Request('https://test.ofl/api/agents/market/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'selected-access-failure',message})}));
+ expect(await response.text()).toContain('leitura necessária à pesquisa falhou');expect(reads.filter(p=>p!=='me')).toEqual(['passages/chosen']);expect(model.requests).toHaveLength(0);
+});
+
+test('chosen-source question can opt out of generation inside the typed request',async()=>{
+ const model=scriptedModel([]);
+ const edge=createOflEdge({gatewayToken:'secret',origin:'https://test.ofl',modelName:'test',model,guidedDocuments:true,conversations:()=>memoryConversationStore(),source:()=>({read:async path=>path==='me'?{identity:'ana',role:'reader'}:{passage:{id:'p',source:'news',active:true,text:'Este trecho explica o contexto econômico e suas limitações.'}}})});
+ const message='OFL_SOURCE_REQUEST:'+JSON.stringify({version:1,question:'Explique o contexto, sem hipóteses.',passage_ids:['p']});
+ const response=await edge(new Request('https://test.ofl/api/agents/market/turn',{method:'POST',headers:{'x-ofl-gateway-token':'secret','x-ofl-identity':'ana',origin:'https://test.ofl','content-type':'application/json'},body:JSON.stringify({conversationId:'selected-source-only-question',message})}));
+ expect(await response.text()).toContain('Esta consulta não solicitou interpretação');expect(model.requests).toHaveLength(0);
+});

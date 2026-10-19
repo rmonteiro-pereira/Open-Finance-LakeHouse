@@ -54,3 +54,36 @@ previous T01 failure into a pass or establish independent user outcomes.
 Production stage acceptance, the still-failed substantive T01 and retained native
 experiments are recorded in `OUTCOME-TRIALS.md` and
 `evidence/evidence-brief-live-acceptance.json`.
+
+## Investigate a chosen source set
+
+Finance researchers and data workers can now select one to four passages in
+Pesquisa and choose **Investigar seleção no assistente**. The question is prefilled
+and remains editable before execution. This is an author-curated research path;
+it does not claim automatic relevance or close the original failed T01.
+
+The agent receives a strict `OFL_SOURCE_REQUEST:` packet with `version: 1`,
+`question` and distinct `passage_ids`. IDs authorize requested reads, not source
+text or review judgments. The normal authenticated passage API and fresh canonical
+verification still apply. No automatic search replaces these sources. An invalid
+packet or failed read stops the flow; an inactive/changed passage is excluded with
+an explicit partial-coverage notice. The brief records requested and revalidated
+passage counts. Four passages do not imply four independent documents.
+
+Manual selection rereads the chosen passages without an additional publication
+filter. Date fields are disabled in this mode; describe the intended horizon in
+the question and inspect the catalogued dates in the response. Unknown publication
+stays unknown. Optional assisted classification remains a strict tentative relation,
+not free substantive synthesis. Source-only mode performs no model call.
+
+The panel checks the authenticated agent catalog capability before sending a
+selected-source turn. An old/incompatible agent fails visibly, preventing a mixed
+rollout from silently turning manual selection into automatic search. Reopening a
+conversation restores its last chosen set; opening another conversation clears that
+set. The dossier handoff keeps the actual question and source IDs.
+
+Development acceptance covers exact chosen reads, malformed/duplicate/path/excess
+IDs, failed access, source-only privacy, durable ownership, UI packet round trips,
+reopened conversations, old-agent refusal and 390px layout. Browser acceptance uses
+synthetic responses; it is not a live VPS trial or a relevance/support assessment.
+The original T01 outcome remains failed until its substantive task is satisfied.
