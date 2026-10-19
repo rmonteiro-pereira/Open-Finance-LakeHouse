@@ -14,6 +14,10 @@ if args.artifact.stat().st_size>2*1024**2:raise ValueError("artifact exceeds two
 a=json.loads(args.artifact.read_text());messages=a.get('response',{}).get('data',{}).get('messages',[])
 answer='\n'.join(m.get('content','') for m in messages if m.get('role')=='assistant')
 blocks=re.findall(r'Fonte \d+ \[[^\]]+\][^\n]*:\n((?:>[^\n]*(?:\n|$))+)',answer)
+if not blocks:
+ # The evidence brief places publication/attribution between its source heading
+ # and quote. Keep older recorded source-collection artifacts reproducible too.
+ blocks=re.findall(r'SHA-256 do texto: [a-f0-9]{64}\n((?:>[^\n]*(?:\n|$))+)',answer)
 quotes=['\n'.join(line[2:] for line in block.strip().splitlines()) for block in blocks][:2]
 if not quotes:raise RuntimeError('No source-verified input available; do not fabricate an evaluation corpus')
 base=args.url.rstrip('/');baseline=args.baseline;candidate=args.candidate
