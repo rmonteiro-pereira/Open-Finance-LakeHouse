@@ -4,7 +4,7 @@ const source:BriefSource={id:'p1',item_id:'i1',quote:'A inflação exige atenç�
 const letter:BriefSource={...source,id:'p2',item_id:'i2',source:'manager_letter',title:'Carta Outubro 2025',collection:'gestora',date_start:null,date_end:null,date_precision:'unknown',content_tier:'private_original'};
 test('brief distinguishes reported headline, manager opinion and unknown publication without manufacturing a counterpoint',()=>{
  const text=composeBrief('Compare notícias e cartas sobre inflação no Brasil.',[source,letter],['> '+source.quote,'> '+letter.quote],undefined,'unavailable');
- expect(text).toContain('Somente manchete/resumo disponível');expect(text).toContain('Opinião atribuída à gestora');expect(text).toContain('Origem catalogada: gestora');expect(text).toContain('Publicação: não catalogada');expect(text).toContain('não é possível ordenar todas as fontes');expect(text).toContain('Não há contraponto estabelecido');expect(text).toContain('modelo não retornou');expect(text).toContain('País, indicador e horizonte');expect(text).toContain('não é resultado realizado');
+ expect(text).toContain('Somente manchete/resumo disponível');expect(text).toContain('Opinião atribuída à gestora');expect(text).toContain('Origem catalogada: gestora');expect(text).toContain('Publicação: não catalogada');expect(text).toContain('não é possível ordenar todas as fontes');expect(text).toContain('Não há contraponto estabelecido');expect(text).toContain('modelo não retornou');expect(text).toContain('correspondem à comparação solicitada');expect(text).toContain('não é resultado realizado');
 });
 test('possible contrast requires two distinct source items, not two passages from one document',()=>{
  const d=JSON.stringify({references:[1,2],relation:'contrast'});
