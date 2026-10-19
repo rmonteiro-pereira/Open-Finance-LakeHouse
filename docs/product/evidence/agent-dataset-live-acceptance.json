@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "application_merge": "ee1f7e1538bae3c9915bf5acb7daf6d6869bf735",
+  "mobile_application_merge": "c5c4c626e1381cfc46fdda422258abf976049386",
+  "private_agent": "9979b90",
+  "infra_merge": "7141cde269e0f6a72df8ba8af2d2fc56cf67cfc0",
+  "mobile_infra_merge": "371dff0eb704948786584af0102f5e5da1da22e1",
+  "first_mobile_trial": "failed: raw recipe text and saved-conversation selector overflow; corrected in #80",
+  "isolated_stdlib_vps_reproduction": true,
+  "source_definitions_checked": true,
+  "scope": "builder-operated production agent integration, not participant success or independent financial validation",
+  "snapshot_id": "20261018T040612Z",
+  "rows": 1536,
+  "specification": {
+    "snapshot_id": "20261018T040612Z",
+    "series": [
+      {
+        "series_id": "ipca",
+        "operation": "level",
+        "window": 3,
+        "lag": 1
+      },
+      {
+        "series_id": "selic",
+        "operation": "level",
+        "window": 3,
+        "lag": 1
+      }
+    ],
+    "date_from": "2020-01-01",
+    "date_to": "2025-12-31",
+    "alignment": "outer"
+  },
+  "csv_sha256": "5901757b16ad1de63edbfdbe4a5e05e475474a1566b76e1d3c39f0a0f5eec418",
+  "zip_sha256": "2105c6f841bf3f3523694c05ea87dd69e10558d3e2430c90246fa2d3647a82dd",
+  "zip_bytes": 14682,
+  "null_cells_by_column": {
+    "ipca__level": 1464,
+    "selic__level": 29
+  },
+  "isolated_stdlib_client_reproduction": true,
+  "browser": {
+    "access": "SSH loopback trusted application boundary with configured identity/origin; not Tailscale authentication",
+    "dated_request": true,
+    "explicit_catalog_choices": [
+      "ipca",
+      "selic"
+    ],
+    "prepared_in_agent": true,
+    "prepared_csv_sha256": "5901757b16ad1de63edbfdbe4a5e05e475474a1566b76e1d3c39f0a0f5eec418",
+    "conversation_reopened": true,
+    "downloaded_from_saved_result": true,
+    "mobile_no_overflow": true,
+    "javascript_errors": 0,
+    "turn_statuses": [
+      200,
+      200
+    ],
+    "turn_milliseconds": [
+      321,
+      1543
+    ]
+  },
+  "agent_tests": 32,
+  "research_ci_tests": 288,
+  "unresolved": [
+    "independent user reproduction and comprehension",
+    "T01 complete analytical synthesis",
+    "independent retrieval relevance",
+    "source completeness"
+  ]
+}
