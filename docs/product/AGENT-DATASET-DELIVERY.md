@@ -34,3 +34,7 @@ include dated clarification, real tool chaining, malformed and reversed recipes,
 missing series, backend refusal and mismatching specification. Production
 acceptance is recorded separately after deployment; this does not validate the
 analytical-brief journey or independent user comprehension.
+
+Production acceptance and the observed mobile correction are recorded in
+`evidence/agent-dataset-live-acceptance.json` and `OUTCOME-TRIALS.md`. The record
+separates a builder's working integration from independent participant outcomes.

@@ -171,3 +171,20 @@ hashes, keeps raw output private, and reloads the baseline with the current OFL
 production context/thread profile. It does not select a production model or add
 a desktop dependency. Independent relevance judgments and actual participant
 completion/comprehension/reuse studies remain uncollected.
+
+
+### Agent dataset delivery follow-up — builder acceptance
+
+The dated IPCA/Selic 2020–2025 request now remains guided. The browser confirms
+actual catalog IDs, one snapshot, operation and date alignment, then the agent
+re-reads that snapshot and calls preparation without generated planning. The
+result has 1,536 rows and its CSV is byte-identical after isolated stdlib replay
+on both the VPS and a separate temporary client. The package is downloadable
+from a reopened, owned conversation, with hash revalidation before download.
+
+The first narrow-screen test failed on recipe text/selector overflow. OFL #80
+corrects the presentation; the final production rerun is recorded in
+`evidence/agent-dataset-live-acceptance.json`. The previous failed and scoping-only
+rehearsals above remain historical evidence. This builder-operated confirmation
+flow does not establish participant success, autonomous interpretation of every
+recipe from prose, or completion of the failed T01 analytical brief.
