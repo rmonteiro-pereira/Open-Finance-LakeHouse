@@ -12,6 +12,13 @@ async function api(path: string, body?: unknown, signal?: AbortSignal) {
   if (!result.ok) throw new Error(data.detail ?? data.message ?? "Não foi possível acessar o agente");
   return data.data ?? data;
 }
+function messageContent(message:Message):string {
+  if(message.role==='user'&&message.content.includes('OFL_DATASET_REQUEST:'))try{
+    const spec=JSON.parse(message.content.split('OFL_DATASET_REQUEST:')[1]);
+    if(Array.isArray(spec.series))return `Receita confirmada: ${spec.series.map((s:Row)=>`${s.series_id} (${s.operation}, janela ${s.window}, defasagem ${s.lag})`).join('; ')}. Período: ${spec.date_from} a ${spec.date_to}. Alinhamento: ${spec.alignment}. Versão: ${spec.snapshot_id}. Valores ausentes permanecem nulos.`;
+  }catch{/* Keep the original invalid request inspectable. */}
+  return message.content;
+}
 function value(v: unknown): string { return v == null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v); }
 function Evidence({table}: {table: Table}) {
   const [inspection,setInspection]=useState(false);
@@ -96,7 +103,7 @@ export default function Agents({onDossier}:{onDossier?:(draft:{question:string;r
     const blob = new Blob([JSON.stringify({specialist, conversationId, messages}, null, 2)], {type: "application/json"});
     const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `ofl-${specialist}-${conversationId || "pesquisa"}.json`; link.click(); URL.revokeObjectURL(url);
   }
-  return <>
+  return <div className="research-agent">
     <section className="card"><h2>Agentes de pesquisa OFL</h2><p>Investigações privadas, salvas por usuário. As consultas apresentam evidências da fonte; valores monetários mantêm sua precisão original.</p>
       <div className="filters"><label>Especialista<select value={specialist} disabled={busy} onChange={e => selectSpecialist(e.target.value)}>{specialists.map(s => <option key={s.id} value={s.id}>{s.title}</option>)}</select></label>
       <label>Investigação salva<select value={conversationId} disabled={busy} onChange={e => e.target.value ? void open(e.target.value) : (setConversationId(""), setMessages([]))}><option value="">Nova investigação</option>{conversations.map(c => {const id = c.conversationId ?? c.id ?? ""; return <option key={id} value={id}>{c.title ?? id}</option>;})}</select></label>
@@ -105,8 +112,8 @@ export default function Agents({onDossier}:{onDossier?:(draft:{question:string;r
     </section>
     {messages.length > 0 && <section className="card"><h3>Consultar outro especialista</h3><p>A pergunta e as referências serão copiadas para uma nova investigação. O histórico original permanece salvo.</p>{specialists.filter(s => s.id !== specialist).map(s => <button key={s.id} disabled={busy} onClick={() => handoff(s.id)}>{s.title}</button>)}</section>}
     {error && <p role="alert" className="status error">{error}</p>}{status && <p role="status">{status}</p>}
-    <div aria-live="polite">{messages.filter(m => m.role !== "system").map(m => <article className="card" key={m.id}><strong>{m.role === "user" ? "Você" : m.role === "tool" ? "Fonte OFL" : "Agente"}</strong><p style={{whiteSpace: "pre-wrap"}}>{m.content}</p>{m.toolResults?.map((result, i) => <div key={i}>{result.widget && <Evidence table={result.widget}/>} {result.refusal?.explanation && <p>{result.refusal.explanation}</p>}{result.error != null && <p>Uma leitura falhou. Não há evidência para essa parte da consulta.</p>}</div>)}</article>)}</div>
+    <div aria-live="polite">{messages.filter(m => m.role !== "system").map(m => <article className="card" key={m.id}><strong>{m.role === "user" ? "Você" : m.role === "tool" ? "Fonte OFL" : "Agente"}</strong><p style={{whiteSpace: "pre-wrap",overflowWrap:"anywhere"}}>{messageContent(m)}</p>{m.toolResults?.map((result, i) => <div key={i}>{result.widget && <Evidence table={result.widget}/>} {result.refusal?.explanation && <p>{result.refusal.explanation}</p>}{result.error != null && <p>Uma leitura falhou. Não há evidência para essa parte da consulta.</p>}</div>)}</article>)}</div>
     {specialist!=="quality"&&catalogRows.length>0&&<AgentDatasetChoices key={conversationId} rows={catalogRows} onPrepare={send} busy={busy}/>}
     <form className="card" onSubmit={e => {e.preventDefault(); void send();}}><label>Como trabalhar?<select value={interpretation?"interpretation":"sources"} disabled={busy} onChange={e=>setInterpretation(e.target.value==="interpretation")}><option value="sources">Coletar e conferir fontes</option><option value="interpretation">Fontes e rascunho interpretativo (experimental)</option></select></label><p className="muted">A coleta documental pode ser levada ao dossiê para sua análise. O rascunho interpretativo exige revisão e pode não produzir uma resposta utilizável.</p><div className="filters"><label>Para quem é a pesquisa?<select value={audience} onChange={e=>setAudience(e.target.value)}><option value="analista">Analista financeiro</option><option value="assessor ou consultor">Assessor ou consultor</option><option value="pessoa de dados">Pessoa de dados</option><option value="pessoa estudando mercados e sua carteira">Estou estudando mercados e minha carteira</option></select></label><label>Período a partir de<input type="date" value={scopeFrom} onChange={e=>setScopeFrom(e.target.value)}/></label><label>Período até<input type="date" value={scopeTo} onChange={e=>setScopeTo(e.target.value)}/></label></div><p className="muted">Confira pergunta, público e período antes de executar. O agente deve esclarecer o objetivo quando faltarem informações.</p><label htmlFor="research-question">Pergunta de pesquisa</label><textarea id="research-question" value={question} disabled={busy} maxLength={8000} rows={4} onChange={e => setQuestion(e.target.value)} placeholder={specialist === "market" ? "Consulte PETR4 no mercado 010 de 2026-01-05 a 2026-01-05" : "O que você quer investigar?"}/><button disabled={busy || !question.trim()} type="submit">{busy ? "Consultando fontes…" : "Investigar"}</button>{busy&&<button type="button" onClick={()=>request.current?.abort()}>Cancelar consulta</button>}</form>
-  </>;
+  </div>;
 }
