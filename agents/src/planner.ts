@@ -52,7 +52,8 @@ export function evidencePlanner(model: ModelPort, kind: Specialist, resolvePassa
 export function researchOffer(kind:Specialist,question:string,specs:readonly ToolSpec[]):readonly ToolSpec[]{
     const explicit = specs?.filter(t=>question.includes(t.name))??[];
     let names:string[]=[];
-    if(question.includes("OFL_DATASET_REQUEST:")) names=["read_data_catalog","prepare_dataset"];
+    if(question.includes("OFL_SOURCE_REQUEST:")) return specs.filter(t=>t.name==="read_passage");
+    else if(question.includes("OFL_DATASET_REQUEST:")) names=["read_data_catalog","prepare_dataset"];
     else if(explicit.length) names=explicit.map(t=>t.name);
     else if(/not[ií]ci|cartas?|document|acervo|evid[eê]ncia/i.test(question)) names=["search_archive","read_passage","read_item",...(/s[eé]ries?|macro|dados|snapshot|indicadores|observa[cç]/i.test(question)?["read_data_catalog","read_macro_series"]:[])];
     else if(/carteira|portf[oó]lio|dossi[eê]|trabalho salvo|workspace/i.test(question)) names=["read_saved_work","read_data_catalog","read_macro_series"];
