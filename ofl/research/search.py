@@ -199,16 +199,28 @@ def search(
         i.metadata->>'url' AS source_url,i.metadata->>'content_tier' AS content_tier,
         i.metadata->>'epistemic_status' AS epistemic_status"""
     rankings = []
+    # Extracted bodies have only Portuguese lexemes; applying a simple NOT
+    # against that vector can silently bypass exclusions (`tesouro` vs `tesour`).
+    # Metadata also has simple lexemes, useful for short identifiers. Keep that
+    # fallback for positive queries only: exclusions use Portuguese consistently,
+    # including inflected metadata words. Inspect PostgreSQL's parsed query rather
+    # than interpreting minus signs inside identifiers/quoted source text ourselves.
     candidates = max(100, limit * 5)
     if mode in {"keyword", "hybrid"}:
         rankings.append(
             db.rows(
-                f"""SELECT {projection},ts_rank_cd(p.search,
-            websearch_to_tsquery('portuguese',%s) || websearch_to_tsquery('simple',%s)) AS score
-            FROM passages p JOIN items i ON i.id=p.item_id WHERE {where}
-            AND p.search @@ (websearch_to_tsquery('portuguese',%s) || websearch_to_tsquery('simple',%s))
-            ORDER BY score DESC,p.id LIMIT %s""",
-                (text, text, *params, text, text, candidates),
+                f"""WITH query AS (
+                SELECT websearch_to_tsquery('portuguese',%s) AS pt,
+                    websearch_to_tsquery('simple',%s) AS literal
+                ) SELECT {projection},ts_rank_cd(p.search,
+                    CASE WHEN p.method='metadata' AND strpos(query.literal::text,'!')=0
+                    THEN query.pt || query.literal ELSE query.pt END) AS score
+                FROM passages p JOIN items i ON i.id=p.item_id CROSS JOIN query
+                WHERE {where} AND (p.search @@ query.pt OR
+                    (p.method='metadata' AND strpos(query.literal::text,'!')=0
+                    AND p.search @@ query.literal))
+                ORDER BY score DESC,p.id LIMIT %s""",
+                (text, text, *params, candidates),
             )
         )
     if mode in {"vector", "hybrid"} and not coverage["configured"]:

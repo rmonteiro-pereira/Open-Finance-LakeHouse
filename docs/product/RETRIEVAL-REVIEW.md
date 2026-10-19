@@ -84,3 +84,39 @@ Coverage now uses the same semantic eligibility rule as vector retrieval. Its
 denominator therefore differs from the earlier baseline; a higher coverage fraction
 must not be presented as measured relevance improvement. Similarity still ranks
 candidates for unrelated topics. This change does not implement calibrated abstention.
+
+## Keyword exclusions and source-selection development
+
+The 2026-10-18 source-selection investigation found a keyword contract defect:
+`IPCA -Tesouro` could return extracted passages containing the excluded word.
+Extracted text has Portuguese lexemes; the old query OR-ed Portuguese and simple
+queries against that same vector. The simple exclusion `!tesouro` could succeed
+against a body indexed as `tesour`, bypassing the intended exclusion.
+
+Keyword retrieval now applies the Portuguese query to extracted text. Metadata
+retains its simple-dictionary fallback for positive queries, including identifiers;
+when PostgreSQL's parsed query contains negation, metadata also uses Portuguese
+normalization consistently. This requires no index migration or embedding backfill.
+
+These are **passage-level** keyword operators with PostgreSQL's Portuguese stemming
+and stop words. A document may still appear through another matching passage even
+if its title or another passage contains an excluded term. Quoted phrases and OR
+remain supported. In hybrid mode these operators govern the keyword contribution;
+the vector contribution is not a Boolean exclusion filter. Neither mode supplies
+jurisdiction, claim support or publication-horizon validation automatically.
+
+A repeatable-read, read-only comparison on the private VPS captured four queries
+at 20 returned documents each. For `IPCA -Tesouro`, the old implementation returned
+13 passages that failed the Portuguese query; the candidate returned zero such
+violations. Both returned 20 documents. The other three query checks recorded no
+violations in either implementation, including an empty phrase query. This is a
+query-contract regression check, not relevance precision, corpus recall or proof of
+correct abstention. Captures remain private; the sanitized receipt is
+`evidence/keyword-exclusion-development.json`.
+
+The same investigation examined larger lexical candidate pools and `IPCA` as a
+query variant. IPCA-linked securities and generic economic agendas still polluted
+the candidates. Mere word proximity can prefer the wrong jurisdiction. No automatic
+query expansion, lexical relevance threshold or new selection heuristic was promoted.
+T01 still requires substantive source relevance and analytical support; the earlier
+failed outcome remains failed.

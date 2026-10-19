@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "date": "2026-10-18",
+  "type": "builder_query_contract_check",
+  "environment": "private_vps_cpu",
+  "isolation": "repeatable_read_read_only",
+  "candidate_search_sha256": "dbf2c7e32a2d39ed7f69f97161ebde7f608f408791230f6609804a38409f1cc3",
+  "per_query_limit": 20,
+  "cases": [
+    {
+      "query": "IPCA -Tesouro",
+      "baseline_returned_documents": 20,
+      "candidate_returned_documents": 20,
+      "baseline_portuguese_query_violations": 13,
+      "candidate_portuguese_query_violations": 0
+    },
+    {
+      "query": "\"inflação\" \"Brasil\"",
+      "baseline_returned_documents": 20,
+      "candidate_returned_documents": 20,
+      "baseline_portuguese_query_violations": 0,
+      "candidate_portuguese_query_violations": 0
+    },
+    {
+      "query": "\"inflação brasileira\"",
+      "baseline_returned_documents": 0,
+      "candidate_returned_documents": 0,
+      "baseline_portuguese_query_violations": 0,
+      "candidate_portuguese_query_violations": 0
+    },
+    {
+      "query": "\"inflação\" -EUA",
+      "baseline_returned_documents": 20,
+      "candidate_returned_documents": 20,
+      "baseline_portuguese_query_violations": 0,
+      "candidate_portuguese_query_violations": 0
+    }
+  ],
+  "relevance_precision": null,
+  "whole_corpus_recall": null,
+  "full_t01_outcome": "not_reassessed_by_this_contract_check",
+  "independent_review": false,
+  "runtime_selection_heuristic_changed": false,
+  "private_captures_published": false
+}

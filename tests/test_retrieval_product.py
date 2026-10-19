@@ -388,3 +388,38 @@ def test_original_catalog_metadata_is_discoverable_but_not_vector_evidence(resea
     assert result["results"][0]["method"] == "pdf_text"
     assert result["index_coverage"]["eligible_passages"] == 1
     assert len(db.rows("SELECT * FROM embeddings WHERE passage_id=%s", (metadata,))) == 1
+
+
+def test_keyword_exclusion_cannot_escape_through_unindexed_simple_dictionary(research):
+    """Real vectors: body uses Portuguese; metadata also indexes simple tokens."""
+    from ofl.research.archive import index_text
+
+    db, _ = research
+    bodies = {
+        "excluded": "O Tesouro oferece títulos IPCA para investidores.",
+        "included": "O IPCA mede a inflação ao consumidor.",
+        "foreign": "A inflação nos EUA subiu neste mês.",
+    }
+    ids = {}
+    with db.connect() as con:
+        for name, text in bodies.items():
+            ids[name] = upsert_item(con, "news", {"source_id": name, "title": name}, name)
+            con.execute("UPDATE passages SET active=false WHERE item_id=%s", (ids[name],))
+            index_text(con, item_id=ids[name], revision=name, text=text, method="text")
+        ids["metadata"] = upsert_item(
+            con, "mub3", {"source_id": "catalog", "title": "IPCA Tesouros BRXYZ123"}, "catalog"
+        )
+        ids["identifier"] = upsert_item(
+            con, "mub3", {"source_id": "identifier", "title": "BRXYZ123"}, "identifier"
+        )
+    found = search(db, "IPCA -Tesouro", mode="keyword")["results"]
+    assert {r["item_id"] for r in found} == {ids["included"]}
+    assert {r["item_id"] for r in search(db, "BRXYZ123")["results"]} == {
+        ids["metadata"], ids["identifier"]
+    }
+    assert {r["item_id"] for r in search(db, '"inflação ao consumidor"')["results"]} == {
+        ids["included"]
+    }
+    assert {r["item_id"] for r in search(db, "IPCA OR EUA", source="news")["results"]} == {
+        ids["included"], ids["excluded"], ids["foreign"]
+    }
