@@ -188,3 +188,40 @@ corrects the presentation; the final production rerun is recorded in
 rehearsals above remain historical evidence. This builder-operated confirmation
 flow does not establish participant success, autonomous interpretation of every
 recipe from prose, or completion of the failed T01 analytical brief.
+
+
+### Source-backed brief and assisted comparison — builder follow-up
+
+The agent now composes a source-backed brief with current publication/attribution,
+source type/content limits, exact quotes, comparison boundaries and explicit
+unresolved counterevidence. Each quote and its current metadata are re-read before
+composition. Unknown publication stays unknown even when a letter title includes
+a month/year. Inactive or changed passages cannot establish a new brief. Failed
+reads stop without exhausting the turn budget.
+
+Two native CPU free-prose prototypes failed builder review (unsupported comparison
+and misattribution). The optional published model step instead outputs only a
+strict relation and source indices. Source text, numbers and publication metadata
+remain available to that classifier; every extra output field, including prose,
+is rejected. A contrast needs distinct source items and remains a tentative
+machine judgment. The interface calls this assisted comparison. Guidance respects
+intentional country/horizon comparisons in the user's requested scope.
+
+The production rehearsal retained the original substantive T01 requirement:
+
+| Case | Observed result | Elapsed, one observation | Builder outcome |
+|---|---|---|---|
+| B01 source-only brief stage | Two quotes, publishers and publication metadata match the current API; source types and limits explicit | 4.442 s | Completed the evidence-brief stage |
+| T01 substantive comparison | Valid `insufficient` classifier result; the same inspected news/letter pair still has a country mismatch and unknown letter publication | 27.081 s | Failed the full analytical task; substantive claim support unassessed |
+| T10 absent topic | Qualified gap in the requested indexed scope | 0.871 s | Correct abstention |
+
+Four literal quote/hash and current publisher/publication checks passed across
+B01 and T01. That verifies quotation and metadata identity, not relevance or
+entailment. The same source pair and full source text as the earlier inspected
+captures were observed; these runs are not a controlled benchmark or evidence of
+quality lift. The failed T01 remains failed despite HTTP 200 and a useful brief.
+Baselines, independent support/relevance judgments and participant outcomes remain
+unassessed. Native prototypes, source captures, private trial artifacts, manual
+assessments and the formal evaluator output are retained on the research PVC.
+The sanitized deployment/browser receipt is
+`evidence/evidence-brief-live-acceptance.json`.

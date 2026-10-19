@@ -1,0 +1,143 @@
+{
+  "version": 1,
+  "scope": "Builder-operated production integration and artifact review; not independent relevance/support, participant outcomes or complete analytical synthesis.",
+  "application_merge": "be0a7c2b7fd9da59926bfb65e4c05e54a2c88a64",
+  "scope_patch_merge": "d94c6213cdcfbc4e271d077c63618f446881777b",
+  "private_agent": "f8c680f",
+  "initial_infra_merge": "4d66beee38d0b0b946c3ab1248b6409b6e349268",
+  "final_infra_merge": "6bdc35ac96b841e5949a05c87964d83bd75490a6",
+  "all_seven_deployments_ready": true,
+  "tests": {
+    "agent_core_with_postgres": 38,
+    "scope_wording_patch_available": 37,
+    "scope_wording_patch_optional_postgres_skipped": 1,
+    "workbench_api_postgres": 21,
+    "research_ci": 289
+  },
+  "native_rehearsal": {
+    "scope": "builder-operated native CPU rehearsals, not controlled benchmark or independent quality validation",
+    "model": "ofl-research-qwen3:small-cpu2",
+    "model_digest": "e3ddf3d5e04198d3b6de78084d030132721267e765eefadfc469317db0a6dcd0",
+    "cases": [
+      {
+        "case": "free_prose",
+        "seconds": 30.167,
+        "completion_tokens": 102,
+        "request_sha256": "1f4f3fd058349d27ca27e0b221b626bc27c959011f117052ea71fafe113ebd69",
+        "response_sha256": "6d9210eae8bbfaf1afa176b52b6771998196d81e8bdab0faa319ba6e95c732a3",
+        "schema_result": "rejected_free_prose",
+        "relation": "context",
+        "builder_assessment": "unsupported_comparison"
+      },
+      {
+        "case": "free_prose_redacted_prototype",
+        "seconds": 28.188,
+        "completion_tokens": 123,
+        "request_sha256": "228c78ec4e573013fd2e8e4b5b8f34f2269329a629be9f98fcf30be47cda66d3",
+        "response_sha256": "cdc996a30c7341009fb3cc27d7178798843625469575c9b55f04a951da64abec",
+        "schema_result": "rejected_free_prose",
+        "relation": "insufficient",
+        "builder_assessment": "misattribution_and_overlong_prose"
+      },
+      {
+        "case": "strict_relation_redacted_prototype",
+        "seconds": 16.164,
+        "completion_tokens": 13,
+        "request_sha256": "d5a0951347385dc2f5df59aad0dd62851673c09c4ad8011f42ffc605d349cfe0",
+        "response_sha256": "0d70a4d291bdc05b753c45f7d0109738dbbf37916cd9e8ee6bd274dda9b0b25e",
+        "schema_result": "valid_relation_only",
+        "relation": "insufficient",
+        "builder_assessment": "insufficiency_is_plausible_for_observed_country_and_date_mismatch"
+      },
+      {
+        "case": "strict_relation_original_context",
+        "seconds": 9.316,
+        "completion_tokens": 13,
+        "request_sha256": "310f7abb676f63f3673691721e7b4c9736495ea7deb4abdd363d0629b2c1077a",
+        "response_sha256": "094688c66979b380cc2613d96781ec5c8379f5122cddcb2abb8e8b55c6c418ed",
+        "schema_result": "valid_relation_only",
+        "relation": "insufficient",
+        "builder_assessment": "insufficiency_is_plausible_for_observed_country_and_date_mismatch"
+      }
+    ],
+    "production_candidate": "strict_relation_original_context",
+    "full_T01_analytical_synthesis": "not_closed",
+    "raw_artifacts": "retained privately on research PVC"
+  },
+  "production": {
+    "trials": [
+      {
+        "case_id": "B01",
+        "elapsed_seconds": 4.442,
+        "http_status": 200,
+        "artifact_sha256": "784919a0411b05bf6c207b40edd495e4f9f83a02bef0730782d6e4ddd5176494",
+        "outcome": "completed",
+        "eligibility": "eligible",
+        "hard_gate": "pass",
+        "claim_support": "pass",
+        "rationale": "Requested source-backed brief present. Four quote/source checks across the two brief cases match current source text/hash, publisher and publication metadata. This grades an evidence-brief stage, not substantive synthesis."
+      },
+      {
+        "case_id": "T01",
+        "elapsed_seconds": 27.081,
+        "http_status": 200,
+        "artifact_sha256": "afb5df6001454608668e1f04cba87c0dd7d87a336c7b15b99e61cb4fef594f82",
+        "outcome": "failed",
+        "eligibility": "eligible",
+        "hard_gate": "pass",
+        "claim_support": "not_assessed",
+        "rationale": "The same inspected news candidate concerns foreign inflation while the manager letter addresses Brazil with unknown publication. The classifier signals insufficiency and the brief qualifies it; substantive question-specific comparison is still missing. Do not turn the original T01 into a pass."
+      },
+      {
+        "case_id": "T10",
+        "elapsed_seconds": 0.871,
+        "http_status": 200,
+        "artifact_sha256": "8b6acc604ef0b1008497680720fb813545621deaff11e46cedefee9525d841c9",
+        "outcome": "correct_abstention",
+        "eligibility": "unavailable",
+        "hard_gate": "pass",
+        "claim_support": "pass",
+        "rationale": "No indexed source returned in the exact requested scope, with no claim that an event did not occur."
+      }
+    ],
+    "citation_verification": [
+      {
+        "case_id": "B01",
+        "verified_citations": 2,
+        "current_publisher_and_publication_match": true,
+        "model_relation": null,
+        "full_analytical_task": "still_requires_substantive_relevance_and_support_review"
+      },
+      {
+        "case_id": "T01",
+        "verified_citations": 2,
+        "current_publisher_and_publication_match": true,
+        "model_relation": "insufficient",
+        "full_analytical_task": "still_requires_substantive_relevance_and_support_review"
+      },
+      {
+        "case_id": "T10",
+        "scoped_gap": true
+      }
+    ]
+  },
+  "browser": {
+    "access": "SSH loopback trusted application boundary with configured identity/origin injected; not a Tailscale authentication test",
+    "real_source_only_brief": true,
+    "attribution_dates_and_gaps": true,
+    "assisted_mode_returns_bounded_relation": true,
+    "saved_conversation_reopened": true,
+    "markdown_export_contains_brief": true,
+    "mobile_no_overflow": true,
+    "javascript_errors": 0
+  },
+  "benchmark": false,
+  "independent_participants": 0,
+  "desktop_backend_dependency": false,
+  "remaining": [
+    "T01 substantive question-specific synthesis",
+    "independent source relevance/support judgments",
+    "source completeness/publication metadata",
+    "participant outcomes and portfolio comprehension"
+  ]
+}
