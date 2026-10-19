@@ -50,3 +50,7 @@ A complete T01 analytical brief still needs independently reviewed relevance,
 appropriate sources and supported substantive synthesis. This implementation
 improves the inspectable brief and its failure behavior; it does not turn the
 previous T01 failure into a pass or establish independent user outcomes.
+
+Production stage acceptance, the still-failed substantive T01 and retained native
+experiments are recorded in `OUTCOME-TRIALS.md` and
+`evidence/evidence-brief-live-acceptance.json`.
