@@ -82,8 +82,8 @@ def test_weak_markers_are_recorded_but_do_not_support_a_tag():
     result = tag("O real caiu e o CPI subiu.")
     assert result["jurisdiction"] == []
     assert result["evidence"]["counts"] == {
-        "BR": {"title": 0, "body": 0, "related": 0, "weak": 1},
-        "US": {"title": 0, "body": 0, "related": 0, "weak": 1},
+        "BR": {"title": 0, "body": 0, "related": 0, "unclassified": 0, "weak": 1},
+        "US": {"title": 0, "body": 0, "related": 0, "unclassified": 0, "weak": 1},
     }
     assert [(m["term"], m["strength"], m["where"]) for m in result["evidence"]["matches"]] == [
         ("real", "weak", "body"),
@@ -115,7 +115,7 @@ def test_related_link_and_navigation_text_never_tags():
     result = tag(text)
     assert result["jurisdiction"] == ["BR"]
     counts = result["evidence"]["counts"]
-    assert counts["US"] == {"title": 0, "body": 0, "related": 2, "weak": 0}
+    assert counts["US"] == {"title": 0, "body": 0, "related": 2, "unclassified": 0, "weak": 0}
     assert counts["CN"]["related"] == 1 and counts["EA"]["related"] == 1
     only_related = tag("Mercados. LEIA MAIS: Estados Unidos e China em guerra comercial.")
     assert only_related["jurisdiction"] == []
@@ -164,13 +164,23 @@ def test_overlaps_prefer_strong_then_longer_then_earlier_and_allow_adjacency(mon
         places, "PATTERNS", patterns(("US", "strong", "cd"), ("BR", "strong", "ab"))
     )
     assert find("abcd") == [(0, 2, "BR", "strong"), (2, 4, "US", "strong")]
+    monkeypatch.setattr(
+        places, "PATTERNS", patterns(("BR", "strong", "ab"), ("US", "strong", "cde"))
+    )
+    assert find("abcde") == [(0, 2, "BR", "strong"), (2, 5, "US", "strong")]
 
 
 def test_title_is_counted_once_and_inherited_by_every_passage():
     title = "Inflação  nos EUA"
     first = tag("Inflação nos EUA surpreende os analistas.", title)
     assert first["jurisdiction"] == ["US"]
-    assert first["evidence"]["counts"]["US"] == {"title": 1, "body": 0, "related": 0, "weak": 0}
+    assert first["evidence"]["counts"]["US"] == {
+        "title": 1,
+        "body": 0,
+        "related": 0,
+        "unclassified": 0,
+        "weak": 0,
+    }
     assert first["evidence"]["matches"] == [
         {"code": "US", "term": "EUA", "where": "title", "strength": "strong", "offset": 14}
     ]
@@ -188,6 +198,7 @@ def test_title_is_counted_once_and_inherited_by_every_passage():
         "title": 1,
         "body": 1,
         "related": 0,
+        "unclassified": 0,
         "weak": 0,
     }
     assert tag("Texto sem título", None)["jurisdiction"] == []
@@ -197,6 +208,23 @@ def test_match_list_is_bounded_but_counts_are_complete():
     result = tag("Brasil " * 60)
     assert len(result["evidence"]["matches"]) == places.MAX_MATCHES
     assert result["evidence"]["counts"]["BR"]["body"] == 60
+
+
+# Each negated jurisdiction term is negated by PostgreSQL's websearch parser too.
+NEGATIONS = [
+    ('inflação -"Estados Unidos"', []),
+    ('-"zona do euro" inflação', []),
+    ('-"Estados Unidos', []),
+    ('"Estados Unidos" -Brasil', ["US"]),
+    ("inflação - Brasil", []),
+    ("inflação OR -China", []),
+    ("juros --EUA", []),
+    ("juros -(EUA)", []),
+    ('juros "-EUA"', ["US"]),
+    ('juros"-EUA"', ["US"]),
+    ('"inflação -EUA" Brasil', ["BR", "US"]),
+    ("inflação -", []),
+]
 
 
 @pytest.mark.parametrize(
@@ -222,10 +250,27 @@ def test_match_list_is_bounded_but_counts_are_complete():
         ("inflação -EUA Brasil", ["BR"]),
         ("latino-americanos", []),
         ("Brasil-EUA", ["BR", "US"]),
-    ],
+    ]
+    + NEGATIONS,
 )
 def test_query_detection_fires_only_on_explicit_strong_names(query, expected):
     assert detect(query) == expected
+
+
+def test_negations_match_postgresql_websearch_parser(research):
+    db, _ = research
+    for query, expected in NEGATIONS:
+        parsed = db.rows("SELECT websearch_to_tsquery('simple',%s)::text AS q", (query,))[0]["q"]
+        for name, code in (
+            ("estados", "US"),
+            ("eua", "US"),
+            ("zona", "EA"),
+            ("brasil", "BR"),
+            ("china", "CN"),
+        ):
+            if f"'{name}'" in parsed:
+                negated = f"!'{name}'" in parsed or f"!( '{name}'" in parsed
+                assert negated == (code not in expected), (query, parsed)
 
 
 def test_rules_are_validated():
@@ -473,14 +518,11 @@ def test_ingestion_tags_passages_and_backfill_never_reembeds(research):
     from ofl.research.jurisdiction import backfill
 
     embeddings = db.rows("SELECT passage_id,embedding::text FROM embeddings ORDER BY 1")
-    assert backfill(db, dry_run=True) == {"tagger": places.VERSION, "pending": 1, "tagged": 0}
+    done = {"tagger": places.VERSION, "pending": 1, "tagged": 1, "partial_context": 0}
+    assert backfill(db, dry_run=True) == done | {"tagged": 0}
     seen = []
-    assert backfill(db, batch=1, progress=seen.append) == {
-        "tagger": places.VERSION,
-        "pending": 1,
-        "tagged": 1,
-    }
-    assert seen == [{"tagger": places.VERSION, "pending": 1, "tagged": 1}]
+    assert backfill(db, batch=1, progress=seen.append) == done
+    assert seen == [done]
     assert backfill(db)["pending"] == 0
     with db.connect() as con:
         con.execute("UPDATE passages SET jurisdiction_tagger='jurisdiction-v0'")
@@ -497,6 +539,132 @@ def test_ingestion_tags_passages_and_backfill_never_reembeds(research):
     with db.connect() as con:
         con.execute("UPDATE items SET title='Outro título' WHERE id=%s", (ids["br"],))
     assert backfill(db, dry_run=True)["pending"] == 1
+
+
+def long_document():
+    """A related-link region opened at word 305 runs past the 310-word chunk boundary."""
+    words = [f"palavra{i}" for i in range(700)]
+    words[300:305] = ["Inflação", "de", "serviços", "no", "Brasil."]
+    words[305:307] = ["Leia", "também:"]
+    words[320] = "EUA"
+    words[400:402] = ["IPCA", "subiu."]
+    return " ".join(words)
+
+
+def test_span_helpers_and_explicit_regions():
+    assert places._word_spans(["ab", "c"]) == [(0, 2), (3, 4)]
+    assert places._merge([(0, 3), (4, 7), (9, 10)]) == [(0, 7), (9, 10)]
+    assert tag("x")["evidence"]["context"] == "passage"
+    assert tag("x", context="document")["evidence"]["context"] == "document"
+
+    def where(**regions):
+        return [m["where"] for m in tag("T Fed", "T", **regions)["evidence"]["matches"]]
+
+    assert where(related=[(2, 5)]) == ["related"]
+    assert where(related=[(2, 4)]) == ["body"]
+    assert where(related=[(3, 5)]) == ["body"]
+    assert where(related=[], unclassified=[(0, 2)]) == ["body"]
+    assert where(related=[], unclassified=[(4, 5)]) == ["unclassified"]
+    assert where(related=[], unclassified=[(5, 6)]) == ["body"]
+    assert where(related=[], unclassified=[(2, 3)]) == ["unclassified"]
+    titled = tag("Inflação no Brasil Leia também: EUA dispara. O Fed age.", "Inflação no Brasil")
+    assert titled["evidence"]["counts"]["US"]["related"] == 1
+    assert titled["evidence"]["counts"]["US"]["body"] == 1
+    with pytest.raises(ValueError):
+        places.passage_regions([0, 1], ["só um"])
+
+
+@pytest.mark.parametrize(
+    "query,spans",
+    [
+        ("a --EUA", [(4, 7)]),
+        ('-"a b" "c"', [(1, 6)]),
+        ('-"" x', [(1, 3)]),
+        ('-"ab"x', [(1, 5)]),
+        ('-ab"c"', [(1, 3)]),
+        ('x"-EUA"', []),
+        ("a - b", [(4, 5)]),
+        ("Brasil-EUA", []),
+    ],
+)
+def test_negated_spans_follow_websearch_terms(query, spans):
+    assert places.negated_spans(query) == spans
+
+
+def test_related_region_crossing_a_chunk_boundary_never_tags():
+    from ofl.research.archive import chunks
+
+    passages = list(chunks(long_document()))
+    assert len(passages) == 3 and passages[1].split()[10] == "EUA"
+    regions = places.passage_regions(range(3), passages)
+    assert [r["context"] for r in regions] == ["document"] * 3
+    assert places.document(passages) == long_document().split()
+    first, second = (places._word_spans(p.split()) for p in passages[:2])
+    # Region: "Leia também" plus 30 tokens (":" counts as one), so through word 335.
+    assert regions[0]["related"] == [(first[305][0], first[335][1])]
+    assert regions[1]["related"] == [(0, second[25][1])]
+    assert regions[2]["related"] == []
+    tags = [tag(text, "", **region) for text, region in zip(passages, regions, strict=True)]
+    assert [t["jurisdiction"] for t in tags] == [["BR"], ["BR"], []]
+    assert tags[1]["evidence"]["counts"]["US"]["related"] == 1
+    assert tags[0]["evidence"]["counts"]["US"]["related"] == 1
+    # Passage text alone would misread the boundary; the old behaviour is the regression.
+    assert tag(passages[1])["jurisdiction"] == ["BR", "US"]
+    partial = places.passage_regions([1, 2], passages[1:])
+    assert [r["context"] for r in partial] == ["passage", "passage"]
+    assert partial[0]["unclassified"] == [(0, second[29][1])]
+    alone = tag(passages[1], "", **partial[0])
+    assert alone["jurisdiction"] == ["BR"]
+    assert alone["evidence"]["counts"]["US"]["unclassified"] == 1
+    broken = [passages[0], passages[1].replace("palavra310", "outra", 1), passages[2]]
+    assert places.passage_regions(range(3), broken)[1]["context"] == "passage"
+    assert places.document(passages[:1]) == passages[0].split()
+    assert places.passage_regions([0], [passages[0]])[0]["unclassified"] == []
+
+
+def test_ingestion_and_backfill_share_document_context(research):
+    from ofl.research.archive import index_text, upsert_item
+    from ofl.research.jurisdiction import backfill
+
+    db, _ = research
+    with db.connect() as con:
+        item = upsert_item(con, "news", {"source_id": "long", "title": "Serviços"}, "long")
+        index_text(con, item_id=item, revision="r", text=long_document(), method="collector_news")
+    query = """SELECT ordinal,jurisdiction,jurisdiction_evidence FROM passages
+        WHERE item_id=%s AND method='collector_news' ORDER BY ordinal"""
+    ingested = db.rows(query, (item,))
+    assert [r["jurisdiction"] for r in ingested] == [["BR"], ["BR"], []]
+    assert {r["jurisdiction_evidence"]["context"] for r in ingested} == {"document"}
+    with db.connect() as con:
+        con.execute("UPDATE passages SET jurisdiction=NULL,jurisdiction_tagger=NULL")
+    assert backfill(db, batch=1)["partial_context"] == 0
+    assert db.rows(query, (item,)) == ingested
+    with db.connect() as con:
+        con.execute(
+            """UPDATE passages SET jurisdiction=NULL,jurisdiction_tagger=NULL WHERE item_id=%s""",
+            (item,),
+        )
+        con.execute(
+            "DELETE FROM passages WHERE item_id=%s AND ordinal=0 AND method='collector_news'",
+            (item,),
+        )
+    assert backfill(db)["partial_context"] == 2
+    rows = db.rows(query, (item,))
+    assert [r["jurisdiction"] for r in rows] == [["BR"], []]
+    assert rows[0]["jurisdiction_evidence"]["counts"]["US"]["unclassified"] == 1
+
+
+def test_migration_fails_fast_when_a_table_is_locked(research):
+    import psycopg
+
+    db, _ = research
+    with psycopg.connect(db.settings.database_url) as holder:
+        holder.execute("LOCK TABLE passages IN ACCESS SHARE MODE")
+        started = time.perf_counter()
+        with pytest.raises(RuntimeError, match="could not lock a research table within 5 s"):
+            db.migrate()
+        assert time.perf_counter() - started < 15
+    db.migrate()
 
 
 @pytest.mark.parametrize("mode", ["keyword", "vector", "hybrid"])
@@ -616,22 +784,45 @@ def test_api_validates_and_discloses_the_rule(research):
     assert applied["jurisdiction"]["excluded_passages"] == 2
 
 
-def test_rule_latency_on_fixture(research):
-    """Observed overhead of the disclosure count on the fixture; reported, loosely bounded."""
-    from ofl.research.search import search
+def test_latency_tool_is_read_only_and_reports_budget(research, monkeypatch):
+    import psycopg
+
+    from ofl.research import retrieval_latency
+    from ofl.research.config import ResearchSettings
+    from ofl.research.db import Database
 
     db, _ = research
     seed(db)
-
-    def timed(rule):
-        started = time.perf_counter()
-        for _ in range(20):
-            search(db, "inflação OR Brasil", mode="hybrid", vector=[1, 0, 0], jurisdiction=rule)
-        return (time.perf_counter() - started) / 20
-
-    timings = {rule: timed(rule) for rule in ("off", "boost", "exclude")}
-    print("jurisdiction latency (s/query):", json.dumps(timings))
-    assert max(timings.values()) < 1.0
+    monkeypatch.setattr(retrieval_latency, "embed", lambda settings, texts: [[1, 0, 0]])
+    settings = ResearchSettings(
+        **{
+            **db.settings.model_dump(),
+            "database_url": retrieval_latency.read_only(db.settings.database_url),
+        }
+    )
+    reader = Database(settings)
+    with pytest.raises(psycopg.errors.ReadOnlySqlTransaction):
+        reader.rows("UPDATE passages SET active=active")
+    cases = [
+        {"id": "named", "query": "inflação OR Brasil", "filters": {"source": "news"}},
+        {"id": "neutral", "query": "inflação"},
+    ]
+    report = retrieval_latency.measure(reader, cases, repetitions=3, warmup=1)
+    assert report["cases"] == ["named"] and report["repetitions"] == 3
+    for mode in ("keyword", "hybrid"):
+        rows = report["modes"][mode]
+        assert rows["off"]["median_overhead"] == 0
+        assert all(
+            rows[r]["p95_ms"] >= rows[r]["median_ms"] > 0 for r in ("off", "boost", "exclude")
+        )
+        assert set(rows["per_case_median_overhead"]["named"]) == {"boost", "exclude"}
+    assert report["budget_median_overhead"] == 0.2 and isinstance(report["within_budget"], bool)
+    with pytest.raises(ValueError, match="names a jurisdiction"):
+        retrieval_latency.measure(reader, cases[1:], repetitions=3)
+    assert retrieval_latency.percentile([5, 1, 3, 2, 4], 0.95) == 5
+    assert "default_transaction_read_only" in retrieval_latency.read_only(
+        "postgresql:///x?options=-csearch_path%3Da"
+    )
 
 
 def test_heldout_cases_validate_for_pooled_collection():

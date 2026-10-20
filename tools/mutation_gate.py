@@ -87,7 +87,12 @@ SCOPES = {
             "ofl.research.jurisdiction.x_check_rule",
             "ofl.research.jurisdiction.x_related_spans",
             "ofl.research.jurisdiction.x_find",
+            "ofl.research.jurisdiction.x__word_spans",
+            "ofl.research.jurisdiction.x__merge",
+            "ofl.research.jurisdiction.x_document",
+            "ofl.research.jurisdiction.x_passage_regions",
             "ofl.research.jurisdiction.x_tag",
+            "ofl.research.jurisdiction.x_negated_spans",
             "ofl.research.jurisdiction.x_detect",
             "ofl.research.jurisdiction.x_exclusion",
             "ofl.research.jurisdiction.x_boosted",
@@ -185,8 +190,16 @@ EQUIVALENT = {
     "ofl.research.jurisdiction.x_find": {
         12: "same-length overlapping matches: end order equals start order",
     },
-    "ofl.research.jurisdiction.x_tag": {
-        21: "a related span starts at its marker, which is never a jurisdiction marker",
+    "ofl.research.jurisdiction.x_negated_spans": {
+        37: "a closing quote is searched from start + 1 >= 2, so find() never returns 0",
+        38: "a closing quote is searched from start + 1 >= 2, so find() never returns 0",
+        57: "every term ends at least one character after it starts: end >= index + 1",
+    },
+    "ofl.research.jurisdiction.x_passage_regions": {
+        **dict.fromkeys(
+            (61, 64, 65),
+            "document branch only runs when ordinals == range(len(texts)): equal lengths",
+        ),
     },
     "ofl.research.workspaces.x_validate": {
         26: _DEFAULT_SAME_ERROR,
