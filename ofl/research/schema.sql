@@ -1,4 +1,6 @@
 -- Application database only. Never apply to the Airflow metadata database.
+-- One transaction. Fail fast instead of queueing behind (and blocking) live readers.
+SET LOCAL lock_timeout = '5s';
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS research_schema (version integer PRIMARY KEY);
 INSERT INTO research_schema VALUES (1) ON CONFLICT DO NOTHING;
