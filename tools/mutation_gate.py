@@ -31,6 +31,8 @@ ROOT = Path(__file__).resolve().parent.parent
 MUTANTS = ROOT / "mutants"
 STATUS = MUTANTS / "run.status.json"
 FRESH = MUTANTS / "fresh-process.json"
+FRESH_LOGS = MUTANTS / "fresh-logs"
+FRESH_TIMEOUT = 600
 
 SCOPES = {
     "access": (
@@ -235,28 +237,36 @@ def fresh_process_check(workers, pinned):
     Their tests read Delta tables; the Delta reader's runtime does not survive the fork
     mutmut uses, so forked results for these functions are replaced. The unmutated code
     must pass the same tests first, or the gate stops.
+
+    Only pytest exit 1 (a test failed) counts as a kill and 0 as a survivor. Any other exit
+    (internal, usage or collection error) fails the gate. A timeout is retried once on its
+    own; a second timeout fails the gate instead of being attributed to the mutation.
+    Each run's output is kept in mutants/fresh-logs/.
     """
     stats = json.loads((MUTANTS / "mutmut-stats.json").read_text())
     codes = results()
     env = {**os.environ, "OFL_RESEARCH_TEST_DATABASE_URL": "", "PYTHONPATH": str(MUTANTS)}
+    FRESH_LOGS.mkdir(exist_ok=True)
 
     def run(function, mutant):
         tests = sorted(stats["tests_by_mangled_function_name"].get(function, []))
         if not tests:
-            return mutant, 33
+            return mutant, "no tests"
         command = ["nice", "-n", "10", sys.executable, "-m", "pytest", "-x", "-q"]
-        try:
-            return mutant, subprocess.run(
-                [*command, "-p", "no:cacheprovider", *tests],
-                cwd=MUTANTS,
-                env={**env, "MUTANT_UNDER_TEST": mutant},
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=600,
-                preexec_fn=lambda: os.sched_setaffinity(0, pinned),
-            ).returncode
-        except subprocess.TimeoutExpired:
-            return mutant, 36
+        with open(FRESH_LOGS / f"{mutant or function + '__unmutated'}.log", "w") as log:
+            try:
+                returncode = subprocess.run(
+                    [*command, "-p", "no:cacheprovider", *tests],
+                    cwd=MUTANTS,
+                    env={**env, "MUTANT_UNDER_TEST": mutant},
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                    timeout=FRESH_TIMEOUT,
+                    preexec_fn=lambda: os.sched_setaffinity(0, pinned),
+                ).returncode
+            except subprocess.TimeoutExpired:
+                return mutant, "timeout"
+        return mutant, returncode
 
     problems, fresh = [], {}
     for function in FRESH_PROCESS:
@@ -265,7 +275,21 @@ def fresh_process_check(workers, pinned):
             continue
         names = [n for n in codes if n.startswith(function + "__mutmut_")]
         with ThreadPoolExecutor(workers) as pool:
-            fresh.update(pool.map(lambda name, f=function: run(f, name), names))
+            outcomes = dict(pool.map(lambda name, f=function: run(f, name), names))
+        for name in [n for n, outcome in outcomes.items() if outcome == "timeout"]:
+            outcomes[name] = run(function, name)[1]  # once more, alone
+        for name, outcome in sorted(outcomes.items()):
+            if outcome in (0, 1):
+                fresh[name] = outcome
+            elif outcome == "no tests":
+                fresh[name] = 33
+            elif outcome == "timeout":
+                problems.append(f"{name} timed out twice ({FRESH_TIMEOUT} s); not counted")
+            else:
+                problems.append(
+                    f"{name}: pytest exit {outcome} is an error, not a kill; "
+                    f"see {FRESH_LOGS / (name + '.log')}"
+                )
     FRESH.write_text(json.dumps(fresh))
     return problems
 

@@ -63,7 +63,10 @@ mutmut's per-mutant fork); the offline tests cover the gated logic directly, rep
 database with recorded rows. `quote_query` is tested against a local Delta table; because
 the Delta reader has the same fork limitation, the mutants of `quote_query` and `per_unit`
 (listed in `FRESH_PROCESS`) are re-run one per new interpreter after the unmutated code
-passes the same tests, and those results replace the forked ones. The run uses half the cores at nice 10 and waits while the load
+passes the same tests, and those results replace the forked ones. There, only a test failure
+(pytest exit 1) counts as a kill; any other exit, or a mutant that times out twice, fails the
+gate with exit 2, and each run's output is kept in `mutants/fresh-logs/`.
+`tests/test_mutation_gate.py` checks these failure paths. The run uses half the cores at nice 10 and waits while the load
 average exceeds the core count. Set `MUTATION_WORKERS` to change the worker count.
 
 ## Lint
