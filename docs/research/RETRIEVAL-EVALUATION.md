@@ -191,7 +191,13 @@ They are:
   whole words. `ignored` reports ISO 3166 alpha-2 codes, or a region name
   (`LATAM`, `ASIA`, `EUROPE`, `EMERGING`, `BLOC`).
 
-The same negation rules as for named jurisdictions apply: `Brasil -Japão` still
+Queries are normalised to Unicode NFC before any matching, negation or span
+computation, so decomposed accents (`a` followed by a combining tilde) give the same
+result as composed ones; combining marks that cannot be composed are dropped when
+folding. Passage text is tagged as stored. On the current archive, NFC changes no
+tag (every passage in documents with non-NFC text or titles was compared). It is
+not applied to tagging yet, because evidence offsets and related-region spans
+refer to the stored text, and title hashes must keep matching it. The same negation rules as for named jurisdictions apply: `Brasil -Japão` still
 applies the rule to Brazil. Words that are also common lowercase words match only
 when capitalised: `Peru` (not `peru`, turkey), `Índia` (not `índia`), `Turkey`,
 `Irã`. A mention inside a strong tagger marker does not count, so `Banco Central
