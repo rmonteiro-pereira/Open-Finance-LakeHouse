@@ -38,6 +38,9 @@ def build_spark_session(
         .config("spark.hadoop.fs.s3a.path.style.access", "true")
         .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
         .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
+        # POSIX-backed stores refuse to delete a "dir/" marker that still holds objects,
+        # and S3A retries each refusal with backoff. Keeping markers is valid on any S3.
+        .config("spark.hadoop.fs.s3a.directory.marker.retention", "keep")
         # single-node: keep shuffle small; this data is tiny.
         .config("spark.sql.shuffle.partitions", "8")
         .config("spark.databricks.delta.optimizeWrite.enabled", "true")
