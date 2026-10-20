@@ -123,7 +123,8 @@ def authenticate(settings, headers, method):
             raise HTTPException(403, "service credentials are read-only")
     else:
         actor = headers.get("x-ofl-identity", "")
-    role = roles.get(actor) if isinstance(roles, dict) else None
+    # An absent or empty identity never matches a role, even one configured for "".
+    role = roles.get(actor) if actor and isinstance(roles, dict) else None
     if role not in {"reader", "reviewer", "admin"}:
         raise HTTPException(403, "identity has no research access")
     if not machine and method not in {"GET", "HEAD"}:
