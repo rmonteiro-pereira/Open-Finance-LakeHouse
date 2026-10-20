@@ -137,7 +137,6 @@ EQUIVALENT = {
     },
     "ofl.research.cotahist.x_parse_record": {7: _CODEC},
     "ofl.research.cotahist.x_stage": {
-        170: "the dropped leading digit is non-zero only for >= 10^10 lines (2.4 TB)",
         182: _CODEC,
         188: _CODEC,
         281: _DUCKDB,

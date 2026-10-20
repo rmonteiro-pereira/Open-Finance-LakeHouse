@@ -290,6 +290,24 @@ def test_trailer_count_is_eleven_digits_and_filler_is_ignored(tmp_path):
     assert cotahist.stage(path, tmp_path / "s", "h")["counts"]["accepted"] == 1
 
 
+def test_trailer_count_uses_all_eleven_digits(tmp_path, monkeypatch):
+    # A trailer for 10^10 lines without writing them: the line counter is replaced so the
+    # trailer is numbered 10,000,000,000, the first count whose leading digit is not 0.
+    path = tmp_path / "COTAHIST_A2024.TXT"
+    path.write_bytes(lines_of(header(), record(), trailer(10**10)))
+
+    def numbered(stream, start):
+        lines = list(stream)
+        numbers = [*range(start, start + len(lines) - 1), 10**10]
+        return zip(numbers, lines, strict=True)
+
+    monkeypatch.setattr(cotahist, "enumerate", numbered, raising=False)
+    assert cotahist.stage(path, tmp_path / "s", "h")["counts"]["accepted"] == 1
+    path.write_bytes(lines_of(header(), record(), trailer(10**10 + 1)))
+    with pytest.raises(ValueError, match="^header/trailer identity or count mismatch$"):
+        cotahist.stage(path, tmp_path / "t", "h")
+
+
 @pytest.mark.parametrize(
     "name,generated,days,period,frequency",
     [
