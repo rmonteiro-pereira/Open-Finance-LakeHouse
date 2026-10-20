@@ -117,7 +117,7 @@ do_not_mutate = [
     "ofl/research/pilot.py",
     "ofl/research/processing.py",
     "ofl/research/retrieval_*",
-    "ofl/research/search.py",
+    # search.py is mutated, but only its functions listed in the gate's SCOPES run.
     "ofl/research/storage.py",
     "ofl/research/worker.py",
 ]

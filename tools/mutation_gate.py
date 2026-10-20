@@ -11,6 +11,7 @@ denominator: those whose source is identical to the original, and those listed i
 EQUIVALENT with the reason no input can tell them apart.
 
 --idle-tests additionally lists tests that touch a gated function but kill no mutant.
+--scope NAME runs and reports a single scope (e.g. --scope retrieval).
 
 CPU use: half of the available cores (override with MUTATION_WORKERS), pinned to that
 half, at nice 10. The run waits while the load average exceeds the core count.
@@ -98,6 +99,20 @@ SCOPES = {
             "ofl.research.jurisdiction.x_detect",
             "ofl.research.jurisdiction.x_exclusion",
             "ofl.research.jurisdiction.x_boosted",
+            "ofl.research.jurisdiction.x_plan",
+            "ofl.research.jurisdiction.x_columns",
+            "ofl.research.jurisdiction.x_batch_updates",
+            # Search integration of the rule, extracted from search() so it can be gated.
+            "ofl.research.search.x_fuse",
+            "ofl.research.search.x__projection",
+            "ofl.research.search.x__narrowed_scope",
+            "ofl.research.search.x__boost",
+            "ofl.research.search.x__contributions",
+            "ofl.research.search.x__boost_disclosure",
+            "ofl.research.search.x__disclosure",
+            "ofl.research.search.x__jurisdiction_scope",
+            "ofl.research.search.x__scope_scan",
+            "ofl.research.search.x__scope_counts",
         ],
     ),
 }
@@ -211,6 +226,12 @@ EQUIVALENT = {
         37: "a closing quote is searched from start + 1 >= 2, so find() never returns 0",
         38: "a closing quote is searched from start + 1 >= 2, so find() never returns 0",
         57: "every term ends at least one character after it starts: end >= index + 1",
+    },
+    "ofl.research.jurisdiction.x_batch_updates": {
+        **dict.fromkeys(
+            (23, 26, 27),
+            "passage_regions returns one region per text (its own strict zip): equal lengths",
+        ),
     },
     "ofl.research.workspaces.x_validate": {
         26: _DEFAULT_SAME_ERROR,
@@ -477,14 +498,19 @@ def idle_tests(codes, workers):
 
 
 def main():
+    global SCOPES, FRESH_PROCESS  # noqa: PLW0603 (--scope narrows them for this run)
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--report-only", action="store_true", help="read the last run")
     parser.add_argument("--idle-tests", action="store_true", help="list tests that kill nothing")
     parser.add_argument("-v", "--verbose", action="store_true", help="list each non-killed mutant")
+    parser.add_argument("--scope", choices=sorted(SCOPES), help="run and report one scope only")
     parser.add_argument("--probe", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.probe:
         return probe(args.probe)
+    if args.scope:
+        SCOPES = {args.scope: SCOPES[args.scope]}
+        FRESH_PROCESS = [f for f in FRESH_PROCESS if f in gated_functions()]
     os.chdir(ROOT)
     cores = sorted(os.sched_getaffinity(0))
     workers = int(os.environ.get("MUTATION_WORKERS", max(1, len(cores) // 2)))

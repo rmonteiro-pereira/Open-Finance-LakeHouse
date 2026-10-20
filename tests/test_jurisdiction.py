@@ -573,6 +573,360 @@ def test_mcp_validates_and_forwards_the_jurisdiction_rule():
     assert len(seen) == 2
 
 
+# Search integration and backfill batches, offline (gated by the "retrieval" mutation scope).
+
+
+def rule_for(rule, named=(), ignored=()):
+    named = list(named)
+    return {
+        "rule": rule,
+        "named": named + list(ignored),
+        "active": [] if ignored else named,
+        "ignored": list(ignored),
+    }
+
+
+def test_only_precision_gated_jurisdictions_activate_a_rule(monkeypatch):
+    # >= 0.90 hand-check precision: BR, US and EA pass; CN (17/21) does not.
+    assert places.GATED_JURISDICTIONS == frozenset({"BR", "US", "EA"})
+    for rule in ("boost", "exclude"):
+        assert places.plan(rule, "inflação no Brasil") == {
+            "rule": rule,
+            "named": ["BR"],
+            "active": ["BR"],
+            "ignored": [],
+        }
+        assert places.plan(rule, "Fed e BCE") == {
+            "rule": rule,
+            "named": ["EA", "US"],
+            "active": ["EA", "US"],
+            "ignored": [],
+        }
+        assert places.plan(rule, "inflação na China") == {
+            "rule": rule,
+            "named": ["CN"],
+            "active": [],
+            "ignored": ["CN"],
+        }
+        # Conservative: one ungated name turns the whole query off, never a partial rule.
+        assert places.plan(rule, "Brasil e China") == {
+            "rule": rule,
+            "named": ["BR", "CN"],
+            "active": [],
+            "ignored": ["CN"],
+        }
+        assert places.plan(rule, "inflação") == {
+            "rule": rule,
+            "named": [],
+            "active": [],
+            "ignored": [],
+        }
+    monkeypatch.setattr(places, "detect", lambda _: pytest.fail("off must not read the query"))
+    assert places.plan("off", "inflação no Brasil") == {
+        "rule": "off",
+        "named": [],
+        "active": [],
+        "ignored": [],
+    }
+    with pytest.raises(ValueError, match="off, boost or exclude"):
+        places.plan("filter", "Brasil")
+
+
+def test_projection_adds_jurisdiction_columns_only_outside_off():
+    from ofl.research import search as s
+
+    assert s._projection(rule_for("off")) == s.PROJECTION
+    assert "jurisdiction" not in s.PROJECTION
+    for rule in ("boost", "exclude"):
+        for plan in (rule_for(rule), rule_for(rule, ["BR"]), rule_for(rule, ignored=["CN"])):
+            assert s._projection(plan) == s.PROJECTION + s.JURISDICTION_COLUMNS
+    assert s.JURISDICTION_COLUMNS == (
+        ",p.jurisdiction,p.jurisdiction_evidence,p.jurisdiction_tagger"
+    )
+
+
+def test_only_an_active_exclude_narrows_the_scope_of_every_arm():
+    from ofl.research import search as s
+
+    where, params = "i.source=%s", ["news"]
+    for plan in (
+        rule_for("off"),
+        rule_for("exclude"),
+        rule_for("exclude", ["BR"], ignored=["CN"]),
+        rule_for("boost", ["BR"]),
+    ):
+        assert s._narrowed_scope(plan, where, params) == (where, params)
+    condition, extra = exclusion(["BR", "US"])
+    assert s._narrowed_scope(rule_for("exclude", ["BR", "US"]), where, params) == (
+        f"{where} AND {condition}",
+        ["news", ["BR", "US"], ["BR", "US"]],
+    )
+    assert params == ["news"]
+
+
+def ranked(*ids, tags=None):
+    tags = tags or {}
+    return [{"id": i, "score": 10 - n, "jurisdiction": tags.get(i)} for n, i in enumerate(ids)]
+
+
+def test_boost_is_one_extra_list_from_the_fused_base_bounded_at_one_61st():
+    from ofl.research import search as s
+
+    tags = {"b": ["BR"], "c": ["BR", "US"], "d": ["US"]}
+    keyword, vector = ranked("a", "b", "c", "d", tags=tags), ranked("d", "c", "a", tags=tags)
+    labels = ["keyword", "vector"]
+    for plan in (
+        rule_for("off"),
+        rule_for("exclude", ["BR"]),
+        rule_for("boost"),
+        rule_for("boost", ["BR"], ignored=["CN"]),
+    ):
+        assert s._boost(plan, [keyword, vector], labels) == ([keyword, vector], labels, None)
+    rankings, new_labels, count = s._boost(rule_for("boost", ["BR"]), [keyword, vector], labels)
+    assert new_labels == ["keyword", "vector", "jurisdiction_boost"] and labels == [
+        "keyword",
+        "vector",
+    ]
+    assert rankings[:2] == [keyword, vector] and count == 2
+    # Fused base order is c (2/62+... ) before b; a single arm keeps its own order.
+    assert [r["id"] for r in rankings[2]] == ["c", "b"]
+    single, _, one = s._boost(rule_for("boost", ["US"]), [keyword], ["keyword"])
+    assert [r["id"] for r in single[1]] == ["c", "d"] and one == 2
+    # A single arm is its own base: rows keep the arm's raw scores, no re-fusion.
+    assert single[1] == [keyword[2], keyword[3]]
+    fused = {r["id"]: r["score"] for r in s.fuse(rankings)}
+    plain = {r["id"]: r["score"] for r in s.fuse([keyword, vector])}
+    gains = {key: fused[key] - plain[key] for key in plain}
+    assert gains == pytest.approx({"a": 0, "b": 1 / 62, "c": 1 / 61, "d": 0})
+    assert max(gains.values()) == pytest.approx(1 / (s.RRF_K + 1))
+
+
+def test_fuse_is_reciprocal_rank_with_k_60_and_id_ties():
+    from ofl.research import search as s
+
+    assert s.RRF_K == 60
+    fused = s.fuse([ranked("a", "b"), ranked("b", "c")])
+    assert [(r["id"], r["score"]) for r in fused] == [
+        ("b", 1 / 62 + 1 / 61),
+        ("a", 1 / 61),
+        ("c", 1 / 62),
+    ]
+    assert [r["id"] for r in s.fuse([ranked("z"), ranked("y")])] == ["y", "z"]
+    assert s.fuse([ranked("a")], k=0)[0]["score"] == 1
+    assert s.fuse([]) == []
+
+
+def test_contributions_record_rank_raw_score_and_rrf_share():
+    from ofl.research import search as s
+
+    one = s._contributions(["keyword"], [[{"id": "a", "score": 3}, {"id": "b", "score": 1}]])
+    assert one == {
+        "a": {"keyword": {"rank": 1, "raw_score": 3.0, "rrf_contribution": None}},
+        "b": {"keyword": {"rank": 2, "raw_score": 1.0, "rrf_contribution": None}},
+    }
+    assert isinstance(one["a"]["keyword"]["raw_score"], float)
+    two = s._contributions(
+        ["keyword", "jurisdiction_boost"],
+        [[{"id": "a", "score": 3}, {"id": "b", "score": 1}], [{"id": "b", "score": 1}]],
+    )
+    assert two == {
+        "a": {"keyword": {"rank": 1, "raw_score": 3.0, "rrf_contribution": 1 / 61}},
+        "b": {
+            "keyword": {"rank": 2, "raw_score": 1.0, "rrf_contribution": 1 / 62},
+            "jurisdiction_boost": {"rank": 1, "raw_score": 1.0, "rrf_contribution": 1 / 61},
+        },
+    }
+    with pytest.raises(ValueError):
+        s._contributions(["keyword"], [[], []])
+
+
+def test_disclosure_reports_the_rule_names_and_ignored_jurisdictions():
+    from ofl.research import search as s
+
+    assert s._disclosure(rule_for("off")) is None
+    assert s._disclosure(rule_for("exclude", ["BR"], ignored=["CN"])) == {
+        "rule": "exclude",
+        "tagger": places.VERSION,
+        "named": ["BR", "CN"],
+        "applied": False,
+        "ignored": ["CN"],
+        "qualification": s.DISCLOSURE_QUALIFICATION,
+    }
+    assert s._disclosure(rule_for("boost", ["US"])) == {
+        "rule": "boost",
+        "tagger": places.VERSION,
+        "named": ["US"],
+        "applied": True,
+        "ignored": [],
+        "qualification": s.DISCLOSURE_QUALIFICATION,
+    }
+    assert "(BR, US, EA)" in s.DISCLOSURE_QUALIFICATION
+    base = {"rule": "boost"}
+    assert s._boost_disclosure(base, None, []) is base
+    results = [
+        {"ranking": {"keyword": {}, "jurisdiction_boost": {}}},
+        {"ranking": {"keyword": {}}},
+        {"ranking": {"jurisdiction_boost": {}}},
+    ]
+    assert s._boost_disclosure(base, 5, results) == {
+        "rule": "boost",
+        "boosted_candidates": 5,
+        "boosted_results": 2,
+    }
+    assert base == {"rule": "boost"}
+
+
+class Settings:
+    embedding_model = "m"
+    embedding_revision = "r"
+    embedding_dimensions = 3
+    approximate_search = False
+
+
+def test_scope_scan_parameters_follow_the_sql_placeholders():
+    from ofl.research import search as s
+
+    condition, extra = exclusion(["BR"])
+    query, values = s._scope_scan(rule_for("exclude", ["BR"]), "W=%s", ["news"], Settings)
+    assert values == (
+        ["BR"],
+        ["BR"],
+        ["BR"],
+        ["BR"],
+        ["BR"],
+        ["BR"],
+        places.VERSION,
+        ["BR"],
+        ["BR"],
+        ["BR"],
+        "m",
+        "r",
+        "m",
+        "r",
+        "news",
+    )
+    assert query.count("%s") == len(values)
+    searched = f"{s.SEMANTIC_CONTENT} AND {condition}"
+    assert query.count(f"FILTER (WHERE {searched})") == 2
+    assert f"e.passage_id IS NULL AND {searched}) AS rejected_passages" in query
+    assert f"FILTER (WHERE NOT {condition}) AS conflicting" in query
+    assert query.endswith("WHERE W=%s")
+    query, values = s._scope_scan(rule_for("boost", ["US"]), "W", [], Settings)
+    assert values == (places.VERSION, ["US"], ["US"], ["US"], "m", "r", "m", "r")
+    assert query.count("%s") == len(values)
+    assert query.count(f"FILTER (WHERE {s.SEMANTIC_CONTENT})") == 2
+    assert f"e.passage_id IS NULL AND {s.SEMANTIC_CONTENT}) AS rejected_passages" in query
+    unpinned = type("Unpinned", (Settings,), {"embedding_revision": None})
+    assert s._scope_scan(rule_for("boost", ["US"]), "W", [], unpinned)[1][-4:] == (
+        "m",
+        "",
+        "m",
+        "",
+    )
+
+
+ROW = {
+    "scope": 7,
+    "named_evidence": 2,
+    "conflicting": 3,
+    "untagged": 1,
+    "older_tagger": 4,
+    "eligible_passages": 5,
+    "indexed_passages": 4,
+    "rejected_passages": 1,
+}
+
+
+def test_scope_counts_exclude_only_under_exclude():
+    from ofl.research import search as s
+
+    counts = {
+        "scope_passages": 7,
+        "passages_with_named_evidence": 2,
+        "conflicting_passages": 3,
+        "excluded_passages": 3,
+        "untagged_passages": 1,
+        "older_tagger_passages": 4,
+    }
+    assert s._scope_counts(rule_for("exclude", ["BR"]), ROW) == counts
+    assert s._scope_counts(rule_for("boost", ["BR"]), ROW) == counts | {"excluded_passages": 0}
+
+
+def test_scope_scan_runs_once_and_only_for_an_active_rule():
+    from ofl.research import search as s
+
+    class Db:
+        settings = Settings
+
+        def __init__(self):
+            self.calls = []
+
+        def rows(self, query, params=()):
+            self.calls.append((query, params))
+            return [ROW]
+
+    db = Db()
+    assert s._jurisdiction_scope(db, rule_for("off"), "W", []) == (None, None)
+    for plan in (rule_for("exclude"), rule_for("boost", ["BR"], ignored=["CN"])):
+        assert s._jurisdiction_scope(db, plan, "W", []) == (s._disclosure(plan), None)
+    assert db.calls == []
+    plan = rule_for("exclude", ["BR"])
+    disclosure, coverage = s._jurisdiction_scope(db, plan, "W", ["news"])
+    assert db.calls == [s._scope_scan(plan, "W", ["news"], Settings)]
+    assert disclosure == s._disclosure(plan) | s._scope_counts(plan, ROW)
+    assert coverage == s._coverage(Settings, ROW)
+    assert (coverage["eligible_passages"], coverage["indexed_passages"]) == (5, 4)
+
+
+def test_backfill_batches_tag_pending_rows_in_document_context():
+    rest = " ".join(["O mercado subiu."] * 200)
+    words = f"Inflação no Brasil e IPCA {rest}".split()
+    step = places.CHUNK_WORDS - places.CHUNK_OVERLAP
+    chunks = [" ".join(words[i : i + places.CHUNK_WORDS]) for i in range(0, len(words), step)]
+    assert len(chunks) == 2
+
+    def row(item, ordinal, text, pending, title="Inflação no Brasil"):
+        return {
+            "id": f"{item}-{ordinal}",
+            "item_id": item,
+            "revision": "r1",
+            "ordinal": ordinal,
+            "text": text,
+            "title": title,
+            "pending": pending,
+        }
+
+    rows = [
+        row("a", 0, chunks[0], False),
+        row("a", 1, chunks[1], True),
+        row("b", 1, "Fed e FOMC nos Estados Unidos", True, title="Juros"),
+        row("c", 0, "China", True, title=""),
+    ]
+    updates, partial = places.batch_updates(rows)
+    assert [u[-1] for u in updates] == ["a-1", "b-1", "c-0"]
+    assert partial == 1
+    # b lacks ordinal 0: passage context, its head is unclassified and cannot tag.
+    assert [u[0] for u in updates] == [["BR"], [], []]
+    assert updates[1][1].obj["counts"]["US"]["strong"]["unclassified"] == 3
+    assert {u[2] for u in updates} == {places.VERSION}
+    contexts = [u[1].obj["context"] for u in updates]
+    assert contexts == ["document", "passage", "document"]
+    assert updates[0][1].obj == tag(chunks[1], "Inflação no Brasil", context="document")[
+        "evidence"
+    ] | {"context": "document"}
+    assert places.batch_updates([]) == ([], 0)
+    assert places.batch_updates([row("a", 0, "Brasil", False)]) == ([], 0)
+
+
+def test_columns_are_tags_evidence_and_tagger_version():
+    tags, evidence, version = places.columns("Brasil e IPCA", "")
+    assert (tags, version) == (["BR"], places.VERSION)
+    assert evidence.obj == tag("Brasil e IPCA")["evidence"]
+    region = {"related": [(0, 6)], "unclassified": [], "context": "document"}
+    assert places.columns("Brasil e IPCA", "", **region)[1].obj["context"] == "document"
+    assert places.columns("Brasil e IPCA", "Brasil")[0] == ["BR"]
+
+
 # PostgreSQL contracts (disposable schema per test; see tests/test_research.py).
 from tests.test_research import research  # noqa: E402,F401
 
