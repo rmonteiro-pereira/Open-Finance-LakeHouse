@@ -47,6 +47,7 @@ SCOPES = {
             "ofl.research.workspaces.x_owned",
             "ofl.research.workspaces.x_schedule_due",
             "ofl.research.workspaces.x_load",
+            "ofl.research.workspaces.x_restricted",
         ],
     ),
     "money": (
@@ -112,6 +113,7 @@ SCOPES = {
             "ofl.research.chunking.x_overlap",
             "ofl.research.chunking.x_windows",
             "ofl.research.archive.x_chain_plan",
+            "ofl.research.archive.x_chain_current",
             # Search integration of the rule, extracted from search() so it can be gated.
             "ofl.research.search.x_fuse",
             "ofl.research.search.x__projection",
@@ -265,10 +267,10 @@ EQUIVALENT = {
     "ofl.research.workspaces.x_validate": {
         26: _DEFAULT_SAME_ERROR,
         28: _DEFAULT_SAME_ERROR,
-        99: _DEFAULT_SAME_ERROR,
         101: _DEFAULT_SAME_ERROR,
-        191: _DEFAULT_SAME_ERROR,
+        103: _DEFAULT_SAME_ERROR,
         193: _DEFAULT_SAME_ERROR,
+        195: _DEFAULT_SAME_ERROR,
     },
 }
 

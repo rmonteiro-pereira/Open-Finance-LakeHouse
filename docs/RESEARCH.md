@@ -229,6 +229,19 @@ Original page text is not stored, so a chain is rebuilt from its passages' chain
 overlaps (as in the jurisdiction backfill); a chain that does not rebuild exactly is
 counted as `unchained` and left as it is.
 
+Every transaction that writes an item's passages (catalog and archive ingestion,
+news and letter sync, page processing, rechunk) first takes the same item-level
+advisory lock; import and asset locks always come before it. Rechunk re-reads the
+item's active passages under that lock and replaces a chain only if they are still
+exactly the chain it planned; otherwise it counts the chain as `changed` and leaves
+it to the writer that superseded it, so a concurrent re-ingestion or news policy
+downgrade is never undone.
+
+Saved investigations keep working across re-ingestion and re-chunking: when an
+existing investigation is edited, a reference its previous revision already captured
+may point to a superseded passage and keeps its stored text and reviews, unless the
+current news policy restricts it. A new reference still needs an active passage.
+
 A single whitespace-free run over the budget still forms its own window and stays
 rejected by the embedding step rather than being cut inside a word.
 
