@@ -100,6 +100,8 @@ SCOPES = {
             "ofl.research.jurisdiction.x_exclusion",
             "ofl.research.jurisdiction.x_boosted",
             "ofl.research.jurisdiction.x_plan",
+            "ofl.research.jurisdiction.x_nfc",
+            "ofl.research.jurisdiction.x__folded",
             "ofl.research.jurisdiction.x_fold",
             "ofl.research.jurisdiction.x_foreign",
             "ofl.research.jurisdiction.x_columns",
@@ -222,7 +224,7 @@ EQUIVALENT = {
         30: "a dominance check only runs at total == 1, where 3 * 1 == 3 / 1",
     },
     "ofl.research.jurisdiction.x_detect": {
-        24: "a negated span starts after a term-initial '-', where no marker can end",
+        26: "a negated span starts after a term-initial '-', where no marker can end",
     },
     "ofl.research.jurisdiction.x_negated_spans": {
         37: "a closing quote is searched from start + 1 >= 2, so find() never returns 0",
@@ -237,7 +239,13 @@ EQUIVALENT = {
     },
     "ofl.research.jurisdiction.x_foreign": {
         **dict.fromkeys(
-            (18, 29),
+            (20, 22, 23),
+            "no taken span starts inside a mention: negated spans start after a "
+            "term-initial '-' and no FOREIGN match contains ' -'; no strong marker begins "
+            "with the tail of a FOREIGN pattern; overlap is decided by the mention start",
+        ),
+        **dict.fromkeys(
+            (24, 35),
             "a mention ends on a word character, '.' or '$'; a negated span starts after "
             "'-' or a space and a strong marker starts on a word character after a non-word "
             "one, so no span starts exactly where a mention ends",

@@ -633,35 +633,35 @@ def test_only_precision_gated_jurisdictions_activate_a_rule(monkeypatch):
         places.plan("filter", "Brasil")
 
 
-@pytest.mark.parametrize(
-    ("query", "ignored"),
-    [
-        ("inflação no Brasil e Japão", ["JP"]),
-        ("Brasil e CN", ["CN"]),
-        ("Brasil e CHN", ["CN"]),
-        ("EUA e Reino Unido", ["GB"]),
-        ("Fed e BoE no UK", ["GB"]),
-        ("Brasil-Japão", ["JP"]),
-        ("inflação argentina e IPCA", ["AR"]),
-        ("Brasil e México", ["MX"]),
-        ("Brasil e Peru", ["PE"]),
-        ("Brasil e Índia", ["IN"]),
-        ("Brasil e Chile", ["CL"]),
-        ("Brasil e Turquia", ["TR"]),
-        ("Brasil, Alemanha e França", ["DE", "FR"]),
-        ("Brasil e América Latina", ["LATAM"]),
-        ("Brasil e mercados emergentes", ["EMERGING"]),
-        ("Brasil e Ásia", ["ASIA"]),
-        ("EUA e BRICS", ["BLOC"]),
-        ("Brasil e Bank of China", ["CN"]),
-        ("Brasil e yuan", ["CN"]),
-        ("inflação japonesa e Brasil", ["JP"]),
-        # Europe is not the euro area: it never activates EA and turns a rule off.
-        ("Brasil e Europa", ["EUROPE"]),
-        ("Brasil e inflação europeia", ["EUROPE"]),
-        ("Brasil e União Europeia", ["EU", "EUROPE"]),
-    ],
-)
+UNGATED_QUERIES = [
+    ("inflação no Brasil e Japão", ["JP"]),
+    ("Brasil e CN", ["CN"]),
+    ("Brasil e CHN", ["CN"]),
+    ("EUA e Reino Unido", ["GB"]),
+    ("Fed e BoE no UK", ["GB"]),
+    ("Brasil-Japão", ["JP"]),
+    ("inflação argentina e IPCA", ["AR"]),
+    ("Brasil e México", ["MX"]),
+    ("Brasil e Peru", ["PE"]),
+    ("Brasil e Índia", ["IN"]),
+    ("Brasil e Chile", ["CL"]),
+    ("Brasil e Turquia", ["TR"]),
+    ("Brasil, Alemanha e França", ["DE", "FR"]),
+    ("Brasil e América Latina", ["LATAM"]),
+    ("Brasil e mercados emergentes", ["EMERGING"]),
+    ("Brasil e Ásia", ["ASIA"]),
+    ("EUA e BRICS", ["BLOC"]),
+    ("Brasil e Bank of China", ["CN"]),
+    ("Brasil e yuan", ["CN"]),
+    ("inflação japonesa e Brasil", ["JP"]),
+    # Europe is not the euro area: it never activates EA and turns a rule off.
+    ("Brasil e Europa", ["EUROPE"]),
+    ("Brasil e inflação europeia", ["EUROPE"]),
+    ("Brasil e União Europeia", ["EU", "EUROPE"]),
+]
+
+
+@pytest.mark.parametrize(("query", "ignored"), UNGATED_QUERIES)
 def test_any_ungated_mention_turns_a_gated_query_off(query, ignored):
     for rule in ("boost", "exclude"):
         result = places.plan(rule, query)
@@ -670,30 +670,30 @@ def test_any_ungated_mention_turns_a_gated_query_off(query, ignored):
     assert places.foreign(query) == ignored
 
 
-@pytest.mark.parametrize(
-    ("query", "active"),
-    [
-        ("inflação no Brasil", ["BR"]),
-        ("Brasil -Japão", ["BR"]),
-        ('Brasil -"Reino Unido"', ["BR"]),
-        ("Brasil -China", ["BR"]),
-        ("Brasil -yuan", ["BR"]),
-        ("Brasil e BCE", ["BR", "EA"]),
-        ("Banco Central Europeu e Brasil", ["BR", "EA"]),
-        ("zona do euro e EUA", ["EA", "US"]),
-        ("câmbio euro real e Brasil", ["BR"]),
-        # Lower-case homographs are not countries: turkey, an indigenous woman.
-        ("peru de Natal no Brasil", ["BR"]),
-        ("índia e indígenas no Brasil", ["BR"]),
-        ("Rodovia Washington Luís no Brasil", ["BR"]),
-        ("Lojas Americanas e Brasil", ["BR"]),
-        ("China Mobile e Brasil", ["BR"]),
-        ("eu acho que o Brasil", ["BR"]),
-        ("notícias em português sobre o Brasil", ["BR"]),
-        ("Brasil: Petrobras PETR4 e VALE3", ["BR"]),
-        ("Brasileirão e Brasil", ["BR"]),
-    ],
-)
+ACTIVE_QUERIES = [
+    ("inflação no Brasil", ["BR"]),
+    ("Brasil -Japão", ["BR"]),
+    ('Brasil -"Reino Unido"', ["BR"]),
+    ("Brasil -China", ["BR"]),
+    ("Brasil -yuan", ["BR"]),
+    ("Brasil e BCE", ["BR", "EA"]),
+    ("Banco Central Europeu e Brasil", ["BR", "EA"]),
+    ("zona do euro e EUA", ["EA", "US"]),
+    ("câmbio euro real e Brasil", ["BR"]),
+    # Lower-case homographs are not countries: turkey, an indigenous woman.
+    ("peru de Natal no Brasil", ["BR"]),
+    ("índia e indígenas no Brasil", ["BR"]),
+    ("Rodovia Washington Luís no Brasil", ["BR"]),
+    ("Lojas Americanas e Brasil", ["BR"]),
+    ("China Mobile e Brasil", ["BR"]),
+    ("eu acho que o Brasil", ["BR"]),
+    ("notícias em português sobre o Brasil", ["BR"]),
+    ("Brasil: Petrobras PETR4 e VALE3", ["BR"]),
+    ("Brasileirão e Brasil", ["BR"]),
+]
+
+
+@pytest.mark.parametrize(("query", "active"), ACTIVE_QUERIES)
 def test_gated_queries_without_foreign_mentions_stay_active(query, active):
     assert places.foreign(query) == []
     assert places.plan("exclude", query) == {
@@ -702,6 +702,39 @@ def test_gated_queries_without_foreign_mentions_stay_active(query, active):
         "active": active,
         "ignored": [],
     }
+
+
+@pytest.mark.parametrize(
+    "query",
+    [q for q, _ in UNGATED_QUERIES + ACTIVE_QUERIES]
+    + ["Brasil OR França", "inflação OR China", 'Brasil -"Reino Unido" e Japão'],
+)
+def test_decomposed_accents_give_the_same_plan(query):
+    import unicodedata
+
+    decomposed = unicodedata.normalize("NFD", query)
+    for rule in ("boost", "exclude"):
+        assert places.plan(rule, decomposed) == places.plan(rule, query)
+    assert detect(decomposed) == detect(query)
+    assert places.foreign(decomposed) == places.foreign(query)
+
+
+def test_decomposed_gated_and_masked_cases():
+    import unicodedata
+
+    def nfd(text):
+        return unicodedata.normalize("NFD", text)
+
+    assert places.plan("exclude", nfd("Brasil OR França"))["ignored"] == ["FR"]
+    assert places.plan("exclude", nfd("Brasil -Japão"))["active"] == ["BR"]
+    assert places.plan("exclude", nfd("Banco Central Europeu e Brasil"))["active"] == ["BR", "EA"]
+    # Marks NFC cannot compose are dropped when folding; spans map back to the query.
+    stray = "Fran\u0327\u0301ca"
+    assert places.nfc(stray) != places.fold(stray) == "Franca"
+    assert places.foreign(f"Brasil e {stray}") == ["FR"]
+    assert places.foreign(f"Brasil -{stray}") == []
+    assert places.foreign("\u0301Japão -\u0301Brasil") == ["JP"]
+    assert places.foreign("-\u0301Japão") == []
 
 
 def test_foreign_matching_folds_accents_and_keeps_offsets():
