@@ -447,7 +447,7 @@ def detect(query):
     A marker overlapping a negated term at all (`-Estados Unidos` negates `Estados`) is
     ignored; entity names (`futebol americano`) never name a jurisdiction.
     """
-    query = nfc(query)
+    query = canonical(query)
     negated = negated_spans(query)
     demonyms = {
         match.span()
@@ -474,16 +474,25 @@ def plan(rule, query):
     `ignored`.
     """
     rule = check_rule(rule)
-    query = nfc(query)
+    query = canonical(query)
     named = detect(query) if rule != "off" else []
     mentioned = foreign(query) if rule != "off" else []
     ignored = sorted(set(named + mentioned) - GATED_JURISDICTIONS)
     return {"rule": rule, "named": named, "active": [] if ignored else named, "ignored": ignored}
 
 
-def nfc(text):
-    """Composed Unicode form: decomposed accents (`a` + U+0303) cannot dodge a pattern."""
-    return unicodedata.normalize("NFC", text)
+def canonical(query):
+    """The one query form all query-side matching, negation and spans use.
+
+    NFKC (composed accents; fullwidth letters and ligatures as plain letters), format
+    characters (category Cf: zero-width space and joiners, soft hyphen, BOM) removed,
+    and every run of Unicode whitespace (NBSP, narrow NBSP, tabs, line breaks) as one
+    ASCII space. Offsets on the query side are relative to this form; the query is
+    not stored.
+    """
+    text = unicodedata.normalize("NFKC", query)
+    text = "".join(c for c in text if unicodedata.category(c) != "Cf")
+    return " ".join(text.split())
 
 
 def _folded(text):
@@ -509,7 +518,7 @@ def foreign(query):
     China`, `chinês`): naming is not needed to make a rule unsafe. FOREIGN mentions
     inside a strong tagger match (`Banco Central Europeu`) do not count.
     """
-    query = nfc(query)
+    query = canonical(query)
     negated = negated_spans(query)
     matches = find(query)
     taken = negated + [(start, end) for start, end, _, tier in matches if tier == "strong"]
