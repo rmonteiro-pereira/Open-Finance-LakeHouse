@@ -16,7 +16,7 @@ from .db import digest
 VERSION = "archive-v1"
 
 
-def chunks(text: str, words=350, overlap=40):
+def chunks(text: str, words=jurisdiction.CHUNK_WORDS, overlap=jurisdiction.CHUNK_OVERLAP):
     """Page-bounded passages; embedding adapters enforce their tokenizer limit."""
     tokens = text.split()
     for start in range(0, len(tokens), words - overlap):
@@ -33,7 +33,9 @@ def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None
         (item_id, method, asset_id, page),
     )
     title = con.execute("SELECT title FROM items WHERE id=%s", (item_id,)).fetchone()["title"]
-    for ordinal, passage in enumerate(chunks(text)):
+    passages = list(chunks(text))
+    regions = jurisdiction.passage_regions(range(len(passages)), passages)
+    for ordinal, passage in enumerate(passages):
         identity = digest([item_id, revision, ordinal])
         con.execute(
             """INSERT INTO passages(id,item_id,asset_id,page,ordinal,text,revision,method,evidence,search,
@@ -56,7 +58,7 @@ def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None
                 Jsonb(evidence or {}),
                 passage if method == "metadata" else "",
                 passage,
-                *jurisdiction.columns(passage, title),
+                *jurisdiction.columns(passage, title, **regions[ordinal]),
             ),
         )
 
