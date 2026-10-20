@@ -16,7 +16,7 @@ from ofl.research import dataset_bundle, dataset_replay, macro, query
 from ofl.research.analytics import prepare_dataset, release_diff
 from ofl.research.db import digest
 from ofl.research.reference_review import reference_reviews, text_hash
-from ofl.research.workspaces import evidence, validate
+from ofl.research.workspaces import evidence, restricted, validate
 
 # Reference reviews bound to the question and the captured source
 
@@ -133,16 +133,23 @@ class Rows:
 
 
 class Passages:
-    """Serves active passages by id, as the evidence query would."""
+    """Serves passages by id with their current activity, as the evidence query would.
+
+    A row is an active passage without an asset unless it sets passage_active or
+    asset_active itself.
+    """
 
     def __init__(self, passages):
         self.passages = passages
         self.calls = []
 
     def execute(self, sql, params):
-        assert "WHERE p.id=%s AND p.active" in sql and "(p.asset_id IS NULL OR a.active)" in sql
+        assert sql.rstrip().endswith("WHERE p.id=%s")
+        assert "p.active AS passage_active,a.active AS asset_active" in sql
         self.calls.append(params)
-        return Rows(self.passages.get(params[0]))
+        row = self.passages.get(params[0])
+        flags = {"passage_active": True, "asset_active": None}
+        return Rows(row and {**flags, **row})
 
 
 PASSAGES = {
@@ -199,6 +206,69 @@ def test_evidence_is_captured_in_reference_order_as_json_values():
 def test_evidence_references_must_be_distinct_and_available(references, message):
     with pytest.raises(ValueError, match=f"^{message}$"):
         evidence(Passages(PASSAGES), references)
+
+
+NEWS = {"source": "news", "metadata": {"content_tier": "headline_only"}}
+SUPERSEDED = {
+    "old": {"id": "old", "text": "Old page text.", "passage_active": False, "source": "mub3"},
+    "asset": {"id": "asset", "text": "Old asset.", "asset_active": False, "source": "mub3"},
+    "withheld": {"id": "withheld", "text": "Body.", "passage_active": False, **NEWS},
+    "body": {
+        "id": "body",
+        "text": "Body.",
+        "passage_active": False,
+        "source": "news",
+        "metadata": {"content_tier": "full_text"},
+    },
+    "headline": {"id": "headline", "text": "Headline.", "asset_active": True, **NEWS},
+}
+
+
+def test_superseded_passages_stay_capturable_only_for_previous_references():
+    con = Passages(SUPERSEDED)
+    previous = {"old", "asset", "withheld", "body", "headline"}
+    captured = evidence(con, ["old", "asset", "body", "headline"], previous)
+    assert [c["id"] for c in captured] == ["old", "asset", "body", "headline"]
+    assert all("passage_active" not in c and "asset_active" not in c for c in captured)
+    assert evidence(con, ["headline"]) == [captured[3]]
+    for passage in ("old", "asset", "body"):
+        with pytest.raises(ValueError, match="^evidence reference unavailable$"):
+            evidence(con, [passage], previous - {passage})
+    # The current policy withholds a superseded body of a now headline-only item.
+    with pytest.raises(ValueError, match="^evidence reference unavailable$"):
+        evidence(con, ["withheld"], previous)
+    with pytest.raises(ValueError, match="^evidence reference unavailable$"):
+        evidence(con, ["gone"], {"gone"})
+
+
+def test_validate_passes_previous_references_to_capture():
+    body = {"question": "q", "references": ["old"]}
+    assert validate(Passages(SUPERSEDED), "investigation", body, previous={"old"})["evidence"]
+    with pytest.raises(ValueError, match="^evidence reference unavailable$"):
+        validate(Passages(SUPERSEDED), "investigation", body)
+
+
+@pytest.mark.parametrize(
+    ("row", "withheld"),
+    [
+        ({"passage_active": False, "asset_active": None, **NEWS}, True),
+        ({"passage_active": True, "asset_active": False, **NEWS}, True),
+        ({"passage_active": True, "asset_active": None, **NEWS}, False),
+        ({"passage_active": True, "asset_active": True, **NEWS}, False),
+        (
+            {
+                "passage_active": False,
+                "asset_active": None,
+                "source": "mub3",
+                "metadata": NEWS["metadata"],
+            },
+            False,
+        ),
+        ({"passage_active": False, "asset_active": None, "source": "news", "metadata": {}}, False),
+    ],
+)
+def test_current_news_policy_restricts_superseded_text(row, withheld):
+    assert restricted(row) is withheld
 
 
 def test_investigation_findings_are_labeled_and_reviews_bound_server_side():
