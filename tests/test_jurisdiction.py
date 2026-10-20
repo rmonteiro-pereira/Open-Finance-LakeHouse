@@ -564,6 +564,9 @@ def test_mcp_validates_and_forwards_the_jurisdiction_rule():
         )
         with pytest.raises(Exception):
             await server.call_tool("search_archive", {"q": "inflação", "jurisdiction": "only"})
+        # boost is API-only.
+        with pytest.raises(Exception):
+            await server.call_tool("search_archive", {"q": "inflação", "jurisdiction": "boost"})
 
     asyncio.run(exercise())
     assert "jurisdiction" not in seen[0] and seen[1]["jurisdiction"] == "exclude"

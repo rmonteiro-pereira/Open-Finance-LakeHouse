@@ -106,20 +106,22 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
         date_from: date | None = None,
         date_to: date | None = None,
         limit: int = 8,
-        jurisdiction: Literal["off", "boost", "exclude"] = "off",
+        jurisdiction: Literal["off", "exclude"] = "off",
     ) -> dict:
         """Document evidence with passage/item/asset/page IDs. OCR is not approved numeric data.
 
-        jurisdiction: when the query names a country/area, `boost` ranks passages with
-        lexical evidence of it higher; `exclude` drops passages whose evidence names only
-        other jurisdictions. The response's `jurisdiction` field discloses what was applied.
+        jurisdiction (experimental): `exclude` drops passages whose evidence names only
+        jurisdictions other than the ones the query names. It applies only when every named
+        jurisdiction is precision-gated (Brazil, United States, euro area); a query naming
+        another one (e.g. China) is searched without it. The response's `jurisdiction`
+        field discloses what was applied and what was ignored.
         """
         if not 1 <= len(q) <= 1000 or not 1 <= limit <= 20:
             raise ValueError("query length or result limit outside bounds")
         if date_from and date_to and date_from > date_to:
             raise ValueError("reversed date interval")
-        if jurisdiction not in {"off", "boost", "exclude"}:
-            raise ValueError("jurisdiction must be off, boost or exclude")
+        if jurisdiction not in {"off", "exclude"}:
+            raise ValueError("jurisdiction must be off or exclude")
         if jurisdiction == "off":
             jurisdiction = None
         return read("search", locals())
