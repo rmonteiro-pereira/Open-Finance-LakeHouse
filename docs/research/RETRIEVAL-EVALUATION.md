@@ -159,8 +159,22 @@ Schema migration runs in one transaction with `lock_timeout = 5s`; if another se
 holds a research table (for example a running worker), it fails with a clear error and
 changes nothing instead of queueing behind that session and blocking readers.
 
-Search takes `jurisdiction=off|boost|exclude` (API, MCP `search_archive`, dashboard;
-default `off`). A rule applies only when the query names a jurisdiction;
+Search takes `jurisdiction=off|boost|exclude`, default `off`. Both rules are
+experimental opt-ins: `exclude` is offered by the API, MCP `search_archive` and the
+dashboard; `boost` only by the API. On the frozen held-out cases, `exclude` raised
+P@10 by 0.1 on two cases and lowered none; `boost` lowered one case by 0.2.
+
+Rules act only on precision-gated jurisdictions (`GATED_JURISDICTIONS` in
+`ofl/research/jurisdiction.py`): those whose `jurisdiction-v4` tags reached at least
+0.90 precision in the hand-check audit, currently `BR` (40/40), `US` (38-39/40,
+depending on the judge) and `EA` (3/3). `CN` (17/21 = 0.81) is below the gate: China
+passages are still tagged and their evidence stored, but a query naming China is
+searched exactly as `off`. When a query names any ungated jurisdiction, the whole
+query is searched as `off`, even if it also names a gated one (`Brasil e China`); a
+partial rule would exclude on the gated name while silently ignoring the other. The
+disclosure lists the ungated codes in `ignored` and reports `applied: false`.
+
+A rule applies only when the query names a jurisdiction;
 `inflação`, `taxa de juros`, `Banco Central` or `câmbio dólar real` never fire
 it. Strong markers and national demonyms (`inflação brasileira`) name a
 jurisdiction in a query; cities, currencies, state banks and listed entities do not.
@@ -176,7 +190,7 @@ quotes is not negation.
   of the named ones. Untagged, unknown and mixed passages stay. The condition is part
   of the scope, so the keyword arm, the vector arm and `index_coverage` see the same
   passages.
-- `boost`: adds one list to the reciprocal-rank fusion with the same k=60: the
+- `boost` (API only): adds one list to the reciprocal-rank fusion with the same k=60: the
   candidates already retrieved, in fused order, that carry evidence of a named
   jurisdiction. A passage gains at most 1/61, the weight of a first place in one arm;
   no passage is added or removed. In single-arm modes the score becomes the fused
@@ -184,11 +198,11 @@ quotes is not negation.
   hybrid.
 
 With a non-`off` rule, the response carries `jurisdiction`: rule, tagger, named codes,
-whether it applied, and counts of scope passages, passages with named evidence,
+whether it applied, ungated named codes (`ignored`), and, when it applied, counts of scope passages, passages with named evidence,
 conflicting and excluded passages, untagged passages, passages tagged by an older
 tagger and boosted candidates/results. Each result carries its codes and evidence;
 a boosted result has a `jurisdiction_boost` entry in `ranking`. When a jurisdiction
-is named, the counts and `index_coverage` come from one scan of the filtered scope,
+is named and the rule applies, the counts and `index_coverage` come from one scan of the filtered scope,
 replacing the coverage query.
 
 `tools/jurisdiction_latency.py [--modes keyword,hybrid] [--repetitions 15]` times the
