@@ -169,10 +169,43 @@ Rules act only on precision-gated jurisdictions (`GATED_JURISDICTIONS` in
 0.90 precision in the hand-check audit, currently `BR` (40/40), `US` (38-39/40,
 depending on the judge) and `EA` (3/3). `CN` (17/21 = 0.81) is below the gate: China
 passages are still tagged and their evidence stored, but a query naming China is
-searched exactly as `off`. When a query names any ungated jurisdiction, the whole
+searched exactly as `off`. When a query mentions any ungated jurisdiction, the whole
 query is searched as `off`, even if it also names a gated one (`Brasil e China`); a
 partial rule would exclude on the gated name while silently ignoring the other. The
 disclosure lists the ungated codes in `ignored` and reports `applied: false`.
+
+Ungated mentions are found on the query side only; passage tagging is unchanged.
+They are:
+
+- any tagger match of an ungated code, weak ones included (`chinês`, `yuan`, `Bank of
+  China`);
+- a mention from a query-only lexicon (`FOREIGN` in `ofl/research/jurisdiction.py`)
+  of countries and blocs the tagger has no code for, in Portuguese and English. It
+  covers the G20 and OECD members and other frequent markets (`Japão`, `Reino
+  Unido`, `Alemanha`, `Argentina`, `México`, `Índia`, `Turquia`, `Hong Kong`,
+  `Taiwan`...), their main demonyms (`japonesa`, `argentino`), regions and blocs
+  (`América Latina`, `Ásia`, `mercados emergentes`, `Mercosul`, `BRICS`, `G20`)
+  and a short list of upper-case ISO codes (`CN`, `CHN`, `JP`, `JPN`, `UK`, `GBR`,
+  `DEU`, `FRA`, `ARG`, `MEX`...). Other upper-case words and tickers are not read
+  as codes. Matching ignores accents and, except where noted, case, and works on
+  whole words. `ignored` reports ISO 3166 alpha-2 codes, or a region name
+  (`LATAM`, `ASIA`, `EUROPE`, `EMERGING`, `BLOC`).
+
+The same negation rules as for named jurisdictions apply: `Brasil -Japão` still
+applies the rule to Brazil. Words that are also common lowercase words match only
+when capitalised: `Peru` (not `peru`, turkey), `Índia` (not `índia`), `Turkey`,
+`Irã`. A mention inside a strong tagger marker does not count, so `Banco Central
+Europeu` still names only the euro area.
+
+Europe is not the euro area. `Europa`, `europeu`/`europeia`, `União Europeia`,
+`UE` and `EU` never activate `EA`, as before, and a query that contains them is
+searched as `off` (ignored `EUROPE` or `EU`), because a rule on the other named
+jurisdictions would drop euro-area passages the query asks about. Only an explicit
+euro-area name or institution (`zona do euro`, `BCE`, `Eurostat`) names `EA`.
+Currency words (`euro`, `real`) are not mentions. Language names that double as
+demonyms (`inglês`, `espanhol`) turn the rule off. Missing the rule only costs the
+rule, never results. `português` is not in the lexicon, because in this corpus it
+almost always names the language.
 
 A rule applies only when the query names a jurisdiction;
 `inflação`, `taxa de juros`, `Banco Central` or `câmbio dólar real` never fire
