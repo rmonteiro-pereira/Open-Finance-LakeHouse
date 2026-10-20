@@ -445,7 +445,7 @@ def fake_ollama(monkeypatch, db, *, failure=None):
     def post(_url, json, timeout):
         assert json["truncate"] is False
         calls.append(len(json["input"]))
-        if failure and (status := failure(len(calls))):
+        if failure and (status := failure(len(calls), json["input"])):
             return reply(*status)
         if any("OVERSIZE" in text for text in json["input"]):
             return reply(413, {"error": "the input length exceeds the context length"})
@@ -514,14 +514,14 @@ PHRASE = "the input length exceeds the context length"
 @pytest.mark.parametrize(
     ("failure", "calls_made"),
     [
-        (lambda _: (500, {"error": "model runner has unexpectedly stopped"}), [4]),
-        (lambda _: (400, {"error": "invalid input"}), [4]),
-        (lambda _: (503, f"<html><body>upstream: {PHRASE}</body></html>".encode()), [4]),
-        (lambda _: (500, {"error": f"upstream: {PHRASE} upstream"}), [4]),
-        (lambda _: (413, PHRASE.encode()), [4]),
-        (lambda _: (413, {"error": f"{PHRASE} (proxy)"}), [4]),
+        (lambda *_: (500, {"error": "model runner has unexpectedly stopped"}), [4]),
+        (lambda *_: (400, {"error": "invalid input"}), [4]),
+        (lambda *_: (503, f"<html><body>upstream: {PHRASE}</body></html>".encode()), [4]),
+        (lambda *_: (500, {"error": f"upstream: {PHRASE} upstream"}), [4]),
+        (lambda *_: (413, PHRASE.encode()), [4]),
+        (lambda *_: (413, {"error": f"{PHRASE} (proxy)"}), [4]),
         # The first refusal is genuine; an outage during bisection still fails the batch.
-        (lambda call: None if call == 1 else (503, b"Service Unavailable"), [4, 2]),
+        (lambda call, _: None if call == 1 else (503, b"Service Unavailable"), [4, 2]),
     ],
 )
 def test_other_remote_errors_still_fail_the_job(research, monkeypatch, failure, calls_made):
@@ -536,6 +536,32 @@ def test_other_remote_errors_still_fail_the_job(research, monkeypatch, failure, 
         embed_pending(db, 100)
     assert calls == calls_made and not rejections(db)
     assert not db.rows("SELECT 1 FROM embeddings")
+    assert index_coverage(db)["pending_passages"] == 4
+
+
+def test_outage_after_a_completed_bisection_branch_persists_nothing(research, monkeypatch):
+    import requests
+
+    from ofl.research.search import embed_pending
+
+    db, _ = research
+    seed_letters(db, 4)
+    ids = [row["id"] for row in db.rows("SELECT id FROM passages ORDER BY id")]
+    with db.connect() as con:
+        # Selection order is by id: the left half holds the refusal, the right half the outage.
+        con.execute("UPDATE passages SET text='Carta OVERSIZE' WHERE id=%s", (ids[0],))
+        con.execute("UPDATE passages SET text='Carta OUTAGE' WHERE id=%s", (ids[3],))
+
+    def outage(_call, texts):
+        refused = "Carta OVERSIZE" in texts
+        return (503, b"Service Unavailable") if "Carta OUTAGE" in texts and not refused else None
+
+    calls = fake_ollama(monkeypatch, db, failure=outage)
+    with pytest.raises(requests.HTTPError):
+        embed_pending(db, 100)
+    # 4 refused, left [0,1] refused, [0] rejected, [1] embedded, right [2,3] outage.
+    assert calls == [4, 2, 1, 1, 2]
+    assert not rejections(db) and not db.rows("SELECT 1 FROM embeddings")
     assert index_coverage(db)["pending_passages"] == 4
 
 
