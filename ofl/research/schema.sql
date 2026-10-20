@@ -1,4 +1,6 @@
 -- Application database only. Never apply to the Airflow metadata database.
+-- One transaction. Fail fast instead of queueing behind (and blocking) live readers.
+SET LOCAL lock_timeout = '5s';
 CREATE EXTENSION IF NOT EXISTS vector;
 CREATE TABLE IF NOT EXISTS research_schema (version integer PRIMARY KEY);
 INSERT INTO research_schema VALUES (1) ON CONFLICT DO NOTHING;
@@ -63,6 +65,11 @@ CREATE TABLE IF NOT EXISTS passages (
 );
 CREATE INDEX IF NOT EXISTS passages_search ON passages USING gin(search) WHERE active;
 CREATE INDEX IF NOT EXISTS passages_item ON passages(item_id) WHERE active;
+-- Lexical jurisdiction evidence (ofl/research/jurisdiction.py). NULL = not yet tagged;
+-- an empty array = tagged, no evidence. Tagger version and title digest detect stale tags.
+ALTER TABLE passages ADD COLUMN IF NOT EXISTS jurisdiction text[];
+ALTER TABLE passages ADD COLUMN IF NOT EXISTS jurisdiction_evidence jsonb;
+ALTER TABLE passages ADD COLUMN IF NOT EXISTS jurisdiction_tagger text;
 -- Different model versions coexist; vector dimensions validated by the application.
 CREATE TABLE IF NOT EXISTS embeddings (
  passage_id text NOT NULL REFERENCES passages(id), model text NOT NULL,

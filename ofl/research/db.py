@@ -40,7 +40,13 @@ class Database:
         with self.connect() as con:
             if con.execute("SELECT to_regclass('public.dag_run') AS airflow").fetchone()["airflow"]:
                 raise ValueError("refusing to migrate an Airflow metadata database")
-            con.execute(files("ofl.research").joinpath("schema.sql").read_text())
+            try:
+                con.execute(files("ofl.research").joinpath("schema.sql").read_text())
+            except psycopg.errors.LockNotAvailable as error:
+                raise RuntimeError(
+                    "migration could not lock a research table within 5 s; another session "
+                    "holds it (e.g. a running worker). Nothing was changed; retry when idle."
+                ) from error
 
     def rows(self, query, params=(), *, ann=False):
         with self.connect() as con:

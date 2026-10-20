@@ -404,6 +404,12 @@ def create_app(settings=None):
         date_from: date | None = None,
         date_to: date | None = None,
         limit: int = Query(20, ge=1, le=100),
+        jurisdiction: Literal["off", "boost", "exclude"] = Query(
+            "off",
+            description="Experimental. exclude drops passages whose evidence names only other "
+            "jurisdictions; boost (API only) adds one bounded RRF list. Applied only when the "
+            "query names precision-gated jurisdictions (BR, US, EA).",
+        ),
         _user=Depends(identity),
     ):
         from .search import search
@@ -424,6 +430,7 @@ def create_app(settings=None):
                 date_from=date_from,
                 date_to=date_to,
                 limit=limit,
+                jurisdiction=jurisdiction,
             )
         )
 

@@ -11,6 +11,7 @@ denominator: those whose source is identical to the original, and those listed i
 EQUIVALENT with the reason no input can tell them apart.
 
 --idle-tests additionally lists tests that touch a gated function but kill no mutant.
+--scope NAME runs and reports a single scope (e.g. --scope retrieval).
 
 CPU use: half of the available cores (override with MUTATION_WORKERS), pinned to that
 half, at nice 10. The run waits while the load average exceeds the core count.
@@ -79,6 +80,43 @@ SCOPES = {
             "ofl.research.workspaces.x_validate",
             "ofl.research.analytics.x_release_diff",
             "ofl.research.analytics.x_prepare_dataset",
+        ],
+    ),
+    "retrieval": (
+        0.90,
+        [
+            "ofl.research.jurisdiction.x_check_rule",
+            "ofl.research.jurisdiction.x_sentence_end",
+            "ofl.research.jurisdiction.x_related_spans",
+            "ofl.research.jurisdiction.x_find",
+            "ofl.research.jurisdiction.x__word_spans",
+            "ofl.research.jurisdiction.x__merge",
+            "ofl.research.jurisdiction.x_document",
+            "ofl.research.jurisdiction.x_passage_regions",
+            "ofl.research.jurisdiction.x_decide",
+            "ofl.research.jurisdiction.x_tag",
+            "ofl.research.jurisdiction.x_negated_spans",
+            "ofl.research.jurisdiction.x_detect",
+            "ofl.research.jurisdiction.x_exclusion",
+            "ofl.research.jurisdiction.x_boosted",
+            "ofl.research.jurisdiction.x_plan",
+            "ofl.research.jurisdiction.x_canonical",
+            "ofl.research.jurisdiction.x__folded",
+            "ofl.research.jurisdiction.x_fold",
+            "ofl.research.jurisdiction.x_foreign",
+            "ofl.research.jurisdiction.x_columns",
+            "ofl.research.jurisdiction.x_batch_updates",
+            # Search integration of the rule, extracted from search() so it can be gated.
+            "ofl.research.search.x_fuse",
+            "ofl.research.search.x__projection",
+            "ofl.research.search.x__narrowed_scope",
+            "ofl.research.search.x__boost",
+            "ofl.research.search.x__contributions",
+            "ofl.research.search.x__boost_disclosure",
+            "ofl.research.search.x__disclosure",
+            "ofl.research.search.x__jurisdiction_scope",
+            "ofl.research.search.x__scope_scan",
+            "ofl.research.search.x__scope_counts",
         ],
     ),
 }
@@ -169,6 +207,51 @@ EQUIVALENT = {
         137: "no separator configured: None and '' are both falsy and differ from '.'/','",
         139: "no separator configured: None and '' are both falsy and differ from '.'/','",
         190: _EXPONENT,
+    },
+    "ofl.research.jurisdiction.x_find": {
+        13: "same-length overlapping matches: end order equals start order",
+    },
+    "ofl.research.jurisdiction.x_related_spans": {
+        13: "a marker ends on a non-space character, so no word starts exactly there",
+    },
+    "ofl.research.jurisdiction.x_passage_regions": {
+        **dict.fromkeys(
+            (61, 64, 65),
+            "document branch only runs when ordinals == range(len(texts)): equal lengths",
+        ),
+    },
+    "ofl.research.jurisdiction.x_decide": {
+        30: "a dominance check only runs at total == 1, where 3 * 1 == 3 / 1",
+    },
+    "ofl.research.jurisdiction.x_detect": {
+        26: "a negated span starts after a term-initial '-', where no marker can end",
+    },
+    "ofl.research.jurisdiction.x_negated_spans": {
+        37: "a closing quote is searched from start + 1 >= 2, so find() never returns 0",
+        38: "a closing quote is searched from start + 1 >= 2, so find() never returns 0",
+        57: "every term ends at least one character after it starts: end >= index + 1",
+    },
+    "ofl.research.jurisdiction.x_batch_updates": {
+        **dict.fromkeys(
+            (23, 26, 27),
+            "passage_regions returns one region per text (its own strict zip): equal lengths",
+        ),
+    },
+    "ofl.research.jurisdiction.x_foreign": {
+        **dict.fromkeys(
+            (22, 23),
+            "no taken span starts inside a mention (negated spans start after a "
+            "term-initial '-', which no FOREIGN match contains; no strong marker begins "
+            "inside a FOREIGN match): a mention at or after a span start has "
+            "index[end - 2] + 1 >= start + 1 > a, also for 2-letter codes, and +2 only "
+            "differs for a span starting where the mention ends",
+        ),
+        **dict.fromkeys(
+            (24, 35),
+            "a mention ends on a word character, '.' or '$'; a negated span starts after "
+            "'-' or a space and a strong marker starts on a word character after a non-word "
+            "one, so no span starts exactly where a mention ends",
+        ),
     },
     "ofl.research.workspaces.x_validate": {
         26: _DEFAULT_SAME_ERROR,
@@ -435,14 +518,19 @@ def idle_tests(codes, workers):
 
 
 def main():
+    global SCOPES, FRESH_PROCESS  # noqa: PLW0603 (--scope narrows them for this run)
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--report-only", action="store_true", help="read the last run")
     parser.add_argument("--idle-tests", action="store_true", help="list tests that kill nothing")
     parser.add_argument("-v", "--verbose", action="store_true", help="list each non-killed mutant")
+    parser.add_argument("--scope", choices=sorted(SCOPES), help="run and report one scope only")
     parser.add_argument("--probe", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.probe:
         return probe(args.probe)
+    if args.scope:
+        SCOPES = {args.scope: SCOPES[args.scope]}
+        FRESH_PROCESS = [f for f in FRESH_PROCESS if f in gated_functions()]
     os.chdir(ROOT)
     cores = sorted(os.sched_getaffinity(0))
     workers = int(os.environ.get("MUTATION_WORKERS", max(1, len(cores) // 2)))

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "purpose": "Held-out evaluation set for jurisdiction-aware search, frozen before implementation. Slices: paraphrase of development case R01 (reported separately), named jurisdiction, mirrored jurisdiction, neutral (no jurisdiction named; the rule must not fire), mixed comparison, implicit geography, absent topic.",
+  "cases": [
+    {"id": "H01", "slice": "r01-paraphrase", "query": "inflação brasileira", "filters": {"source": "news"}},
+    {"id": "H02", "slice": "r01-paraphrase", "query": "IPCA acumulado em 12 meses", "filters": {"source": "news"}},
+    {"id": "H03", "slice": "named-jurisdiction", "query": "preços ao consumidor no Brasil", "filters": {"source": "news"}},
+    {"id": "H04", "slice": "mirrored-jurisdiction", "query": "juros nos Estados Unidos", "filters": {"source": "news"}},
+    {"id": "H05", "slice": "mirrored-jurisdiction", "query": "custo de vida nos EUA", "filters": {"source": "news"}},
+    {"id": "H06", "slice": "named-jurisdiction", "query": "inflação na zona do euro", "filters": {"source": "news"}},
+    {"id": "H07", "slice": "neutral", "query": "inflação", "filters": {"source": "news"}},
+    {"id": "H08", "slice": "neutral", "query": "taxa de juros", "filters": {"source": "news"}},
+    {"id": "H09", "slice": "mixed-comparison", "query": "Selic e juros americanos comparados", "filters": {"source": "news"}},
+    {"id": "H10", "slice": "implicit-geography", "query": "política monetária do Banco Central", "filters": {"source": "manager_letter"}},
+    {"id": "H11", "slice": "mixed-comparison", "query": "juros americanos e impacto nos ativos brasileiros", "filters": {"source": "manager_letter"}},
+    {"id": "H12", "slice": "named-jurisdiction", "query": "cenário fiscal brasileiro", "filters": {"source": "manager_letter"}},
+    {"id": "H13", "slice": "implicit-geography", "query": "câmbio dólar real", "filters": {"source": "news"}},
+    {"id": "H14", "slice": "named-jurisdiction", "query": "inflação na China", "filters": {"source": "news"}},
+    {"id": "H15", "slice": "named-jurisdiction", "query": "eleições no Brasil e mercado financeiro", "filters": {"source": "news"}},
+    {"id": "H16", "slice": "absent-topic", "query": "receita de bolo de chocolate", "filters": {}}
+  ]
+}
