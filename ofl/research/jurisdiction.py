@@ -8,12 +8,17 @@ document is about. Two tiers:
   `BCE`, `PBoC`) or a national market (`Ibovespa`, `Wall Street`, `Nasdaq`);
 - weak: demonyms (`brasileiro`, `americana`, `chinês`), cities (`Brasília`,
   `Washington`, `Xangai`), currencies and symbols (`real`, `R$`, `US$`, `euro`, `yuan`)
-  and generic terms (`Banco Central`, `CPI`, `Treasury`). Weak evidence is recorded but
-  never creates a tag.
+  state banks (`Banco do Brasil`, `Bank of China`) and generic terms (`Banco Central`,
+  `CPI`, `Treasury`). Weak evidence is recorded but never creates a tag.
 
-Reviewed multiword entities that contain a country word without referring to the
-country (company, brand, road, sports names: `Lojas Americanas`, `CNN Brasil`,
-`Rodovia Washington Luís`, `futebol americano`) mask their words and count as nothing.
+State banks are national evidence but, like company news generally, not a statement
+about the country, so they are weak: recorded, never decisive. Reviewed multiword
+entities that contain a country word without referring to the country (publisher,
+brand, road, sports names: `Lojas Americanas`, `CNN Brasil`, `Rodovia Washington Luís`,
+`futebol americano`) mask their words and count as nothing.
+
+In queries, strong markers and national demonyms name a jurisdiction; European
+demonyms do not name the euro area, which needs an explicit name or institution.
 
 A jurisdiction is tagged with a strong title mention or at least two strong body
 mentions. When another jurisdiction has at least three times its strong evidence, it
@@ -27,13 +32,10 @@ import re
 
 from psycopg.types.json import Jsonb
 
-VERSION = "jurisdiction-v3"
+VERSION = "jurisdiction-v4"
 RULES = ("off", "boost", "exclude")
 MAX_MATCHES = 40
 RELATED_WORDS = 30
-TRAILING_WORDS = 60
-TAIL_WORDS = 40
-TAIL_CONTEXT = 60
 DOMINANCE = 3
 # Must equal ofl.research.archive.chunks: passages are 350-word windows overlapping by 40.
 CHUNK_WORDS = 350
@@ -48,6 +50,7 @@ MARKERS = [
     ("BR", "weak", "demonym", r"brasileir[oa]s?"),
     ("BR", "weak", "city", r"bras[ií]lia"),
     ("BR", "weak", "currency", r"(?<!\w)(?-i:R)\$"),
+    ("BR", "weak", "state_bank", r"banco do brasil"),
     ("BR", "weak", "generic", r"real|reais|banco central|tesouro"),
     ("US", "strong", "name", r"estados unidos|united states|(?-i:EUA|U\.S\.|USA)"),
     ("US", "strong", "institution", r"(?-i:Fed|FOMC)|federal reserve|casa branca|white house"),
@@ -68,7 +71,8 @@ MARKERS = [
         "institution",
         r"banco central europeu|european central bank|eurostat|(?-i:BCE|ECB|HICP)",
     ),
-    ("EA", "weak", "demonym", r"europeu|europeia|europeus|europeias|european"),
+    # European, not euro-area: never names EA in a query.
+    ("EA", "weak", "regional", r"europeu|europeia|europeus|europeias|european"),
     ("EA", "weak", "currency", r"euros?"),
     ("EA", "weak", "generic", r"europa|europe"),
     ("CN", "strong", "name", r"china"),
@@ -76,6 +80,7 @@ MARKERS = [
     ("CN", "strong", "market", r"bolsa de (?:xangai|shanghai)"),
     ("CN", "weak", "demonym", r"chin[eê]s|chines[ae]s?"),
     ("CN", "weak", "city", r"pequim|beijing|xangai|shanghai"),
+    ("CN", "weak", "state_bank", r"bank of china|china construction bank"),
     ("CN", "weak", "currency", r"yuan|renminbi"),
 ]
 # Reviewed entities whose country word does not refer to the country.
@@ -83,10 +88,10 @@ ENTITIES = [
     r"(?:rodovia |avenida |av\. )?washington lu[ií]s",
     r"washington post|wall street journal|new york times",
     r"lojas americanas|americanas s\.?a\.?|(?-i:Americanas)",
-    r"(?:cnn|tv|agência|agencia|rádio|radio) brasil|brasil paralelo|banco do brasil",
+    r"(?:cnn|tv|agência|agencia|rádio|radio) brasil|brasil paralelo",
     r"copa do brasil|(?:gp|grande prêmio|grande premio) do brasil|seleção brasileira",
     r"futebol americano|(?:moeda|divisa) (?:americana|norte-americana)|sonho americano",
-    r"china mobile|bank of china|air china|china evergrande|china construction bank",
+    r"china mobile|air china|china evergrande",
 ]
 PATTERNS = [
     (
@@ -97,7 +102,7 @@ PATTERNS = [
     )
     for code, tier, kind, pattern in MARKERS
 ] + [(None, "entity", "entity", re.compile(rf"(?<!\w)(?:{p})(?!\w)", re.I)) for p in ENTITIES]
-PRIORITY = {"entity": 0, "strong": 1, "weak": 2}
+PRIORITY = {"entity": 0, "state_bank": 0, "strong": 1, "weak": 2}
 RELATED = re.compile(
     r"(?<!\w)(?:leia (?:também|mais|a seguir)|veja (?:também|mais)|saiba mais|confira (?:também|mais)"
     r"|assista (?:também|mais)|mais lidas|últimas notícias|mais notícias|recomendad[ao]s"
@@ -152,48 +157,39 @@ def sentence_end(text, start):
     return None
 
 
-def related_spans(text, whole=True):
-    """Related-link/navigation regions.
+def related_spans(text):
+    """Related-link/navigation regions, only where a cue marks them.
 
-    A marker runs to its sentence end, at most 30 words, or to the end of the text when
-    at most 60 words follow it (a trailing link block). Feed footers ("The post ...
-    appeared first on ...") are related. With `whole`, an unterminated tail of at most
-    40 words after the last sentence of a longer text is a trailing headline.
+    A marker runs to its sentence end, at most 30 words. Feed footers ("The post ...
+    appeared first on ...") are related. Unmarked text, even a closing fragment without
+    punctuation, keeps body provenance: stored passages have no line structure that
+    would show a link list.
     """
     words = [w.span() for w in re.finditer(r"\S+", text)]
     spans = []
     for marker in RELATED.finditer(text):
         after = [w for w in words if w[0] >= marker.end()]
-        if whole and len(after) <= TRAILING_WORDS:
-            spans.append((marker.start(), len(text)))
-            continue
         limit = after[RELATED_WORDS - 1][1] if len(after) >= RELATED_WORDS else len(text)
         stop = sentence_end(text, marker.end())
         spans.append((marker.start(), min(limit, len(text) if stop is None else stop)))
     spans += [m.span() for m in FOOTER.finditer(text)]
-    if whole:
-        last, position = None, 0
-        while (stop := sentence_end(text, position)) is not None:
-            last, position = stop, stop
-        tail = [w for w in words if last is not None and w[0] >= last]
-        if 0 < len(tail) <= TAIL_WORDS and len(words) - len(tail) >= TAIL_CONTEXT:
-            spans.append((tail[0][0], len(text)))
     return sorted(spans)
 
 
 def find(text):
-    """Non-overlapping matches; entities, then strong, then longer, then earlier win."""
+    """Non-overlapping matches; entities and state banks, then strong, then longer, then
+    earlier win (`Banco do Brasil` is not also a strong `Brasil`)."""
     found = [
-        (match.start(), match.end(), code, tier)
-        for code, tier, _, pattern in PATTERNS
+        (PRIORITY.get(kind, PRIORITY[tier]), match.start(), match.end(), code, tier)
+        for code, tier, kind, pattern in PATTERNS
         for match in pattern.finditer(text)
     ]
-    found.sort(key=lambda m: (PRIORITY[m[3]], m[0] - m[1], m[0]))
+    found.sort(key=lambda m: (m[0], m[1] - m[2], m[1]))
     kept = []
     for match in found:
-        if all(match[1] <= other[0] or match[0] >= other[1] for other in kept):
+        if all(match[2] <= other[1] or match[1] >= other[2] for other in kept):
             kept.append(match)
-    return sorted(kept)
+    return sorted(m[1:] for m in kept)
 
 
 def _word_spans(words):
@@ -238,7 +234,7 @@ def passage_regions(ordinals, texts):
             spans = _word_spans(text.split())[:RELATED_WORDS] if ordinal else []
             regions.append(
                 {
-                    "related": related_spans(text, whole=False),
+                    "related": related_spans(text),
                     "unclassified": [(spans[0][0], spans[-1][1])] if spans else [],
                     "context": "passage",
                 }
