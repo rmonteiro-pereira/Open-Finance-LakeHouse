@@ -191,10 +191,16 @@ They are:
   whole words. `ignored` reports ISO 3166 alpha-2 codes, or a region name
   (`LATAM`, `ASIA`, `EUROPE`, `EMERGING`, `BLOC`).
 
-Queries are normalised to Unicode NFC before any matching, negation or span
-computation, so decomposed accents (`a` followed by a combining tilde) give the same
-result as composed ones; combining marks that cannot be composed are dropped when
-folding. Passage text is tagged as stored. On the current archive, NFC changes no
+All query-side matching, negation and span computation use one canonical query
+form (`canonical()` in `ofl/research/jurisdiction.py`): Unicode NFKC, so decomposed
+accents, fullwidth letters and ligatures read as plain text; format characters
+(zero-width space and joiners, word joiner, soft hyphen, BOM) removed; and every run
+of Unicode whitespace (NBSP, narrow NBSP, ideographic space, tabs, line breaks) as one
+space. Offsets on the query side are relative to that form; the query is not stored
+and no disclosure reports query spans. Combining marks that cannot be composed are
+dropped when folding accents. Other exotic input (homoglyphs from other scripts, for
+example) is not normalised; such a query can still miss an ungated mention.
+Passage text is tagged as stored. On the current archive, NFC changes no
 tag (every passage in documents with non-NFC text or titles was compared). It is
 not applied to tagging yet, because evidence offsets and related-region spans
 refer to the stored text, and title hashes must keep matching it. The same negation rules as for named jurisdictions apply: `Brasil -Japão` still
