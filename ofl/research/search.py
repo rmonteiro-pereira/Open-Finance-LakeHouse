@@ -202,7 +202,6 @@ def index_coverage(db, *, where=None, params=()):
         where, params = scope_conditions()
     where = f"({where}) AND {SEMANTIC_CONTENT}"
     settings = db.settings
-    configured = bool(settings.embedding_revision)
     space = (settings.embedding_model, settings.embedding_revision or "")
     row = db.rows(
         f"""SELECT count(*) AS eligible_passages, count(e.passage_id) AS indexed_passages,
@@ -211,6 +210,11 @@ def index_coverage(db, *, where=None, params=()):
         ON e.passage_id=p.id AND e.model=%s AND e.revision=%s LEFT JOIN {REJECTED} WHERE {where}""",
         (*space, *space, *params),
     )[0]
+    return _coverage(settings, row)
+
+
+def _coverage(settings, row):
+    configured = bool(settings.embedding_revision)
     total, indexed, rejected = (
         int(row["eligible_passages"]),
         int(row["indexed_passages"]) if configured else 0,
@@ -261,12 +265,13 @@ def search(
         date_from=date_from,
         date_to=date_to,
     )
-    disclosure = _jurisdiction_scope(db, rule, named, where, params)
+    disclosure, coverage = _jurisdiction_scope(db, rule, named, where, params)
     if named and rule == "exclude":
         # Both arms and the coverage denominator see the same narrowed scope.
         condition, extra = places.exclusion(named)
         where, params = f"{where} AND {condition}", [*params, *extra]
-    coverage = index_coverage(db, where=where, params=params)
+    if coverage is None:
+        coverage = index_coverage(db, where=where, params=params)
     projection = """p.id,p.item_id,p.asset_id,p.page,p.text,p.method,p.evidence,
         i.title,i.source,i.item_type,i.collection,i.date_start,i.date_end,i.date_precision,
         i.metadata->>'url' AS source_url,i.metadata->>'content_tier' AS content_tier,
@@ -380,9 +385,13 @@ def search(
 
 
 def _jurisdiction_scope(db, rule, named, where, params):
-    """Disclosure for a non-off rule; counts only when the query names a jurisdiction."""
+    """Disclosure for a non-off rule and, when a jurisdiction is named, the index coverage.
+
+    One scan of the filtered scope yields both: coverage aggregates are restricted to the
+    searched (semantic, and for exclude narrowed) passages, disclosure counts are not.
+    """
     if rule == "off":
-        return None
+        return None, None
     disclosure = {
         "rule": rule,
         "tagger": places.VERSION,
@@ -392,26 +401,45 @@ def _jurisdiction_scope(db, rule, named, where, params):
         "currency symbol, not topic classification. Applied only when the query names a "
         "jurisdiction; untagged and evidence-free passages are never excluded.",
     }
-    if named:
-        condition, extra = places.exclusion(named)
-        row = db.rows(
-            f"""SELECT count(*) AS scope,count(*) FILTER (WHERE p.jurisdiction IS NULL) AS untagged,
-            count(*) FILTER (WHERE p.jurisdiction_tagger IS DISTINCT FROM %s
-                AND p.jurisdiction IS NOT NULL) AS older_tagger,
-            count(*) FILTER (WHERE p.jurisdiction && %s::text[]) AS named_evidence,
-            count(*) FILTER (WHERE NOT {condition}) AS conflicting
-            FROM passages p JOIN items i ON i.id=p.item_id WHERE {where}""",
-            (places.VERSION, named, *extra, *params),
-        )[0]
-        disclosure.update(
-            scope_passages=row["scope"],
-            passages_with_named_evidence=row["named_evidence"],
-            conflicting_passages=row["conflicting"],
-            excluded_passages=row["conflicting"] if rule == "exclude" else 0,
-            untagged_passages=row["untagged"],
-            older_tagger_passages=row["older_tagger"],
-        )
-    return disclosure
+    if not named:
+        return disclosure, None
+    condition, extra = places.exclusion(named)
+    searched = f"{SEMANTIC_CONTENT} AND {condition}" if rule == "exclude" else SEMANTIC_CONTENT
+    narrowed = extra if rule == "exclude" else []
+    settings = db.settings
+    space = (settings.embedding_model, settings.embedding_revision or "")
+    row = db.rows(
+        f"""SELECT count(*) FILTER (WHERE {searched}) AS eligible_passages,
+        count(e.passage_id) FILTER (WHERE {searched}) AS indexed_passages,
+        count(r.passage_id) FILTER (WHERE e.passage_id IS NULL AND {searched}) AS rejected_passages,
+        count(*) AS scope,count(*) FILTER (WHERE p.jurisdiction IS NULL) AS untagged,
+        count(*) FILTER (WHERE p.jurisdiction_tagger IS DISTINCT FROM %s
+            AND p.jurisdiction IS NOT NULL) AS older_tagger,
+        count(*) FILTER (WHERE p.jurisdiction && %s::text[]) AS named_evidence,
+        count(*) FILTER (WHERE NOT {condition}) AS conflicting
+        FROM passages p JOIN items i ON i.id=p.item_id LEFT JOIN embeddings e
+        ON e.passage_id=p.id AND e.model=%s AND e.revision=%s LEFT JOIN {REJECTED} WHERE {where}""",
+        (
+            *narrowed,
+            *narrowed,
+            *narrowed,
+            places.VERSION,
+            named,
+            *extra,
+            *space,
+            *space,
+            *params,
+        ),
+    )[0]
+    disclosure.update(
+        scope_passages=row["scope"],
+        passages_with_named_evidence=row["named_evidence"],
+        conflicting_passages=row["conflicting"],
+        excluded_passages=row["conflicting"] if rule == "exclude" else 0,
+        untagged_passages=row["untagged"],
+        older_tagger_passages=row["older_tagger"],
+    )
+    return disclosure, _coverage(settings, row)
 
 
 def create_vector_index(db):
