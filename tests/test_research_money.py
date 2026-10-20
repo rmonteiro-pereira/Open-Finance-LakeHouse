@@ -392,6 +392,163 @@ def test_zip_member_is_read_like_the_text_file(tmp_path):
     )
 
 
+# Pinned quote releases read from a local Delta table
+
+POINTER_SQL = (
+    "SELECT r.* FROM pointers p JOIN releases r ON r.id=p.release_id WHERE p.kind='quotes'"
+)
+RELEASE_SQL = "SELECT * FROM releases WHERE id=%s AND kind='quotes'"
+
+
+def quote_rows(closes):
+    rows = [
+        ("q1", date(2024, 3, 4), "PETR4", "010", "BRL", 1),
+        ("q2", date(2024, 3, 5), "PETR4", "010", "BRL", 1),
+        ("q0", date(2024, 3, 5), "PETR4", "020", "BRL", 1),
+        ("q3", date(2024, 3, 6), "PETR4", "010", "BRL", 1000),
+        ("q4", date(2024, 3, 5), "VALE3", "010", "BRL", 1),
+        ("q5", date(2024, 3, 5), "PETR4", "010", "USD", 1),
+    ]
+    return [
+        {
+            "record_id": r[0],
+            "date": r[1],
+            "symbol": r[2],
+            "tpmerc": r[3],
+            "currency": r[4],
+            "quotation_factor": r[5],
+            "close": Decimal(close),
+        }
+        for r, close in zip(rows, closes, strict=True)
+    ]
+
+
+@pytest.fixture(scope="module")
+def delta_quotes(tmp_path_factory):
+    import pyarrow as pa
+    from deltalake import write_deltalake
+
+    schema = pa.schema(
+        [
+            ("record_id", pa.string()),
+            ("date", pa.date32()),
+            ("symbol", pa.string()),
+            ("tpmerc", pa.string()),
+            ("currency", pa.string()),
+            ("quotation_factor", pa.int64()),
+            ("close", pa.decimal128(20, 2)),
+        ]
+    )
+    uri = str(tmp_path_factory.mktemp("quotes") / "delta")
+    first = ["38.80", "39.10", "1.00", "1000.00", "60.00", "7.50"]
+    write_deltalake(uri, pa.Table.from_pylist(quote_rows(first), schema=schema))
+    second = ["99.99"] * 6
+    write_deltalake(uri, pa.Table.from_pylist(quote_rows(second), schema=schema), mode="overwrite")
+    return uri
+
+
+class Releases:
+    """Release catalogue: the current pointer and releases by id."""
+
+    def __init__(self, uri, pointer=("r-old", 0), known=(("r-old", 0), ("r-new", 1))):
+        self.uri, self.pointer, self.known = uri, pointer, dict(known)
+        self.calls = []
+
+    def release(self, release_id, version):
+        return {"id": release_id, "delta_uri": self.uri, "delta_version": version}
+
+    def rows(self, sql, params=()):
+        self.calls.append((sql, params))
+        if sql == POINTER_SQL and not params:
+            return [self.release(*self.pointer)] if self.pointer else []
+        if sql == RELEASE_SQL:
+            version = self.known.get(params[0])
+            return [] if version is None else [self.release(params[0], version)]
+        raise AssertionError(sql)
+
+
+def test_quotes_come_from_the_pointed_release_at_its_pinned_delta_version(delta_quotes):
+    db = Releases(delta_quotes)
+    result = query.quote_query(db, symbol="PETR4", market="010", currency="BRL")
+    assert db.calls == [(POINTER_SQL, ())]
+    assert result["release"] == "r-old"
+    assert [(r["record_id"], r["close"]) for r in result["rows"]] == [
+        ("q1", Decimal("38.80")),
+        ("q2", Decimal("39.10")),
+        ("q3", Decimal("1000.00")),
+    ]
+    assert [r["close_per_unit"] for r in result["rows"]] == [
+        Decimal("38.800000000000"),
+        Decimal("39.100000000000"),
+        Decimal("1.000000000000"),
+    ]
+    assert result["qualification"] == "Original currency and quotation basis; unadjusted prices"
+    assert (result["limit"], result["offset"]) == (100, 0)
+    assert set(result) == {"release", "rows", "qualification", "limit", "offset"}
+
+
+def test_an_explicit_release_is_read_at_its_own_version(delta_quotes):
+    db = Releases(delta_quotes)
+    result = query.quote_query(db, release="r-new", symbol="VALE3")
+    assert db.calls == [(RELEASE_SQL, ("r-new",))]
+    assert result["release"] == "r-new"
+    assert [(r["record_id"], r["close"]) for r in result["rows"]] == [("q4", Decimal("99.99"))]
+
+
+@pytest.mark.parametrize("release,pointer", [("r-missing", ("r-old", 0)), (None, None)])
+def test_no_release_means_no_rows(delta_quotes, release, pointer):
+    result = query.quote_query(Releases(delta_quotes, pointer=pointer), release=release)
+    assert result == {"release": None, "rows": [], "qualification": "No quote release published"}
+
+
+@pytest.mark.parametrize(
+    "filters,expected",
+    [
+        ({}, ["q1", "q0", "q2", "q4", "q5", "q3"]),
+        ({"symbol": "VALE3"}, ["q4"]),
+        ({"market": "020"}, ["q0"]),
+        ({"currency": "USD"}, ["q5"]),
+        ({"date_from": date(2024, 3, 5)}, ["q0", "q2", "q4", "q5", "q3"]),
+        ({"date_to": date(2024, 3, 5)}, ["q1", "q0", "q2", "q4", "q5"]),
+        ({"date_from": date(2024, 3, 5), "date_to": date(2024, 3, 5)}, ["q0", "q2", "q4", "q5"]),
+        ({"limit": 2}, ["q1", "q0"]),
+        ({"limit": 2, "offset": 2}, ["q2", "q4"]),
+        ({"symbol": "PETR4", "currency": "BRL", "date_from": date(2024, 3, 6)}, ["q3"]),
+    ],
+)
+def test_filters_select_by_symbol_market_currency_and_inclusive_dates(
+    delta_quotes, filters, expected
+):
+    result = query.quote_query(Releases(delta_quotes), **filters)
+    assert [r["record_id"] for r in result["rows"]] == expected
+    assert result["limit"] == filters.get("limit", 100)
+    assert result["offset"] == filters.get("offset", 0)
+
+
+def test_a_reversed_date_interval_is_refused(delta_quotes):
+    with pytest.raises(ValueError, match="^date interval reversed$"):
+        query.quote_query(
+            Releases(delta_quotes), date_from=date(2024, 3, 6), date_to=date(2024, 3, 5)
+        )
+
+
+def test_arrow_export_appends_the_exact_per_unit_price(delta_quotes):
+    import pyarrow as pa
+
+    release, table = query.quote_query(Releases(delta_quotes), symbol="PETR4", arrow=True)
+    assert release == "r-old"
+    assert table.column_names[-1] == "close_per_unit"
+    assert table.schema.field("close_per_unit").type == pa.decimal128(38, 12)
+    assert table["record_id"].to_pylist() == ["q1", "q0", "q2", "q5", "q3"]
+    assert table["close_per_unit"].to_pylist() == [
+        Decimal("38.800000000000"),
+        Decimal("1.000000000000"),
+        Decimal("39.100000000000"),
+        Decimal("7.500000000000"),
+        Decimal("1.000000000000"),
+    ]
+
+
 # Exact quote comparison
 
 

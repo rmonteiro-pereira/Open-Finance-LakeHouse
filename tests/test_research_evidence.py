@@ -723,6 +723,20 @@ def test_bundle_size_bound_is_inclusive(sources, monkeypatch):
         dataset_bundle.bundle("db", "store", SPEC)
 
 
+def test_bundle_names_the_resource_package_explicitly(sources, monkeypatch):
+    # Python 3.11 has no caller-relative default for importlib.resources.files().
+    anchors = []
+    real = dataset_bundle.files
+
+    def recording(anchor):
+        anchors.append(anchor)
+        return real(anchor)
+
+    monkeypatch.setattr(dataset_bundle, "files", recording)
+    dataset_bundle.bundle("db", "store", SPEC)
+    assert anchors == ["ofl.research"]
+
+
 def test_bundle_limit_is_64_mib():
     assert dataset_bundle.MAX_BYTES == 64 * 1024**2 == dataset_replay.MAX_BYTES
 

@@ -11,9 +11,9 @@ pytest.importorskip("psycopg")
 from fastapi import HTTPException
 from starlette.datastructures import Headers
 
-from ofl.research.api import authenticate, require_admin, require_reviewer
+from ofl.research.api import authenticate, can_read_feedback, require_admin, require_reviewer
 from ofl.research.config import ResearchSettings
-from ofl.research.workspaces import load
+from ofl.research.workspaces import has_research_access, load, owned, schedule_due
 
 GATEWAY = "gateway-secret"
 SERVICE = "s" * 32
@@ -346,3 +346,152 @@ def test_artifact_without_evidence_loads_unchanged():
     result = load(PolicyDatabase(PolicyConnection(item, record, {})), "ana", "w1")
     assert result["body"]["content"] == {"a": 1}
     assert result["redacted_references"] == []
+
+
+# Ownership
+
+
+OWNED_SQL = "SELECT * FROM workspaces WHERE id=%s AND owner=%s FOR UPDATE"
+
+
+class Workspaces:
+    """Rows of the workspaces table; answers only the owner-filtered, locking lookup."""
+
+    def __init__(self, *rows):
+        self.rows = rows
+        self.calls = []
+
+    def execute(self, sql, params):
+        self.calls.append((sql, params))
+        assert sql == OWNED_SQL
+        workspace_id, owner = params
+        match = [r for r in self.rows if r["id"] == workspace_id and r["owner"] == owner]
+        return Rows(match[0] if match else None)
+
+
+def test_owner_reads_and_locks_their_own_workspace():
+    mine = {"id": "w1", "owner": "ana", "kind": "check"}
+    con = Workspaces(mine, {"id": "w2", "owner": "rui", "kind": "check"})
+    assert owned(con, "ana", "w1") is mine
+    assert con.calls == [(OWNED_SQL, ("w1", "ana"))]
+
+
+@pytest.mark.parametrize("actor,workspace", [("rui", "w1"), ("ana", "w2"), ("", "w1")])
+def test_foreign_or_unknown_workspaces_are_not_found(actor, workspace):
+    con = Workspaces({"id": "w1", "owner": "ana", "kind": "check"})
+    with pytest.raises(LookupError, match="^workspace not found$"):
+        owned(con, actor, workspace)
+
+
+@pytest.mark.parametrize(
+    "roles,actor,allowed",
+    [
+        ('{"ana": "reader"}', "ana", True),
+        ('{"ana": "reviewer"}', "ana", True),
+        ('{"ana": "admin"}', "ana", True),
+        ('{"ana": "owner"}', "ana", False),
+        ('{"ana": "admin"}', "rui", False),
+        ("", "ana", False),
+        (None, "ana", False),
+    ],
+)
+def test_research_access_follows_the_current_roles(roles, actor, allowed):
+    assert has_research_access(roles, actor) is allowed
+
+
+@pytest.mark.parametrize(
+    "owner,user,visible",
+    [
+        ("ana", ("ana", "reader"), True),
+        ("ana", ("rui", "reviewer"), True),
+        ("ana", ("eva", "admin"), True),
+        ("ana", ("bia", "reader"), False),
+        ("ana", ("ANA", "reader"), False),
+    ],
+)
+def test_feedback_history_is_visible_to_its_author_and_reviewers(owner, user, visible):
+    assert can_read_feedback(owner, user) is visible
+
+
+class Schedules:
+    """Due check schedules and pending jobs, recording every statement."""
+
+    DUE = (
+        "SELECT s.* FROM check_schedules s WHERE enabled AND next_run_at<=now() "
+        "ORDER BY next_run_at FOR UPDATE SKIP LOCKED LIMIT 10"
+    )
+    DISABLE = "UPDATE check_schedules SET enabled=false WHERE workspace_id=%s"
+    PENDING = (
+        "SELECT 1 FROM jobs WHERE kind='research_check' AND payload->>'workspace_id'=%s "
+        "AND state IN ('queued','running') LIMIT 1"
+    )
+    NEXT = (
+        "UPDATE check_schedules SET next_run_at=now()+(interval_minutes * interval '1 minute') "
+        "WHERE workspace_id=%s"
+    )
+
+    def __init__(self, due, pending=()):
+        self.due, self.pending = due, set(pending)
+        self.calls = []
+
+    def execute(self, sql, params=()):
+        self.calls.append((sql, params))
+        if sql == self.DUE:
+            return Answer(all_rows=self.due)
+        if sql == self.PENDING:
+            return Answer(one=(1,) if params[0] in self.pending else None)
+        assert sql in {self.DISABLE, self.NEXT}, sql
+        return Answer()
+
+
+class Answer:
+    def __init__(self, one=None, all_rows=()):
+        self.one, self.all_rows = one, list(all_rows)
+
+    def fetchone(self):
+        return self.one
+
+    def fetchall(self):
+        return self.all_rows
+
+
+class ScheduleDatabase:
+    def __init__(self, con, roles):
+        self.con = con
+        self.settings = ResearchSettings(roles=roles)
+        self.enqueued = []
+
+    @contextmanager
+    def connect(self):
+        yield self.con
+
+    def enqueue_on(self, con, kind, payload, actor):
+        assert con is self.con
+        self.enqueued.append((kind, payload, actor))
+
+
+def test_due_checks_run_only_for_owners_who_still_have_access():
+    due = [
+        {"workspace_id": "w1", "owner": "ana"},
+        {"workspace_id": "w2", "owner": "gone"},
+        {"workspace_id": "w3", "owner": "bia"},
+    ]
+    con = Schedules(due, pending={"w3"})
+    db = ScheduleDatabase(con, json.dumps({"ana": "reader", "bia": "admin", "gone": "owner"}))
+    assert schedule_due(db) == 3
+    assert db.enqueued == [("research_check", {"workspace_id": "w1", "owner": "ana"}, "ana")]
+    assert con.calls == [
+        (Schedules.DUE, ()),
+        (Schedules.PENDING, ("w1",)),
+        (Schedules.NEXT, ("w1",)),
+        (Schedules.DISABLE, ("w2",)),
+        (Schedules.PENDING, ("w3",)),
+        (Schedules.NEXT, ("w3",)),
+    ]
+
+
+def test_no_due_checks_means_no_work():
+    con = Schedules([])
+    db = ScheduleDatabase(con, "")
+    assert schedule_due(db) == 0
+    assert db.enqueued == [] and con.calls == [(Schedules.DUE, ())]

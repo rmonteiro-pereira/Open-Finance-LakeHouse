@@ -30,6 +30,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 MUTANTS = ROOT / "mutants"
 STATUS = MUTANTS / "run.status.json"
+FRESH = MUTANTS / "fresh-process.json"
 
 SCOPES = {
     "access": (
@@ -38,6 +39,10 @@ SCOPES = {
             "ofl.research.api.x_authenticate",
             "ofl.research.api.x_require_admin",
             "ofl.research.api.x_require_reviewer",
+            "ofl.research.api.x_can_read_feedback",
+            "ofl.research.workspaces.x_has_research_access",
+            "ofl.research.workspaces.x_owned",
+            "ofl.research.workspaces.x_schedule_due",
             "ofl.research.workspaces.x_load",
         ],
     ),
@@ -45,6 +50,7 @@ SCOPES = {
         0.95,
         [
             "ofl.research.query.x_per_unit",
+            "ofl.research.query.x_quote_query",
             "ofl.research.analytics.x_number",
             "ofl.research.analytics.x_portfolio",
             "ofl.research.analytics.x_compare_quotes",
@@ -80,6 +86,7 @@ _ZIP = "zip() over sequences whose equal length is guaranteed a few lines earlie
 _DEFAULT_SAME_ERROR = "missing key: None fails the same type check with the same message"
 _CODEC = "Python codec names are case-insensitive"
 _DUCKDB = "DuckDB settings and view names are case-insensitive"
+_DUCKDB_SQL = "DuckDB keywords, settings and identifiers are case-insensitive"
 _EXPONENT = "Decimal exponent marker is case-insensitive: same value"
 
 # Mutant number -> reason, per gated function. Numbers are stable while the function's
@@ -99,6 +106,11 @@ EQUIVALENT = {
         4: "quotation factor is a 7-digit unsigned integer: < 1 and < 0 differ only at 0",
         6: "38 vs 39 digits differ only after >= 25 consecutive 9s in close/factor; with "
         "two-decimal closes and factors <= 9,999,999 the period bounds runs of 9s to 9 digits",
+    },
+    "ofl.research.query.x_quote_query": {
+        **dict.fromkeys((41, 42, 48, 51, 53, 55, 60, 64, 78, 80), _DUCKDB_SQL),
+        **dict.fromkeys((95, 98, 103), "zip() over two columns of one Arrow table"),
+        **dict.fromkeys((128, 131, 132), "zip() over cursor column names and one row"),
     },
     "ofl.research.analytics.x_number": {21: _EXPONENT},
     "ofl.research.analytics.x_portfolio": {
@@ -137,7 +149,6 @@ EQUIVALENT = {
     "ofl.research.dataset_bundle.x_bundle": {
         15: "json.dumps treats ensure_ascii=None like False",
         24: "json.dumps treats ensure_ascii=None like False",
-        40: "files(None) resolves to the calling module's package (Python 3.12+)",
         107: "every member's ZipInfo sets ZIP_DEFLATED, overriding the archive default",
         114: "ZipInfo's default date_time is (1980, 1, 1, 0, 0, 0)",
         120: "ZIP stores seconds in 2-second units: 1 s is written as 0",
@@ -168,6 +179,10 @@ EQUIVALENT = {
     },
 }
 
+# Functions reached by tests that read local Delta tables (quote_query calls per_unit):
+# verified one mutant per new interpreter.
+FRESH_PROCESS = ["ofl.research.query.x_quote_query", "ofl.research.query.x_per_unit"]
+
 KILLED = {1, 3, -24, 24, 36, 152, 255}  # failing tests, or CPU limit (counted as killed)
 SURVIVED = {0}
 
@@ -196,14 +211,63 @@ def run_problems():
         log = (MUTANTS / "run.log").read_text(errors="replace").splitlines()[-15:]
         return [f"mutmut exited with {returncode}; end of mutants/run.log:", *log]
     missing = sorted({str(meta_path(f)) for f in gated_functions() if not meta_path(f).exists()})
-    return [f"mutation metadata missing: {path}" for path in missing]
+    problems = [f"mutation metadata missing: {path}" for path in missing]
+    if FRESH_PROCESS and not FRESH.exists():
+        problems.append(
+            "fresh-process check missing or failed: unmutated code must pass "
+            + ", ".join(FRESH_PROCESS)
+        )
+    return problems
 
 
 def results():
     codes = {}
     for meta in MUTANTS.rglob("*.meta"):
         codes.update(json.loads(meta.read_text())["exit_code_by_key"])
+    if FRESH.exists():
+        codes.update(json.loads(FRESH.read_text()))
     return codes
+
+
+def fresh_process_check(workers, pinned):
+    """Re-run mutants of FRESH_PROCESS functions, each in a new interpreter.
+
+    Their tests read Delta tables; the Delta reader's runtime does not survive the fork
+    mutmut uses, so forked results for these functions are replaced. The unmutated code
+    must pass the same tests first, or the gate stops.
+    """
+    stats = json.loads((MUTANTS / "mutmut-stats.json").read_text())
+    codes = results()
+    env = {**os.environ, "OFL_RESEARCH_TEST_DATABASE_URL": "", "PYTHONPATH": str(MUTANTS)}
+
+    def run(function, mutant):
+        tests = sorted(stats["tests_by_mangled_function_name"].get(function, []))
+        if not tests:
+            return mutant, 33
+        command = ["nice", "-n", "10", sys.executable, "-m", "pytest", "-x", "-q"]
+        try:
+            return mutant, subprocess.run(
+                [*command, "-p", "no:cacheprovider", *tests],
+                cwd=MUTANTS,
+                env={**env, "MUTANT_UNDER_TEST": mutant},
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=600,
+                preexec_fn=lambda: os.sched_setaffinity(0, pinned),
+            ).returncode
+        except subprocess.TimeoutExpired:
+            return mutant, 36
+
+    problems, fresh = [], {}
+    for function in FRESH_PROCESS:
+        if run(function, "")[1] != 0:
+            problems.append(f"unmutated {function} fails its tests in a fresh process")
+            continue
+        names = [n for n in codes if n.startswith(function + "__mutmut_")]
+        with ThreadPoolExecutor(workers) as pool:
+            fresh.update(pool.map(lambda name, f=function: run(f, name), names))
+    FRESH.write_text(json.dumps(fresh))
+    return problems
 
 
 def missing_functions(codes):
@@ -390,6 +454,13 @@ def main():
             ).returncode
         STATUS.write_text(json.dumps({"returncode": returncode}))
         print(f"mutation run: {time.monotonic() - started:.0f} s, {workers} workers")
+        if returncode == 0:
+            fresh_problems = fresh_process_check(workers, pinned)
+            for problem in fresh_problems:
+                print(f"gate error: {problem}")
+            if fresh_problems:
+                FRESH.unlink()
+            print(f"fresh-process check: {time.monotonic() - started:.0f} s total")
     problems = run_problems()
     codes = results() if not problems else {}
     problems += missing_functions(codes)

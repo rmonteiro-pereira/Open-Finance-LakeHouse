@@ -44,8 +44,8 @@ uv run --extra dev --extra research --with mutmut==3.3.1 python tools/mutation_g
 
 | Scope | Functions | Target |
 |---|---|---|
-| access | `api.authenticate`, `require_admin`, `require_reviewer`; source-policy redaction in `workspaces.load` | 95 % |
-| money | `query.per_unit`; `analytics.number`, `portfolio`, `compare_quotes`; COTAHIST `parse_record`, `stage`; table review `normalize`, `observation_period` | 95 % |
+| access | `api.authenticate`, `require_admin`, `require_reviewer`, `can_read_feedback`; `workspaces.owned`, `has_research_access`, `schedule_due`; source-policy redaction in `workspaces.load` | 95 % |
+| money | `query.quote_query`, `per_unit`; `analytics.number`, `portfolio`, `compare_quotes`; COTAHIST `parse_record`, `stage`; table review `normalize`, `observation_period` | 95 % |
 | evidence | `reference_review.reference_reviews`, `text_hash`; `dataset_bundle.bundle`; `dataset_replay.replay` | 95 % |
 | other | `workspaces.evidence`, `validate`; `analytics.release_diff`, `prepare_dataset` | 85 % |
 
@@ -60,7 +60,10 @@ The gate runs the offline tests in `tests/test_research_access.py`,
 `tests/test_research_money.py`, `tests/test_research_evidence.py` and the other research test
 files. PostgreSQL tests are skipped during the run (the Delta writer they use does not survive
 mutmut's per-mutant fork); the offline tests cover the gated logic directly, replacing the
-database with recorded rows. The run uses half the cores at nice 10 and waits while the load
+database with recorded rows. `quote_query` is tested against a local Delta table; because
+the Delta reader has the same fork limitation, the mutants of `quote_query` and `per_unit`
+(listed in `FRESH_PROCESS`) are re-run one per new interpreter after the unmutated code
+passes the same tests, and those results replace the forked ones. The run uses half the cores at nice 10 and waits while the load
 average exceeds the core count. Set `MUTATION_WORKERS` to change the worker count.
 
 ## Lint
