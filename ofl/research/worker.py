@@ -69,11 +69,10 @@ def build_observations(db, store):
 
 def execute(db, store, job, heartbeat):
     if job["kind"] == "research_check":
-        import json
-        from .workspaces import rerun
+        from .workspaces import has_research_access, rerun
 
         actor = job["payload"]["owner"]
-        if json.loads(db.settings.roles or "{}").get(actor) not in {"reader", "reviewer", "admin"}:
+        if not has_research_access(db.settings.roles, actor):
             raise ValueError("scheduled check owner has no research access")
         return rerun(db, store, actor, job["payload"]["workspace_id"])
     payload = job["payload"]

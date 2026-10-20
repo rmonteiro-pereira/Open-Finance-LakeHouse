@@ -172,3 +172,5 @@ temp/*
 # Streaming lane: landing JSONL, bronze Delta and Spark checkpoints are generated,
 # hot and large. Covered by `data/**` already; spelled out so it stays that way.
 data/streaming/
+# mutation testing working copy (tools/mutation_gate.py)
+mutants/

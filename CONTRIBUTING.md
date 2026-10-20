@@ -33,6 +33,42 @@ looking at. `.github/workflows/tests.yml` installs base + `dev` only.
 **Keep it that way.** A test that needs a network service, a credential or a running cluster
 belongs behind an extra and a marker, not in the default run.
 
+### Mutation gate (research)
+
+The research functions that decide access, money and evidence integrity have a mutation
+gate: each mutant of those functions must make an offline test fail.
+
+```bash
+uv run --extra dev --extra research --with mutmut==3.3.1 python tools/mutation_gate.py
+```
+
+| Scope | Functions | Target |
+|---|---|---|
+| access | `api.authenticate`, `require_admin`, `require_reviewer`, `can_read_feedback`; `workspaces.owned`, `has_research_access`, `schedule_due`; source-policy redaction in `workspaces.load` | 95 % |
+| money | `query.quote_query`, `per_unit`; `analytics.number`, `portfolio`, `compare_quotes`; COTAHIST `parse_record`, `stage`; table review `normalize`, `observation_period` | 95 % |
+| evidence | `reference_review.reference_reviews`, `text_hash`; `dataset_bundle.bundle`; `dataset_replay.replay` | 95 % |
+| other | `workspaces.evidence`, `validate`; `analytics.release_diff`, `prepare_dataset` | 85 % |
+
+The command exits 1 when a scope is below target, and 2 when the mutmut run itself failed,
+its metadata is missing, or a configured function produced no mutants. `-v` lists every mutant that was
+not killed and each equivalent mutant with its reason; `--idle-tests` lists tests that touch
+a gated function but kill no mutant. Equivalent mutants are either source-identical to the
+original or listed, with the reason, in `EQUIVALENT` in `tools/mutation_gate.py`; mutant
+numbers change when a function changes, so review that table after editing a gated function.
+
+The gate runs the offline tests in `tests/test_research_access.py`,
+`tests/test_research_money.py`, `tests/test_research_evidence.py` and the other research test
+files. PostgreSQL tests are skipped during the run (the Delta writer they use does not survive
+mutmut's per-mutant fork); the offline tests cover the gated logic directly, replacing the
+database with recorded rows. `quote_query` is tested against a local Delta table; because
+the Delta reader has the same fork limitation, the mutants of `quote_query` and `per_unit`
+(listed in `FRESH_PROCESS`) are re-run one per new interpreter after the unmutated code
+passes the same tests, and those results replace the forked ones. There, only a test failure
+(pytest exit 1) counts as a kill; any other exit, or a mutant that times out twice, fails the
+gate with exit 2, and each run's output is kept in `mutants/fresh-logs/`.
+`tests/test_mutation_gate.py` checks these failure paths. The run uses half the cores at nice 10 and waits while the load
+average exceeds the core count. Set `MUTATION_WORKERS` to change the worker count.
+
 ## Lint
 
 ```bash

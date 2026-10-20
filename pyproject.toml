@@ -87,3 +87,50 @@ testpaths = ["tests"]
 [tool.mypy]
 python_version = "3.11"
 ignore_missing_imports = true
+
+# Mutation gate for the research functions that decide access, money and evidence
+# integrity. tools/mutation_gate.sh selects the gated functions and checks the targets.
+[tool.mutmut]
+paths_to_mutate = ["ofl/"]
+do_not_mutate = [
+    "ofl/__init__.py",
+    "ofl/cli.py",
+    "ofl/config.py",
+    "ofl/publish.py",
+    "ofl/registry.py",
+    "ofl/documents/*",
+    "ofl/ingestion/*",
+    "ofl/platform/*",
+    "ofl/quality/*",
+    "ofl/streaming/*",
+    "ofl/transform/*",
+    "ofl/research/__init__.py",
+    "ofl/research/archive.py",
+    "ofl/research/cli.py",
+    "ofl/research/db.py",
+    "ofl/research/imports.py",
+    "ofl/research/library.py",
+    "ofl/research/macro.py",
+    "ofl/research/mcp.py",
+    "ofl/research/orchestration.py",
+    "ofl/research/outcomes.py",
+    "ofl/research/pilot.py",
+    "ofl/research/processing.py",
+    "ofl/research/retrieval_*",
+    "ofl/research/search.py",
+    "ofl/research/storage.py",
+    "ofl/research/worker.py",
+]
+tests_dir = [
+    "tests/test_research_access.py",
+    "tests/test_research_money.py",
+    "tests/test_research_evidence.py",
+    "tests/test_research.py",
+    "tests/test_research_agents.py",
+    "tests/test_dataset_reproduction.py",
+    "tests/test_workbench.py",
+    "tests/test_product_workflows.py",
+    # These start a separate interpreter that cannot load the mutated package.
+    "--deselect=tests/test_research_agents.py::test_real_stdio_mcp_initialization_and_discovery",
+    "--deselect=tests/test_dataset_reproduction.py::test_offline_reproduction_matches_server_for_null_calendars_and_transforms",
+]

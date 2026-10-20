@@ -91,6 +91,65 @@ class FeedbackReview(BaseModel):
     note: str = Field(min_length=1, max_length=2000)
 
 
+def authenticate(settings, headers, method):
+    """Resolve (actor, role) from gateway identity or a read-only service bearer token."""
+    authorization = headers.get("authorization", "")
+    machine = authorization.startswith("Bearer ")
+    if not machine:
+        token = headers.get("x-ofl-gateway-token", "")
+        if not settings.gateway_token or not hmac.compare_digest(
+            token.encode(), settings.gateway_token.encode()
+        ):
+            raise HTTPException(401, "verified private gateway required")
+    try:
+        roles = json.loads(settings.roles)
+        service_tokens = json.loads(settings.service_tokens)
+    except (ValueError, TypeError):
+        raise HTTPException(503, "research access is not configured") from None
+    if machine:
+        supplied = authorization[7:].encode()
+        actor = None
+        if isinstance(service_tokens, dict):
+            for principal, secret in service_tokens.items():
+                if (
+                    isinstance(secret, str)
+                    and len(secret) >= 32
+                    and hmac.compare_digest(supplied, secret.encode())
+                ):
+                    actor = principal
+        if actor is None:
+            raise HTTPException(401, "invalid service credential")
+        if method not in {"GET", "HEAD"}:
+            raise HTTPException(403, "service credentials are read-only")
+    else:
+        actor = headers.get("x-ofl-identity", "")
+    # An absent or empty identity never matches a role, even one configured for "".
+    role = roles.get(actor) if actor and isinstance(roles, dict) else None
+    if role not in {"reader", "reviewer", "admin"}:
+        raise HTTPException(403, "identity has no research access")
+    if not machine and method not in {"GET", "HEAD"}:
+        if headers.get("origin") != settings.origin:
+            raise HTTPException(403, "same-origin request required")
+    return actor, "reader" if machine else role
+
+
+def require_admin(user):
+    if user[1] != "admin":
+        raise HTTPException(403, "administrator role required")
+    return user
+
+
+def require_reviewer(user):
+    if user[1] not in {"reviewer", "admin"}:
+        raise HTTPException(403, "reviewer role required")
+    return user
+
+
+def can_read_feedback(owner, user):
+    """Feedback history is visible to its author and to reviewers or admins."""
+    return owner == user[0] or user[1] in {"reviewer", "admin"}
+
+
 def create_app(settings=None):
     settings = settings or ResearchSettings()
     db = Database(settings)
@@ -99,53 +158,13 @@ def create_app(settings=None):
     app.state.db, app.state.store = db, store
 
     def identity(request: Request):
-        authorization = request.headers.get("authorization", "")
-        machine = authorization.startswith("Bearer ")
-        if not machine:
-            token = request.headers.get("x-ofl-gateway-token", "")
-            if not settings.gateway_token or not hmac.compare_digest(
-                token.encode(), settings.gateway_token.encode()
-            ):
-                raise HTTPException(401, "verified private gateway required")
-        try:
-            roles = json.loads(settings.roles)
-            service_tokens = json.loads(settings.service_tokens)
-        except (ValueError, TypeError):
-            raise HTTPException(503, "research access is not configured") from None
-        if machine:
-            supplied = authorization[7:].encode()
-            actor = None
-            if isinstance(service_tokens, dict):
-                for principal, secret in service_tokens.items():
-                    if (
-                        isinstance(secret, str)
-                        and len(secret) >= 32
-                        and hmac.compare_digest(supplied, secret.encode())
-                    ):
-                        actor = principal
-            if actor is None:
-                raise HTTPException(401, "invalid service credential")
-            if request.method not in {"GET", "HEAD"}:
-                raise HTTPException(403, "service credentials are read-only")
-        else:
-            actor = request.headers.get("x-ofl-identity", "")
-        role = roles.get(actor) if isinstance(roles, dict) else None
-        if role not in {"reader", "reviewer", "admin"}:
-            raise HTTPException(403, "identity has no research access")
-        if not machine and request.method not in {"GET", "HEAD"}:
-            if request.headers.get("origin") != settings.origin:
-                raise HTTPException(403, "same-origin request required")
-        return actor, "reader" if machine else role
+        return authenticate(settings, request.headers, request.method)
 
     def admin(user=Depends(identity)):
-        if user[1] != "admin":
-            raise HTTPException(403, "administrator role required")
-        return user
+        return require_admin(user)
 
     def reviewer(user=Depends(identity)):
-        if user[1] not in {"reviewer", "admin"}:
-            raise HTTPException(403, "reviewer role required")
-        return user
+        return require_reviewer(user)
 
     @app.middleware("http")
     async def bounds(request, call_next):
@@ -984,7 +1003,7 @@ def create_app(settings=None):
     @app.get("/api/v1/feedback/{feedback_id}/history")
     def feedback_history(feedback_id: str, user=Depends(identity)):
         items = db.rows("SELECT owner FROM research_feedback WHERE id=%s", (feedback_id,))
-        if not items or (items[0]["owner"] != user[0] and user[1] not in {"reviewer", "admin"}):
+        if not items or not can_read_feedback(items[0]["owner"], user):
             raise LookupError("feedback not found")
         return response(
             db.rows(
