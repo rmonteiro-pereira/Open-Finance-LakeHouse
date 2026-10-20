@@ -24,6 +24,13 @@ def main():
     sampler.add_argument("--n", type=int, default=100)
     sampler.add_argument("--source", help="e.g. news or manager_letter")
     sampler.add_argument("--seed", default=None)
+    sampler.add_argument(
+        "--exclude-sample",
+        type=Path,
+        action="append",
+        default=[],
+        help="earlier sample file whose passages are not drawn again (repeatable)",
+    )
     grader = commands.add_parser("assess")
     grader.add_argument("worksheet", type=Path)
     args = parser.parse_args()
@@ -34,7 +41,15 @@ def main():
         if not 5 <= args.n <= 1000:
             raise SystemExit("--n must be between 5 and 1000")
         result = sample(
-            Database(ResearchSettings()), args.n, args.seed or secrets.token_hex(8), args.source
+            Database(ResearchSettings()),
+            args.n,
+            args.seed or secrets.token_hex(8),
+            args.source,
+            [
+                r["passage_id"]
+                for f in args.exclude_sample
+                for r in json.loads(f.read_text())["rows"]
+            ],
         )
         private_write(args.output, json.loads(json.dumps(result, default=str)))
         print(

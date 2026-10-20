@@ -41,11 +41,14 @@ def quotas(n):
     return {name: base + (index < extra) for index, name in enumerate(STRATA)}
 
 
-def sample(db, n, seed, source=None):
+def sample(db, n, seed, source=None, exclude=()):
+    """`exclude`: passage IDs already sampled (earlier audits), never drawn again."""
     with db.connect() as con:
         con.execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
-        scope = "p.active AND p.jurisdiction_tagger=%s" + (" AND i.source=%s" if source else "")
-        params = (VERSION, source) if source else (VERSION,)
+        scope = "p.active AND p.jurisdiction_tagger=%s AND NOT p.id=ANY(%s)" + (
+            " AND i.source=%s" if source else ""
+        )
+        params = (VERSION, list(exclude), *((source,) if source else ()))
         population = {
             row["stratum"]: row["n"]
             for row in con.execute(
@@ -68,6 +71,7 @@ def sample(db, n, seed, source=None):
         "tagger": VERSION,
         "seed": seed,
         "source": source,
+        "excluded_previous": len(set(exclude)),
         "requested": n,
         "population": {name: population.get(name, 0) for name in STRATA},
         "rows": [
