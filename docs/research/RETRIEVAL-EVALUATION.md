@@ -97,7 +97,7 @@ A `held_out` label alone is not evidence of independent judgments or users.
 Each passage stores lexical jurisdiction evidence in `passages.jurisdiction`
 (codes `BR`, `US`, `EA`, `CN`), `jurisdiction_evidence` (every match with its term,
 offset, tier and location, counts per tier and location, and the decision per
-jurisdiction) and `jurisdiction_tagger` (`jurisdiction-v3`). NULL means not yet
+jurisdiction) and `jurisdiction_tagger` (`jurisdiction-v4`). NULL means not yet
 tagged; an empty array means tagged with no tag (unknown). A passage can carry
 several codes.
 
@@ -109,13 +109,17 @@ The tagger (`ofl/research/jurisdiction.py`) is deterministic:
   Street`, `Nasdaq`).
 - Weak markers: demonyms (`brasileiro`, `americana`, `chinês`, `europeu`), cities
   (`Brasília`, `Washington`, `Xangai`), currencies and symbols (`real`, `R$`, `US$`,
-  `euro`, `yuan`) and generic terms (`Banco Central`, `Tesouro`, `CPI`, `Treasury`,
-  `payroll`). They are recorded but never create or support a tag.
+  `euro`, `yuan`), state banks (`Banco do Brasil`, `Bank of China`, `China
+  Construction Bank`) and generic terms (`Banco Central`, `Tesouro`, `CPI`,
+  `Treasury`, `payroll`). They are recorded but never create or support a tag. A
+  state bank is national evidence, but its news is usually company news rather than a
+  statement about the country, so it is weak, and its country word does not also
+  count as a strong mention.
 - A reviewed list of multiword entities whose country word does not refer to the
   country (roads, companies, brands, media, sports: `Rodovia Washington Luís`,
-  `Lojas Americanas`, `CNN Brasil`, `Banco do Brasil`, `futebol americano`, `moeda
-  americana`) masks those words; they count as nothing. Entities win overlaps, then
-  strong markers, then longer matches.
+  `Lojas Americanas`, `CNN Brasil`, `Air China`, `futebol americano`, `moeda
+  americana`) masks those words; they count as nothing. Entities and state banks win
+  overlaps, then strong markers, then longer matches.
 - A jurisdiction is tagged with one strong title mention or at least two strong body
   mentions. If another jurisdiction has at least three times its strong evidence, it
   needs at least two strong mentions. The decision (`title`, `body`, `single_body`,
@@ -125,11 +129,11 @@ The tagger (`ofl/research/jurisdiction.py`) is deterministic:
   counted once), `body`, `related` or `unclassified`; only title and body count.
   Related text: a related-link or navigation marker (`Leia também`, `Veja mais`,
   `Saiba mais`, `Mais notícias`, `Tags:` and similar) up to the end of its sentence, at
-  most 30 words, or to the end of the document when at most 60 words follow it; a feed
-  footer (`The post ... appeared first on ...`); and an unterminated tail of at most 40
-  words after the last sentence of a document of at least 60 words (a trailing
-  headline). Abbreviations (`U.S.`, `E.U.A.`, initials, `Sr.`, `Dr.`) do not end a
-  sentence.
+  most 30 words, and a feed footer (`The post ... appeared first on ...`).
+  Abbreviations (`U.S.`, `E.U.A.`, initials, `Sr.`, `Dr.`) do not end a sentence.
+  Unmarked text, including a closing fragment without punctuation, stays `body`:
+  stored passages have no line structure that would show a link list, and masking
+  without a cue would hide legitimate evidence.
 - Related regions are found on the whole document before it is split into passages
   (350-word windows overlapping by 40), so a region opened in one passage stays
   `related` in the next. The evidence records `context: document`.
@@ -158,8 +162,10 @@ changes nothing instead of queueing behind that session and blocking readers.
 Search takes `jurisdiction=off|boost|exclude` (API, MCP `search_archive`, dashboard;
 default `off`). A rule applies only when the query names a jurisdiction;
 `inflação`, `taxa de juros`, `Banco Central` or `câmbio dólar real` never fire
-it. Strong markers and demonyms (`inflação brasileira`) name a jurisdiction in a
-query; cities, currencies and listed entities do not. A marker that overlaps a term
+it. Strong markers and national demonyms (`inflação brasileira`) name a
+jurisdiction in a query; cities, currencies, state banks and listed entities do not.
+European demonyms (`inflação europeia`) do not name the euro area, which needs an
+explicit name or institution (`zona do euro`, `eurozona`, `BCE`, `Eurostat`). A marker that overlaps a term
 PostgreSQL's `websearch_to_tsquery` negates is ignored: `-Brasil`, `- Brasil`,
 `-"Estados Unidos"`, `-Estados Unidos` (only `Estados` is negated, so the name is not
 named), including an unclosed quote; a hyphen inside a word (`Brasil-EUA`) or inside
@@ -197,13 +203,15 @@ modes, rules or tags. The pool records the tag snapshot digest; a tag change dur
 collection invalidates it. Up to 16 cases are accepted, which covers
 `docs/product/retrieval-cases-heldout.json`.
 
-`tools/jurisdiction_audit.py sample OUT --n 100 [--source news]` writes a seeded
+`tools/jurisdiction_audit.py sample OUT --n 100 [--source news] [--exclude-sample
+EARLIER]` writes a seeded
 random sample stratified by `BR`, `US`, both, none and other tags (current tagger
 only) to a new mode-0600 file, with each passage's text, tags and evidence. Reviewers
 mark each tag correct, incorrect or uncertain and list missed codes;
 `tools/jurisdiction_audit.py assess OUT` prints per-stratum tag precision (correct
 over correct plus incorrect) and missed-tag rate, without passage text. Strata are
-equal-sized, not population-weighted.
+equal-sized, not population-weighted. `--exclude-sample` (repeatable) keeps passages
+of earlier samples out of a new one.
 
 ## Public synthetic development exercise
 
