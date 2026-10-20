@@ -25,13 +25,6 @@ def exact(numerator, denominator, scale=1):
         return str(Decimal(numerator) / Decimal(denominator) * scale)
 
 
-def default(numerator, denominator):
-    """Percentage share in Python's default 28-digit decimal context."""
-    with localcontext() as context:
-        context.prec = 28
-        return str(Decimal(numerator) / Decimal(denominator) * 100)
-
-
 # Quotation basis
 
 
@@ -578,10 +571,9 @@ def test_portfolio_weights_exposures_and_scenarios_are_exact():
                 "weight_percent": third,
             },
         ],
-        # Exposure weights are computed after the 50-digit block, in the default context.
         "exposures": [
-            {"asset_class": "equity", "market_value": "2", "weight_percent": default(2, 3)},
-            {"asset_class": "cash", "market_value": "1", "weight_percent": default(1, 3)},
+            {"asset_class": "equity", "market_value": "2", "weight_percent": exact(2, 3, 100)},
+            {"asset_class": "cash", "market_value": "1", "weight_percent": third},
         ],
         "largest_position_percent": third,
         "scenarios": [

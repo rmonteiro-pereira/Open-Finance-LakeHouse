@@ -230,19 +230,21 @@ def portfolio(body):
                     "change_percent": str(change / total * 100),
                 }
             )
-    return {
-        "valuation_date": str(valuation_date),
-        "currency": currency,
-        "total_value": str(total),
-        "positions": result,
-        "exposures": [
+        # Same 50-digit context as the position weights.
+        exposures = [
             {
                 "asset_class": key,
                 "market_value": str(value),
                 "weight_percent": str(value / total * 100),
             }
             for key, value in groups.items()
-        ],
+        ]
+    return {
+        "valuation_date": str(valuation_date),
+        "currency": currency,
+        "total_value": str(total),
+        "positions": result,
+        "exposures": exposures,
         "largest_position_percent": max(result, key=lambda p: Decimal(p["weight_percent"]))[
             "weight_percent"
         ],
