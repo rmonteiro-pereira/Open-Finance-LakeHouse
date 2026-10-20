@@ -34,6 +34,10 @@ from psycopg.types.json import Jsonb
 
 VERSION = "jurisdiction-v4"
 RULES = ("off", "boost", "exclude")
+# Query-side rules act only for jurisdictions whose v4 tags passed the hand-check
+# precision gate (>= 0.90; BR 40/40, US 38-39/40, EA 3/3). CN (17/21 = 0.81) failed it:
+# CN passages are still tagged and stored, but a query naming China applies no rule.
+GATED_JURISDICTIONS = frozenset({"BR", "US", "EA"})
 MAX_MATCHES = 40
 RELATED_WORDS = 30
 DOMINANCE = 3
@@ -377,6 +381,19 @@ def detect(query):
             and not any(start < b and end > a for a, b in negated)
         }
     )
+
+
+def plan(rule, query):
+    """The rule a search applies: `active` names the jurisdictions it acts on.
+
+    `off` never reads the query. When the query names any jurisdiction outside
+    GATED_JURISDICTIONS, the whole query is searched as `off` (no partial rule) and the
+    ungated codes are reported as `ignored`.
+    """
+    rule = check_rule(rule)
+    named = detect(query) if rule != "off" else []
+    ignored = sorted(set(named) - GATED_JURISDICTIONS)
+    return {"rule": rule, "named": named, "active": [] if ignored else named, "ignored": ignored}
 
 
 def exclusion(codes):

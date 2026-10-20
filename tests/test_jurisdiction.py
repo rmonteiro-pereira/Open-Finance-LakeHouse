@@ -862,6 +862,7 @@ def test_exclude_drops_only_other_jurisdiction_passages_in_every_arm(research, m
         "tagger": places.VERSION,
         "named": ["BR"],
         "applied": True,
+        "ignored": [],
         "qualification": None,
         "scope_passages": 7,
         "passages_with_named_evidence": 2,
@@ -943,10 +944,50 @@ def test_closing_text_about_the_named_jurisdiction_survives_exclusion(research):
             )
             con.execute("UPDATE passages SET active=false WHERE item_id=%s", (ids[name],))
             index_text(con, item_id=ids[name], revision=name, text=text, method="collector_news")
+    tags = {
+        r["item_id"]: r["jurisdiction"]
+        for r in db.rows("SELECT item_id,jurisdiction FROM passages WHERE active")
+    }
+    assert tags[ids["unmarked"]] == tags[ids["after_link"]] == ["CN", "US"]
+    assert tags[ids["us_only"]] == ["US"]
+    # CN is tagged but ungated: a query naming China is searched as off.
+    off = search(db, "juros OR China", mode="keyword", limit=50)
     result = search(db, "juros OR China", mode="keyword", limit=50, jurisdiction="exclude")
-    assert result["jurisdiction"]["named"] == ["CN"]
-    assert {r["item_id"] for r in result["results"]} == {ids["unmarked"], ids["after_link"]}
-    assert all(r["jurisdiction"] == ["CN", "US"] for r in result["results"])
+    assert result["jurisdiction"] | {"qualification": None} == {
+        "rule": "exclude",
+        "tagger": places.VERSION,
+        "named": ["CN"],
+        "applied": False,
+        "ignored": ["CN"],
+        "qualification": None,
+    }
+    assert [r["id"] for r in result["results"]] == [r["id"] for r in off["results"]]
+    assert len(result["results"]) == len(documents)
+
+
+@pytest.mark.parametrize("mode", ["keyword", "vector", "hybrid"])
+@pytest.mark.parametrize("query", ["inflação OR China", "inflação OR Brasil OR China"])
+def test_ungated_jurisdictions_search_exactly_as_off(research, mode, query):
+    from ofl.research.search import search
+
+    db, _ = research
+    seed(db)
+    vector = [1, 0, 0]
+    off = search(db, query, mode=mode, vector=vector, limit=50)
+    columns = {"jurisdiction", "jurisdiction_evidence", "jurisdiction_tagger"}
+    for rule in ("boost", "exclude"):
+        result = search(db, query, mode=mode, vector=vector, limit=50, jurisdiction=rule)
+        disclosure = result.pop("jurisdiction")
+        assert disclosure["applied"] is False and disclosure["ignored"] == ["CN"]
+        assert disclosure["named"] == (["CN"] if "Brasil" not in query else ["BR", "CN"])
+        assert not {"excluded_passages", "boosted_candidates"} & set(disclosure)
+        stripped = [{k: v for k, v in r.items() if k not in columns} for r in result["results"]]
+        assert result | {"results": stripped} == off
+    gated = search(db, "inflação OR Brasil", mode=mode, vector=vector, limit=50)
+    excluded = search(
+        db, "inflação OR Brasil", mode=mode, vector=vector, limit=50, jurisdiction="exclude"
+    )
+    assert len(excluded["results"]) == len(gated["results"]) - 2
 
 
 def test_api_validates_and_discloses_the_rule(research):

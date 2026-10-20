@@ -29,7 +29,10 @@ def _context_refusal(response):
     return isinstance(error, str) and error.strip() == "the input length exceeds the context length"
 
 
-def fuse(rankings, k=60):
+RRF_K = 60
+
+
+def fuse(rankings, k=RRF_K):
     scores = {}
     records = {}
     for ranking in rankings:
@@ -256,8 +259,7 @@ def search(
 ):
     if mode not in {"keyword", "vector", "hybrid"}:
         raise ValueError("unknown search mode")
-    rule = places.check_rule(jurisdiction)
-    named = places.detect(text) if rule != "off" else []
+    rule = places.plan(jurisdiction, text)
     where, params = scope_conditions(
         source=source,
         item_type=item_type,
@@ -265,19 +267,12 @@ def search(
         date_from=date_from,
         date_to=date_to,
     )
-    disclosure, coverage = _jurisdiction_scope(db, rule, named, where, params)
-    if named and rule == "exclude":
-        # Both arms and the coverage denominator see the same narrowed scope.
-        condition, extra = places.exclusion(named)
-        where, params = f"{where} AND {condition}", [*params, *extra]
+    disclosure, coverage = _jurisdiction_scope(db, rule, where, params)
+    # Both arms and the coverage denominator see the same (for exclude, narrowed) scope.
+    where, params = _narrowed_scope(rule, where, params)
     if coverage is None:
         coverage = index_coverage(db, where=where, params=params)
-    projection = """p.id,p.item_id,p.asset_id,p.page,p.text,p.method,p.evidence,
-        i.title,i.source,i.item_type,i.collection,i.date_start,i.date_end,i.date_precision,
-        i.metadata->>'url' AS source_url,i.metadata->>'content_tier' AS content_tier,
-        i.metadata->>'epistemic_status' AS epistemic_status"""
-    if rule != "off":
-        projection += ",p.jurisdiction,p.jurisdiction_evidence,p.jurisdiction_tagger"
+    projection = _projection(rule)
     rankings = []
     # Extracted bodies have only Portuguese lexemes; applying a simple NOT
     # against that vector can silently bypass exclusions (`tesouro` vs `tesour`).
@@ -334,21 +329,8 @@ def search(
             )
         )
     labels = ["keyword", "vector"] if mode == "hybrid" else [mode]
-    if named and rule == "boost":
-        # One more list in the same RRF (k=60): at most 1/61 per passage, only for
-        # candidates the arms already retrieved, in their fused order.
-        base = fuse(rankings) if len(rankings) > 1 else rankings[0]
-        rankings.append(places.boosted(base, named))
-        labels.append("jurisdiction_boost")
-        disclosure["boosted_candidates"] = len(rankings[-1])
-    contributions = {}
-    for label, ranking in zip(labels, rankings, strict=True):
-        for position, row in enumerate(ranking, 1):
-            contributions.setdefault(row["id"], {})[label] = {
-                "rank": position,
-                "raw_score": float(row["score"]),
-                "rrf_contribution": 1 / (60 + position) if len(rankings) > 1 else None,
-            }
+    rankings, labels, boosted = _boost(rule, rankings, labels)
+    contributions = _contributions(labels, rankings)
     combined = fuse(rankings) if len(rankings) > 1 else rankings[0]
     # Group by document without allowing one long scanned volume to occupy every hit.
     results = []
@@ -376,40 +358,109 @@ def search(
         "results": results,
     }
     if disclosure is not None:
-        if "boosted_candidates" in disclosure:
-            disclosure["boosted_results"] = sum(
-                "jurisdiction_boost" in row["ranking"] for row in results
-            )
-        response["jurisdiction"] = disclosure
+        response["jurisdiction"] = _boost_disclosure(disclosure, boosted, results)
     return response
 
 
-def _jurisdiction_scope(db, rule, named, where, params):
-    """Disclosure for a non-off rule and, when a jurisdiction is named, the index coverage.
+PROJECTION = """p.id,p.item_id,p.asset_id,p.page,p.text,p.method,p.evidence,
+    i.title,i.source,i.item_type,i.collection,i.date_start,i.date_end,i.date_precision,
+    i.metadata->>'url' AS source_url,i.metadata->>'content_tier' AS content_tier,
+    i.metadata->>'epistemic_status' AS epistemic_status"""
+JURISDICTION_COLUMNS = ",p.jurisdiction,p.jurisdiction_evidence,p.jurisdiction_tagger"
+DISCLOSURE_QUALIFICATION = (
+    "Lexical evidence of a named place, institution, indicator or currency symbol, not "
+    "topic classification. Applied only when the query names a jurisdiction and every "
+    "named jurisdiction is in the precision-gated set (BR, US, EA); otherwise the query "
+    "is searched without the rule and ungated names are listed as ignored. Untagged and "
+    "evidence-free passages are never excluded."
+)
+
+
+def _projection(rule):
+    """Result columns; jurisdiction evidence only when a rule other than off was asked."""
+    return PROJECTION + (JURISDICTION_COLUMNS if rule["rule"] != "off" else "")
+
+
+def _narrowed_scope(rule, where, params):
+    """Scope both arms search: narrowed only for an active exclude rule."""
+    if rule["rule"] != "exclude" or not rule["active"]:
+        return where, params
+    condition, extra = places.exclusion(rule["active"])
+    return f"{where} AND {condition}", [*params, *extra]
+
+
+def _boost(rule, rankings, labels):
+    """One more list in the same RRF (k=60) for an active boost rule.
+
+    It holds only candidates the arms already retrieved, in their fused order, so each
+    passage gains at most 1/61. Returns rankings, labels and the boosted candidate count
+    (None when no boost applies).
+    """
+    if rule["rule"] != "boost" or not rule["active"]:
+        return rankings, labels, None
+    base = fuse(rankings) if len(rankings) > 1 else rankings[0]
+    extra = places.boosted(base, rule["active"])
+    return [*rankings, extra], [*labels, "jurisdiction_boost"], len(extra)
+
+
+def _contributions(labels, rankings):
+    """Per-passage rank, raw score and RRF share of each fused list."""
+    contributions = {}
+    for label, ranking in zip(labels, rankings, strict=True):
+        for position, row in enumerate(ranking, 1):
+            contributions.setdefault(row["id"], {})[label] = {
+                "rank": position,
+                "raw_score": float(row["score"]),
+                "rrf_contribution": 1 / (RRF_K + position) if len(rankings) > 1 else None,
+            }
+    return contributions
+
+
+def _boost_disclosure(disclosure, boosted, results):
+    if boosted is None:
+        return disclosure
+    return disclosure | {
+        "boosted_candidates": boosted,
+        "boosted_results": sum("jurisdiction_boost" in row["ranking"] for row in results),
+    }
+
+
+def _disclosure(rule):
+    """Base disclosure for a rule other than off; None for off."""
+    if rule["rule"] == "off":
+        return None
+    return {
+        "rule": rule["rule"],
+        "tagger": places.VERSION,
+        "named": rule["named"],
+        "applied": bool(rule["active"]),
+        "ignored": rule["ignored"],
+        "qualification": DISCLOSURE_QUALIFICATION,
+    }
+
+
+def _jurisdiction_scope(db, rule, where, params):
+    """Disclosure for a non-off rule and, when the rule is active, the index coverage.
 
     One scan of the filtered scope yields both: coverage aggregates are restricted to the
     searched (semantic, and for exclude narrowed) passages, disclosure counts are not.
     """
-    if rule == "off":
-        return None, None
-    disclosure = {
-        "rule": rule,
-        "tagger": places.VERSION,
-        "named": named,
-        "applied": bool(named),
-        "qualification": "Lexical evidence of a named place, institution, indicator or "
-        "currency symbol, not topic classification. Applied only when the query names a "
-        "jurisdiction; untagged and evidence-free passages are never excluded.",
-    }
-    if not named:
+    disclosure = _disclosure(rule)
+    if disclosure is None or not rule["active"]:
         return disclosure, None
-    condition, extra = places.exclusion(named)
-    searched = f"{SEMANTIC_CONTENT} AND {condition}" if rule == "exclude" else SEMANTIC_CONTENT
-    narrowed = extra if rule == "exclude" else []
-    settings = db.settings
+    query, values = _scope_scan(rule, where, params, db.settings)
+    row = db.rows(query, values)[0]
+    return disclosure | _scope_counts(rule, row), _coverage(db.settings, row)
+
+
+def _scope_scan(rule, where, params, settings):
+    """SQL and parameters of the one scope scan behind coverage and disclosure counts."""
+    condition, extra = places.exclusion(rule["active"])
+    exclude = rule["rule"] == "exclude"
+    searched = f"{SEMANTIC_CONTENT} AND {condition}" if exclude else SEMANTIC_CONTENT
+    narrowed = extra if exclude else []
     space = (settings.embedding_model, settings.embedding_revision or "")
-    row = db.rows(
-        f"""SELECT count(*) FILTER (WHERE {searched}) AS eligible_passages,
+    query = f"""SELECT count(*) FILTER (WHERE {searched}) AS eligible_passages,
         count(e.passage_id) FILTER (WHERE {searched}) AS indexed_passages,
         count(r.passage_id) FILTER (WHERE e.passage_id IS NULL AND {searched}) AS rejected_passages,
         count(*) AS scope,count(*) FILTER (WHERE p.jurisdiction IS NULL) AS untagged,
@@ -418,28 +469,30 @@ def _jurisdiction_scope(db, rule, named, where, params):
         count(*) FILTER (WHERE p.jurisdiction && %s::text[]) AS named_evidence,
         count(*) FILTER (WHERE NOT {condition}) AS conflicting
         FROM passages p JOIN items i ON i.id=p.item_id LEFT JOIN embeddings e
-        ON e.passage_id=p.id AND e.model=%s AND e.revision=%s LEFT JOIN {REJECTED} WHERE {where}""",
-        (
-            *narrowed,
-            *narrowed,
-            *narrowed,
-            places.VERSION,
-            named,
-            *extra,
-            *space,
-            *space,
-            *params,
-        ),
-    )[0]
-    disclosure.update(
-        scope_passages=row["scope"],
-        passages_with_named_evidence=row["named_evidence"],
-        conflicting_passages=row["conflicting"],
-        excluded_passages=row["conflicting"] if rule == "exclude" else 0,
-        untagged_passages=row["untagged"],
-        older_tagger_passages=row["older_tagger"],
+        ON e.passage_id=p.id AND e.model=%s AND e.revision=%s LEFT JOIN {REJECTED} WHERE {where}"""
+    values = (
+        *narrowed,
+        *narrowed,
+        *narrowed,
+        places.VERSION,
+        rule["active"],
+        *extra,
+        *space,
+        *space,
+        *params,
     )
-    return disclosure, _coverage(settings, row)
+    return query, values
+
+
+def _scope_counts(rule, row):
+    return {
+        "scope_passages": row["scope"],
+        "passages_with_named_evidence": row["named_evidence"],
+        "conflicting_passages": row["conflicting"],
+        "excluded_passages": row["conflicting"] if rule["rule"] == "exclude" else 0,
+        "untagged_passages": row["untagged"],
+        "older_tagger_passages": row["older_tagger"],
+    }
 
 
 def create_vector_index(db):
