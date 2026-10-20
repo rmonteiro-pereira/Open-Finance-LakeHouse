@@ -230,12 +230,19 @@ overlaps (as in the jurisdiction backfill); a chain that does not rebuild exactl
 counted as `unchained` and left as it is.
 
 Every transaction that writes an item's passages (catalog and archive ingestion,
-news and letter sync, page processing, rechunk) first takes the same item-level
-advisory lock; import and asset locks always come before it. Rechunk re-reads the
+news and letter sync, page processing, the jurisdiction backfill, rechunk) first
+takes the same item-level advisory lock and reads the passage state it depends on
+only after that; import and asset locks always come before it. Rechunk re-reads the
 item's active passages under that lock and replaces a chain only if they are still
 exactly the chain it planned; otherwise it counts the chain as `changed` and leaves
 it to the writer that superseded it, so a concurrent re-ingestion or news policy
-downgrade is never undone.
+downgrade is never undone. The backfill likewise re-reads and tags each item in its
+own transaction under the lock, so passages superseded meanwhile are no longer
+pending. Bulk deactivations lock their rows in id order and new passages are written
+in id order. Rechunk and the backfill hold one item lock at a time and touch only
+that item's passages; the remaining deadlock risk is between writers that take
+several item locks in one transaction in no fixed order (catalog imports, library
+sync), which PostgreSQL detects by aborting one of them, whose job is then retried.
 
 Saved investigations keep working across re-ingestion and re-chunking: when an
 existing investigation is edited, a reference its previous revision already captured
