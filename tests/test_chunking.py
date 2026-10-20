@@ -6,7 +6,7 @@ pytest.importorskip("psycopg")
 
 from ofl.research import chunking
 from ofl.research import jurisdiction as places
-from ofl.research.archive import chain_plan, chunks
+from ofl.research.archive import chain_current, chain_plan, chunks
 from ofl.research.jurisdiction import tag
 from tests.test_research import research  # noqa: F401
 
@@ -131,6 +131,15 @@ def test_chain_plan_rechunks_only_rebuildable_chains_cut_differently():
     assert chain_plan(single) == ("rechunk", glued(300))
 
 
+def test_chain_is_current_only_when_exactly_its_passages_are_active():
+    chain = [{"id": "a"}, {"id": "b"}]
+    assert chain_current(chain, ["b", "a"])
+    assert not chain_current(chain, ["a"])
+    assert not chain_current(chain, ["a", "b", "c"])
+    assert not chain_current(chain, ["a", "c"])
+    assert not chain_current(chain, [])
+
+
 def fake_context_model(monkeypatch, db, max_chars=4500):
     """Remote model refusing long inputs, as Ollama does over its context with truncate=false."""
     import json
@@ -226,6 +235,7 @@ def test_rechunk_supersedes_oversize_passages_and_their_rejections(research, mon
         "superseded_passages": 3,
         "new_passages": len(chunking.windows(text.split())),
         "superseded_rejections": 2,
+        "changed": 0,
         "dry_run": True,
     }
     assert db.rows("SELECT count(*) AS n FROM passages WHERE NOT active")[0]["n"] == 0

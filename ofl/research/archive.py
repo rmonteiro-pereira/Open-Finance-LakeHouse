@@ -23,7 +23,22 @@ def chunks(text: str, budget=chunking.TOKEN_BUDGET):
         yield " ".join(words[start:end])
 
 
+def lock_item(con, item_id):
+    """Serialise every transaction that writes an item's passages (transaction-scoped).
+
+    Taken before reading the passage state a write depends on: by upsert_item (catalog
+    and archive ingestion, letter sync), news sync, page processing, index_text and
+    rechunk. Order: an import or asset lock comes first and is never requested while an
+    item lock is held. Job enqueue locks may follow it. Rechunk holds one item lock and
+    requests nothing else, so it cannot take part in a wait cycle; writers that take
+    several item locks (catalog imports, library sync) run serially in the default
+    worker lane. Re-acquiring the lock within the same transaction does not block.
+    """
+    con.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", ("ofl-research-item:" + item_id,))
+
+
 def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None, evidence=None):
+    lock_item(con, item_id)
     # Only replace the appropriate metadata/page revision, never another asset.
     con.execute(
         """UPDATE passages SET active=false WHERE item_id=%s AND method=%s
@@ -102,6 +117,7 @@ def rechunk(db, *, batch=1000, dry_run=False, progress=lambda _: None):
         "superseded_passages": 0,
         "new_passages": 0,
         "superseded_rejections": 0,
+        "changed": 0,
         "dry_run": dry_run,
     }
     for offset in range(0, len(keys), batch):
@@ -125,6 +141,7 @@ def rechunk(db, *, batch=1000, dry_run=False, progress=lambda _: None):
             if state != "rechunk":
                 continue
             if not dry_run and not _replace_chain(db, chain, words):
+                result["changed"] += 1  # superseded since it was read: left to its writer
                 continue
             result["rechunk"] += 1
             result["superseded_passages"] += len(chain)
@@ -134,18 +151,26 @@ def rechunk(db, *, batch=1000, dry_run=False, progress=lambda _: None):
     return result
 
 
+def chain_current(chain, active):
+    """True when the passages still active for the chain's page are exactly the chain.
+
+    `active` holds the ids active now for the chain's item, method, asset and page (with
+    an active asset). Anything else means another write superseded or extended it.
+    """
+    return sorted(active) == sorted(r["id"] for r in chain)
+
+
 def _replace_chain(db, chain, words):
     first = chain[0]
     with db.connect() as con:
-        # Same lock as asset processing; skip a chain that changed since it was read.
-        con.execute(
-            "SELECT pg_advisory_xact_lock(hashtext(%s))", (first["asset_id"] or first["item_id"],)
-        )
+        lock_item(con, first["item_id"])
         active = con.execute(
-            "SELECT count(*) AS n FROM passages WHERE id=ANY(%s) AND active",
-            ([r["id"] for r in chain],),
-        ).fetchone()["n"]
-        if active != len(chain):
+            """SELECT p.id FROM passages p LEFT JOIN assets a ON a.id=p.asset_id
+            WHERE p.item_id=%s AND p.method=%s AND p.asset_id IS NOT DISTINCT FROM %s
+            AND p.page IS NOT DISTINCT FROM %s AND p.active AND (p.asset_id IS NULL OR a.active)""",
+            (first["item_id"], first["method"], first["asset_id"], first["page"]),
+        ).fetchall()
+        if not chain_current(chain, [r["id"] for r in active]):
             return False
         index_text(
             con,
@@ -163,6 +188,7 @@ def _replace_chain(db, chain, words):
 def upsert_item(con, source, record, fallback_id):
     source_id = str(record.get("source_id") or fallback_id)
     identity = digest([source, source_id])
+    lock_item(con, identity)
     title = str(record.get("title") or source_id)
     revision = digest(record)
     date_start, date_end = record.get("date_start") or None, record.get("date_end") or None
