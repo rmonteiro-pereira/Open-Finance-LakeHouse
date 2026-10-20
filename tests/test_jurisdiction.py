@@ -90,10 +90,10 @@ def test_single_strong_or_weak_only_evidence_never_tags(text):
         "Acidente na Rodovia Washington Luís. Trânsito na Washington Luís segue lento.",
         "Ações das Lojas Americanas caem. A Americanas renegocia dívidas.",
         "Produção de jornalismo da CNN Brasil. Programa da TV Brasil e da Agência Brasil.",
-        "Lucro do Banco do Brasil sobe. Final da Copa do Brasil. GP do Brasil.",
+        "Final da Copa do Brasil. GP do Brasil.",
         "Liga de futebol americano; a moeda americana sobe.",
         "Wall Street Journal e Washington Post publicaram.",
-        "Ações da China Mobile e do Bank of China.",
+        "Ações da China Mobile e da Air China.",
     ],
 )
 def test_reviewed_entities_with_country_words_never_count(text):
@@ -171,18 +171,19 @@ def test_related_link_and_navigation_text_never_tags():
     assert counts["CN"]["strong"]["related"] == 1 and counts["EA"]["strong"]["related"] == 1
     only_related = tag("Mercados. LEIA MAIS: Estados Unidos e China em guerra comercial.")
     assert only_related["jurisdiction"] == []
-    rest = " ".join(["O mercado subiu."] * 20)
-    assert codes(f"Veja também: EUA e Fed. O IPCA subiu e a Selic caiu. {rest}") == ["BR"]
-    # At most 60 words after the marker: a trailing link block, related to the end.
-    assert codes("Veja também: EUA e Fed. O IPCA subiu e a Selic caiu.") == []
+    # A marker covers its own sentence only, however little text follows.
+    assert codes("Veja também: EUA e Fed. O IPCA subiu e a Selic caiu.") == ["BR"]
+    assert codes("Leia também o relatório. China e PBoC elevam juros.", "Fed mantém juros") == [
+        "CN",
+        "US",
+    ]
 
 
 def test_abbreviations_do_not_end_a_related_headline():
     assert tag("Leia também: Juros nos U.S. e China sobem.")["jurisdiction"] == []
     assert tag("Leia também: Juros nos U.S. e China e PBoC sobem.")["jurisdiction"] == []
     assert tag("Leia também: O Sr. Silva fala da China e do PBoC.")["jurisdiction"] == []
-    rest = " ".join(["O mercado subiu."] * 20)
-    assert codes(f"Veja mais: E.U.A. e China; PBoC age. China e PBoC. {rest}") == ["CN"]
+    assert codes("Veja mais: E.U.A. e China; PBoC age. China e PBoC.") == ["CN"]
     assert places.sentence_end("Nos U.S. e E.U.A. o Dr. fala. Fim.", 0) == 29
     assert places.sentence_end("Nos U.S.", 0) is None
     assert places.sentence_end("Ele saiu… Fim.", 0) == 9
@@ -194,19 +195,38 @@ def test_abbreviations_do_not_end_a_related_headline():
     assert places.sentence_end("O plano X. Fim.", 0) == 15
 
 
-def test_tail_and_trailing_block_boundaries():
+def test_unmarked_closing_text_keeps_body_provenance():
     body = " ".join(["O mercado subiu hoje."] * 20)
-    single = tag(f"{body} Brasil")
-    assert single["evidence"]["counts"]["BR"]["strong"]["related"] == 1
-    forty = f"{body} Brasil e IPCA " + " ".join(["x"] * 37)
-    assert codes(forty) == []
-    text = f"{body} Brasil e IPCA"
-    assert related_spans(text) == [(text.index("Brasil"), len(text))]
-    sixty = "Leia também: " + " ".join(["x"] * 54) + " Brasil e IPCA. China e PBoC."
-    assert related_spans(sixty) == [(0, len(sixty))]
-    two = f"{body} Leia também: um. Veja mais: dois."
+    for text in (f"{body} China e PBoC elevam juros", f"{body} Brasil"):
+        assert related_spans(text) == []
+    assert codes(f"{body} China e PBoC elevam juros", "Fed mantém juros") == ["CN", "US"]
+    two = f"{body} Leia também: um. Veja mais: dois. China e PBoC."
     first, second = two.index("Leia"), two.index("Veja")
-    assert related_spans(two) == [(first, len(two)), (second, len(two))]
+    assert related_spans(two) == [(first, second - 1), (second, two.index(" China"))]
+    assert codes(two) == ["CN"]
+
+
+def test_state_banks_are_weak_national_evidence_not_masked():
+    result = tag("Lucro do Banco do Brasil sobe; Banco do Brasil paga dividendos.")
+    assert result["jurisdiction"] == []
+    assert result["evidence"]["counts"]["BR"]["weak"]["body"] == 2
+    assert result["evidence"]["entities"] == 0
+    china = tag("Bank of China e China Construction Bank emprestam.")
+    assert china["evidence"]["counts"]["CN"]["weak"]["body"] == 2
+    assert codes("Banco do Brasil e IPCA; o Brasil cresce.") == ["BR"]
+    assert detect("Banco do Brasil") == [] and detect("Bank of China") == []
+
+
+def test_european_demonyms_never_name_the_euro_area_in_queries():
+    for query in ("inflação europeia", "bancos europeus", "economia da Europa", "euro forte"):
+        assert detect(query) == []
+    for query in ("inflação na zona do euro", "decisão do BCE", "HICP do Eurostat"):
+        assert detect(query) == ["EA"]
+    assert detect("inflação brasileira") == ["BR"] and detect("juros americanos") == ["US"]
+    assert (
+        tag("Bancos europeus e a economia europeia.")["evidence"]["counts"]["EA"]["weak"]["body"]
+        == 2
+    )
 
 
 def test_decision_boundaries():
@@ -237,45 +257,28 @@ def test_related_region_ends_at_sentence_or_word_bound():
     assert related_spans("Sem marcador. EUA.") == []
     assert related_spans("Releia também os EUA.") == []
     words29 = " ".join(f"w{i}" for i in range(29))
-    assert related_spans(f"Saiba mais {words29}", whole=False) == [
-        (0, len(f"Saiba mais {words29}"))
-    ]
+    assert related_spans(f"Saiba mais {words29}") == [(0, len(f"Saiba mais {words29}"))]
     words30 = " ".join(f"w{i}" for i in range(30))
-    assert related_spans(f"Saiba mais {words30}   ", whole=False) == [
-        (0, len(f"Saiba mais {words30}"))
-    ]
+    assert related_spans(f"Saiba mais {words30}   ") == [(0, len(f"Saiba mais {words30}"))]
 
 
-def test_trailing_link_blocks_footers_and_unterminated_headlines_are_related():
+def test_feed_footers_and_marked_link_lists_are_related():
     body = " ".join(["O mercado subiu hoje."] * 20)
-    trailing = (
-        f"{body} Leia também: Brasil e IPCA. China e PBoC. EUA e Fed. {' '.join(['x.'] * 48)}"
-    )
-    assert codes(trailing) == []
-    early = f"Leia também: Brasil e IPCA. China e PBoC sobem. {' '.join(['x.'] * 60)}"
-    assert codes(early) == ["CN"]
     footer = f"{body} The post Brasil e IPCA sobem appeared first on Portal Brasil."
     assert codes(footer) == []
     assert tag(footer)["evidence"]["counts"]["BR"]["strong"]["related"] == 3
-    headline = f"{body} Papa diz que Brasil e IPCA preocupam"
-    assert codes(headline) == []
+    # An unpunctuated list after a marker is one block, up to 30 words.
+    listing = f"{body} Leia também Brasil e IPCA sobem China e PBoC cortam juros"
+    assert codes(listing) == []
     assert codes(f"{body} Brasil e IPCA preocupam.") == ["BR"]
-    short = "Brasil e IPCA preocupam"
-    assert codes(short) == ["BR"]
-    assert related_spans(headline, whole=False) == []
-    long_tail = f"{body} Brasil e IPCA " + " ".join(["x"] * 39)
-    assert codes(long_tail) == ["BR"]
-    sixty = " ".join(["O mercado subiu."] * 20)
-    assert codes(f"{sixty} Brasil e IPCA") == []
-    fifty_nine = " ".join(["mercado"] * 56) + " subiu."
-    assert codes(f"{fifty_nine} Brasil e IPCA") == ["BR"]
+    assert codes("Brasil e IPCA preocupam") == ["BR"]
 
 
 def test_overlaps_prefer_entities_strong_then_longer_then_earlier(monkeypatch):
     import re
 
     def patterns(*entries):
-        return [(code, tier, "name", re.compile(p)) for code, tier, p in entries]
+        return [(code, tier, tier, re.compile(p)) for code, tier, p in entries]
 
     monkeypatch.setattr(
         places, "PATTERNS", patterns(("US", "weak", "abcdef"), ("BR", "strong", "cd"))
@@ -685,12 +688,12 @@ def long_document():
     return " ".join(words)
 
 
-def test_fallback_regions_never_read_a_passage_as_a_whole_document():
+def test_fallback_regions_use_the_passage_text_and_unclassify_its_head():
     body = " ".join(["O mercado subiu hoje."] * 20)
-    text = f"{body} Brasil e IPCA"
+    text = f"Leia também: EUA. {body} Brasil e IPCA"
     (region,) = places.passage_regions([1], [text])
-    assert region["related"] == []
-    assert codes(text) == [] and tag(text, **region)["jurisdiction"] == ["BR"]
+    assert region["related"] == [(0, text.index(" O mercado"))]
+    assert tag(text, **region)["jurisdiction"] == ["BR"]
 
 
 def test_span_helpers_and_explicit_regions():
@@ -755,9 +758,9 @@ def test_related_region_crossing_a_chunk_boundary_never_tags():
     assert tags[0]["evidence"]["counts"]["US"]["strong"]["related"] == 1
     # Passage text alone would misread the boundary; the old behaviour is the regression.
     assert (
-        tag(passages[1], related=related_spans(passages[1], whole=False))["evidence"]["counts"][
-            "US"
-        ]["strong"]["body"]
+        tag(passages[1], related=related_spans(passages[1]))["evidence"]["counts"]["US"]["strong"][
+            "body"
+        ]
         == 1
     )
     partial = places.passage_regions([1, 2], passages[1:])
@@ -921,6 +924,31 @@ def test_partially_negated_names_never_apply_a_rule(research, query):
         assert [r["id"] for r in result["results"]] == [r["id"] for r in off["results"]]
 
 
+def test_closing_text_about_the_named_jurisdiction_survives_exclusion(research):
+    from ofl.research.archive import index_text, upsert_item
+    from ofl.research.search import search
+
+    db, _ = research
+    body = " ".join(["O comitê avaliou a inflação."] * 15)
+    documents = {
+        "unmarked": f"Fed mantém juros {body} China e PBoC elevam juros",
+        "after_link": f"Fed mantém juros {body} Leia também o relatório. China e PBoC elevam juros.",
+        "us_only": f"Fed mantém juros {body} O FOMC volta a se reunir.",
+    }
+    ids = {}
+    with db.connect() as con:
+        for name, text in documents.items():
+            ids[name] = upsert_item(
+                con, "news", {"source_id": name, "title": "Fed mantém juros"}, name
+            )
+            con.execute("UPDATE passages SET active=false WHERE item_id=%s", (ids[name],))
+            index_text(con, item_id=ids[name], revision=name, text=text, method="collector_news")
+    result = search(db, "juros OR China", mode="keyword", limit=50, jurisdiction="exclude")
+    assert result["jurisdiction"]["named"] == ["CN"]
+    assert {r["item_id"] for r in result["results"]} == {ids["unmarked"], ids["after_link"]}
+    assert all(r["jurisdiction"] == ["CN", "US"] for r in result["results"])
+
+
 def test_api_validates_and_discloses_the_rule(research):
     from fastapi.testclient import TestClient
 
@@ -1059,6 +1087,10 @@ def test_audit_sample_is_stratified_seeded_and_private(research, tmp_path):
         "other",
     ]
     assert audit.sample(db, 10, "seed-a", "news")["rows"] == first["rows"]
+    taken = [first["rows"][0]["passage_id"]]
+    again = audit.sample(db, 10, "seed-a", "news", exclude=taken)
+    assert again["excluded_previous"] == 1 and len(again["rows"]) == len(first["rows"]) - 1
+    assert taken[0] not in {row["passage_id"] for row in again["rows"]}
     assert audit.sample(db, 5, "seed-a", "manager_letter")["rows"] == []
     assert all(
         row["review"]["tags"] == dict.fromkeys(row["jurisdiction"], "not_assessed")

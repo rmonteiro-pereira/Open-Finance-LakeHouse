@@ -190,7 +190,16 @@ EQUIVALENT = {
         190: _EXPONENT,
     },
     "ofl.research.jurisdiction.x_find": {
-        9: "same-length overlapping matches: end order equals start order",
+        13: "same-length overlapping matches: end order equals start order",
+    },
+    "ofl.research.jurisdiction.x_related_spans": {
+        13: "a marker ends on a non-space character, so no word starts exactly there",
+    },
+    "ofl.research.jurisdiction.x_passage_regions": {
+        **dict.fromkeys(
+            (61, 64, 65),
+            "document branch only runs when ordinals == range(len(texts)): equal lengths",
+        ),
     },
     "ofl.research.jurisdiction.x_decide": {
         30: "a dominance check only runs at total == 1, where 3 * 1 == 3 / 1",
@@ -198,22 +207,10 @@ EQUIVALENT = {
     "ofl.research.jurisdiction.x_detect": {
         24: "a negated span starts after a term-initial '-', where no marker can end",
     },
-    "ofl.research.jurisdiction.x_related_spans": {
-        14: "a marker ends on a non-space character, so no word starts exactly there",
-        39: "a terminator at 0 leaves no tail with 60 words before it",
-        50: "a terminator is followed by whitespace, so no word starts exactly there",
-    },
     "ofl.research.jurisdiction.x_negated_spans": {
         37: "a closing quote is searched from start + 1 >= 2, so find() never returns 0",
         38: "a closing quote is searched from start + 1 >= 2, so find() never returns 0",
         57: "every term ends at least one character after it starts: end >= index + 1",
-    },
-    "ofl.research.jurisdiction.x_passage_regions": {
-        22: "whole=None and whole=False are both falsy",
-        **dict.fromkeys(
-            (65, 68, 69),
-            "document branch only runs when ordinals == range(len(texts)): equal lengths",
-        ),
     },
     "ofl.research.workspaces.x_validate": {
         26: _DEFAULT_SAME_ERROR,
