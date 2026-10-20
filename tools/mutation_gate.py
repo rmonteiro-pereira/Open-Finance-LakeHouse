@@ -81,6 +81,18 @@ SCOPES = {
             "ofl.research.analytics.x_prepare_dataset",
         ],
     ),
+    "retrieval": (
+        0.90,
+        [
+            "ofl.research.jurisdiction.x_check_rule",
+            "ofl.research.jurisdiction.x_related_spans",
+            "ofl.research.jurisdiction.x_find",
+            "ofl.research.jurisdiction.x_tag",
+            "ofl.research.jurisdiction.x_detect",
+            "ofl.research.jurisdiction.x_exclusion",
+            "ofl.research.jurisdiction.x_boosted",
+        ],
+    ),
 }
 
 _HEADERS = "request headers are a case-insensitive mapping (Starlette Headers)"
@@ -169,6 +181,12 @@ EQUIVALENT = {
         137: "no separator configured: None and '' are both falsy and differ from '.'/','",
         139: "no separator configured: None and '' are both falsy and differ from '.'/','",
         190: _EXPONENT,
+    },
+    "ofl.research.jurisdiction.x_find": {
+        12: "same-length overlapping matches: end order equals start order",
+    },
+    "ofl.research.jurisdiction.x_tag": {
+        21: "a related span starts at its marker, which is never a jurisdiction marker",
     },
     "ofl.research.workspaces.x_validate": {
         26: _DEFAULT_SAME_ERROR,
