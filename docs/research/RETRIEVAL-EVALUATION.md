@@ -16,6 +16,15 @@ it says nothing about the original archive's completeness or relevance. Keyword
 checks retain the coverage observation but exclude index progress from evidence
 change detection. A wholly unindexed semantic scope does not call the model.
 
+Passages are never truncated before embedding. When the remote model refuses a
+batch because an input exceeds its context length, the batch is bisected: the
+other passages are stored and each oversize passage is recorded in
+`embedding_rejections` for that model, model revision, passage revision and text
+digest. Rejected passages leave the queue, so later passages are indexed. They stay
+in `eligible_passages`, are reported as `rejected_passages` and are not counted as
+indexed or pending; a changed passage text or revision is eligible again. Any other
+provider error still fails the embedding job.
+
 ## Worker pools
 
 `ofl research worker --lane default` processes imports, library synchronization,
