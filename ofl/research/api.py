@@ -410,6 +410,12 @@ def create_app(settings=None):
             "jurisdictions; boost (API only) adds one bounded RRF list. Applied only when the "
             "query names precision-gated jurisdictions (BR, US, EA).",
         ),
+        vocabulary: Literal["off", "on"] = Query(
+            "off",
+            description="Experimental. on expands plain-word economic concepts with the "
+            "curated lexicon's institutional terms (inflação brasileira: IPCA); the "
+            "response's vocabulary field lists the expansions and the lexicon version.",
+        ),
         _user=Depends(identity),
     ):
         from .search import search
@@ -431,6 +437,7 @@ def create_app(settings=None):
                 date_to=date_to,
                 limit=limit,
                 jurisdiction=jurisdiction,
+                vocabulary=vocabulary,
             )
         )
 
@@ -797,8 +804,10 @@ def create_app(settings=None):
         return Response(
             bundle(db, store, body),
             media_type="application/zip",
-            headers={"Content-Disposition": 'attachment; filename="ofl-dataset-reproduction.zip"',
-                     "Cache-Control": "no-store"},
+            headers={
+                "Content-Disposition": 'attachment; filename="ofl-dataset-reproduction.zip"',
+                "Cache-Control": "no-store",
+            },
         )
 
     @app.get("/api/v1/datasets/bundle")

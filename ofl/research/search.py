@@ -5,6 +5,7 @@ import math
 from functools import lru_cache
 
 from . import jurisdiction as places
+from . import vocabulary as lexicon
 from .db import digest
 
 SEMANTIC_CONTENT = (
@@ -256,10 +257,15 @@ def search(
     limit=20,
     vector=None,
     jurisdiction="off",
+    vocabulary="off",
+    vocabulary_arms=None,
+    expanded_vector=None,
 ):
     if mode not in {"keyword", "vector", "hybrid"}:
         raise ValueError("unknown search mode")
     rule = places.plan(jurisdiction, text)
+    expansion = lexicon.plan(vocabulary, text)
+    arms = _arms(expansion, mode, vocabulary_arms)
     where, params = scope_conditions(
         source=source,
         item_type=item_type,
@@ -282,53 +288,22 @@ def search(
     # than interpreting minus signs inside identifiers/quoted source text ourselves.
     candidates = max(100, limit * 5)
     if mode in {"keyword", "hybrid"}:
-        rankings.append(
-            db.rows(
-                f"""WITH query AS (
-                SELECT websearch_to_tsquery('portuguese',%s) AS pt,
-                    websearch_to_tsquery('simple',%s) AS literal
-                ) SELECT {projection},ts_rank_cd(p.search,
-                    CASE WHEN p.method='metadata' AND strpos(query.literal::text,'!')=0
-                    THEN query.pt || query.literal ELSE query.pt END) AS score
-                FROM passages p JOIN items i ON i.id=p.item_id CROSS JOIN query
-                WHERE {where} AND (p.search @@ query.pt OR
-                    (p.method='metadata' AND strpos(query.literal::text,'!')=0
-                    AND p.search @@ query.literal))
-                ORDER BY score DESC,p.id LIMIT %s""",
-                (text, text, *params, candidates),
-            )
-        )
+        query, head = _keyword_query(projection, where, text, expansion, arms)
+        rankings.append(db.rows(query, (*head, *params, candidates)))
     if mode in {"vector", "hybrid"} and not coverage["configured"]:
         raise ValueError("semantic search requires a pinned embedding model")
     if mode in {"vector", "hybrid"} and not coverage["indexed_passages"]:
         rankings.append([])
+        arms = [arm for arm in arms if arm != "vector"]
     if mode in {"vector", "hybrid"} and coverage["indexed_passages"]:
-        if vector is None:
-            vector = embed(db.settings, [text])[0]
-        literal = vector_literal(vector, db.settings.embedding_dimensions)
-        expression = (
-            f"e.embedding::vector({db.settings.embedding_dimensions})"
-            if db.settings.approximate_search
-            else "e.embedding"
+        vectors = _query_vectors(
+            db.settings, text, expansion, arms, vector=vector, expanded=expanded_vector
         )
-        rankings.append(
-            db.rows(
-                f"""SELECT {projection},1-({expression} <=> %s::vector) AS score
-            FROM passages p JOIN items i ON i.id=p.item_id JOIN embeddings e ON e.passage_id=p.id
-            WHERE {where} AND {SEMANTIC_CONTENT} AND e.model=%s AND e.revision=%s
-            ORDER BY {expression} <=> %s::vector,p.id LIMIT %s""",
-                (
-                    literal,
-                    *params,
-                    db.settings.embedding_model,
-                    db.settings.embedding_revision,
-                    literal,
-                    candidates,
-                ),
-                ann=db.settings.approximate_search,
-            )
-        )
+        rankings += [
+            _vector_rows(db, (projection, where, params), value, candidates) for value in vectors
+        ]
     labels = ["keyword", "vector"] if mode == "hybrid" else [mode]
+    labels += ["vocabulary_vector"] if "vector" in arms else []
     rankings, labels, boosted = _boost(rule, rankings, labels)
     contributions = _contributions(labels, rankings)
     combined = fuse(rankings) if len(rankings) > 1 else rankings[0]
@@ -359,7 +334,97 @@ def search(
     }
     if disclosure is not None:
         response["jurisdiction"] = _boost_disclosure(disclosure, boosted, results)
+    if expansion["setting"] != "off":
+        response["vocabulary"] = lexicon.disclosure(expansion, arms)
     return response
+
+
+def _arms(expansion, mode, requested=None):
+    """Arms the expansion acts on in this mode: none when no concept was expanded."""
+    if not expansion["concepts"]:
+        return []
+    allowed = {"keyword": mode != "vector", "vector": mode != "keyword"}
+    arms = lexicon.ARMS if requested is None else requested
+    if set(arms) - set(allowed):
+        raise ValueError("vocabulary arms must be keyword and/or vector")
+    return [arm for arm in ("keyword", "vector") if arm in arms and allowed[arm]]
+
+
+KEYWORD = """WITH query AS (
+                SELECT websearch_to_tsquery('portuguese',%s) AS pt,
+                    websearch_to_tsquery('simple',%s) AS literal{expanded}
+                ) SELECT {projection},ts_rank_cd(p.search,
+                    CASE WHEN p.method='metadata' AND strpos(query.literal::text,'!')=0
+                    THEN query.pt || query.literal ELSE query.pt END){weighted} AS score
+                FROM passages p JOIN items i ON i.id=p.item_id CROSS JOIN query
+                WHERE {where} AND (p.search @@ query.pt{matched} OR
+                    (p.method='metadata' AND strpos(query.literal::text,'!')=0
+                    AND p.search @@ query.literal))
+                ORDER BY score DESC,p.id LIMIT %s"""
+
+
+def _keyword_query(projection, where, text, expansion, arms):
+    """Keyword SQL and its leading parameters (before the scope's and the limit).
+
+    Without keyword expansion it is the plain query. With it, a passage also matches the
+    expanded tsquery and scores EXPANSION_WEIGHT times its rank on top of the plain rank.
+    """
+    expanded = lexicon.tsquery(expansion) if "keyword" in arms else None
+    if expanded is None:
+        sql = KEYWORD.format(
+            projection=projection, where=where, expanded="", weighted="", matched=""
+        )
+        return sql, (text, text)
+    expression, values = expanded
+    sql = KEYWORD.format(
+        projection=projection,
+        where=where,
+        expanded=f",{expression} AS expanded",
+        weighted="+%s*ts_rank_cd(p.search,query.expanded)",
+        matched=" OR p.search @@ query.expanded",
+    )
+    return sql, (text, text, *values, lexicon.EXPANSION_WEIGHT)
+
+
+def _query_vectors(settings, text, expansion, arms, *, vector=None, expanded=None):
+    """The query vector, then the expanded query's when the vector arm is expanded.
+
+    Missing vectors are embedded in one request; given ones are never recomputed.
+    """
+    texts = [text] if vector is None else []
+    if "vector" in arms and expanded is None:
+        texts.append(lexicon.expanded_text(expansion, text))
+    embedded = embed(settings, texts) if texts else []
+    vector = embedded.pop(0) if vector is None else vector
+    if "vector" not in arms:
+        return [vector]
+    return [vector, embedded.pop(0) if expanded is None else expanded]
+
+
+def _vector_rows(db, scope, vector, candidates):
+    """Exact (or opted-in approximate) nearest passages to one query vector."""
+    projection, where, params = scope
+    literal = vector_literal(vector, db.settings.embedding_dimensions)
+    expression = (
+        f"e.embedding::vector({db.settings.embedding_dimensions})"
+        if db.settings.approximate_search
+        else "e.embedding"
+    )
+    return db.rows(
+        f"""SELECT {projection},1-({expression} <=> %s::vector) AS score
+            FROM passages p JOIN items i ON i.id=p.item_id JOIN embeddings e ON e.passage_id=p.id
+            WHERE {where} AND {SEMANTIC_CONTENT} AND e.model=%s AND e.revision=%s
+            ORDER BY {expression} <=> %s::vector,p.id LIMIT %s""",
+        (
+            literal,
+            *params,
+            db.settings.embedding_model,
+            db.settings.embedding_revision,
+            literal,
+            candidates,
+        ),
+        ann=db.settings.approximate_search,
+    )
 
 
 PROJECTION = """p.id,p.item_id,p.asset_id,p.page,p.text,p.method,p.evidence,

@@ -107,6 +107,7 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
         date_to: date | None = None,
         limit: int = 8,
         jurisdiction: Literal["off", "exclude"] = "off",
+        vocabulary: Literal["off", "on"] = "off",
     ) -> dict:
         """Document evidence with passage/item/asset/page IDs. OCR is not approved numeric data.
 
@@ -115,6 +116,11 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
         jurisdiction is precision-gated (Brazil, United States, euro area); a query naming
         another one (e.g. China) is searched without it. The response's `jurisdiction`
         field discloses what was applied and what was ignored.
+
+        vocabulary (experimental): `on` also searches the institutional terms a curated
+        lexicon lists for plain-word economic concepts (`inflação brasileira`: IPCA,
+        IPCA-15; `desemprego`: PNAD, Caged). The response's `vocabulary` field lists the
+        expansions applied, those skipped and the lexicon version.
         """
         if not 1 <= len(q) <= 1000 or not 1 <= limit <= 20:
             raise ValueError("query length or result limit outside bounds")
@@ -124,6 +130,10 @@ def create_mcp(settings: ResearchSettings, *, transport=None):
             raise ValueError("jurisdiction must be off or exclude")
         if jurisdiction == "off":
             jurisdiction = None
+        if vocabulary not in {"off", "on"}:
+            raise ValueError("vocabulary must be off or on")
+        if vocabulary == "off":
+            vocabulary = None
         return read("search", locals())
 
     @server.tool()
