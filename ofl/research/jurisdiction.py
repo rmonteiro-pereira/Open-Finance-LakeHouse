@@ -447,6 +447,7 @@ def detect(query):
     A marker overlapping a negated term at all (`-Estados Unidos` negates `Estados`) is
     ignored; entity names (`futebol americano`) never name a jurisdiction.
     """
+    query = nfc(query)
     negated = negated_spans(query)
     demonyms = {
         match.span()
@@ -473,15 +474,32 @@ def plan(rule, query):
     `ignored`.
     """
     rule = check_rule(rule)
+    query = nfc(query)
     named = detect(query) if rule != "off" else []
     mentioned = foreign(query) if rule != "off" else []
     ignored = sorted(set(named + mentioned) - GATED_JURISDICTIONS)
     return {"rule": rule, "named": named, "active": [] if ignored else named, "ignored": ignored}
 
 
+def nfc(text):
+    """Composed Unicode form: decomposed accents (`a` + U+0303) cannot dodge a pattern."""
+    return unicodedata.normalize("NFC", text)
+
+
+def _folded(text):
+    """Accent-folded text without combining marks, and each folded character's index."""
+    chars, index = [], []
+    for position, character in enumerate(text):
+        base = unicodedata.normalize("NFD", character)[0]
+        if unicodedata.category(base) != "Mn":
+            chars.append(base)
+            index.append(position)
+    return "".join(chars), [*index, len(text)]
+
+
 def fold(text):
-    """Accents removed, one character per character, so offsets stay valid."""
-    return "".join(unicodedata.normalize("NFD", c)[0] for c in text)
+    """Accents and stray combining marks removed."""
+    return _folded(text)[0]
 
 
 def foreign(query):
@@ -491,15 +509,17 @@ def foreign(query):
     China`, `chinês`): naming is not needed to make a rule unsafe. FOREIGN mentions
     inside a strong tagger match (`Banco Central Europeu`) do not count.
     """
+    query = nfc(query)
     negated = negated_spans(query)
     matches = find(query)
     taken = negated + [(start, end) for start, end, _, tier in matches if tier == "strong"]
-    folded = fold(query)
+    folded, index = _folded(query)
     found = {
         code
         for code, pattern in FOREIGN_PATTERNS
         for match in pattern.finditer(folded)
-        if not any(match.start() < b and match.end() > a for a, b in taken)
+        # Spans of `query`: the first and one past the last matched character.
+        if not any(index[match.start()] < b and index[match.end() - 1] + 1 > a for a, b in taken)
     }
     found |= {
         code
