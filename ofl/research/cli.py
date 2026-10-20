@@ -27,6 +27,7 @@ def configure(subparsers):
                 "build",
                 "mcp",
                 "sync",
+                "tag-jurisdiction",
             ),
         )
         parser.add_argument("path", nargs="?", type=Path)
@@ -64,7 +65,9 @@ def dispatch(args):
         return 0
     db = Database(settings)
     store = (
-        None if args.action in {"evaluate", "evaluate-fixture"} else Store.from_settings(settings)
+        None
+        if args.action in {"evaluate", "evaluate-fixture", "tag-jurisdiction"}
+        else Store.from_settings(settings)
     )
     if args.action == "migrate":
         db.migrate()
@@ -144,6 +147,19 @@ def dispatch(args):
                 "embed", {"limit": args.limit}
             )
         }
+    elif args.action == "tag-jurisdiction":
+        import sys
+
+        from .jurisdiction import backfill
+
+        if not 1 <= args.limit <= 10000:
+            raise ValueError("tag-jurisdiction batch (--limit) must be between 1 and 10000")
+        result = backfill(
+            db,
+            batch=args.limit,
+            dry_run=args.dry_run,
+            progress=lambda value: print(json.dumps(value), file=sys.stderr, flush=True),
+        )
     elif args.action == "evaluate-fixture":
         import sys
         from .retrieval_fixture import evaluate_fixture

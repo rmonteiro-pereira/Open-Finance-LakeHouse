@@ -10,6 +10,7 @@ from pathlib import Path, PurePosixPath
 
 from psycopg.types.json import Jsonb
 
+from . import jurisdiction
 from .db import digest
 
 VERSION = "archive-v1"
@@ -31,13 +32,18 @@ def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None
         AND asset_id IS NOT DISTINCT FROM %s AND page IS NOT DISTINCT FROM %s""",
         (item_id, method, asset_id, page),
     )
+    title = con.execute("SELECT title FROM items WHERE id=%s", (item_id,)).fetchone()["title"]
     for ordinal, passage in enumerate(chunks(text)):
         identity = digest([item_id, revision, ordinal])
         con.execute(
-            """INSERT INTO passages(id,item_id,asset_id,page,ordinal,text,revision,method,evidence,search)
+            """INSERT INTO passages(id,item_id,asset_id,page,ordinal,text,revision,method,evidence,search,
+            jurisdiction,jurisdiction_evidence,jurisdiction_tagger)
             VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,
-            setweight(to_tsvector('simple',%s),'A') || setweight(to_tsvector('portuguese',%s),'B'))
-            ON CONFLICT(id) DO UPDATE SET active=true""",
+            setweight(to_tsvector('simple',%s),'A') || setweight(to_tsvector('portuguese',%s),'B'),
+            %s,%s,%s)
+            ON CONFLICT(id) DO UPDATE SET active=true,jurisdiction=excluded.jurisdiction,
+            jurisdiction_evidence=excluded.jurisdiction_evidence,
+            jurisdiction_tagger=excluded.jurisdiction_tagger""",
             (
                 identity,
                 item_id,
@@ -50,6 +56,7 @@ def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None
                 Jsonb(evidence or {}),
                 passage if method == "metadata" else "",
                 passage,
+                *jurisdiction.columns(passage, title),
             ),
         )
 
