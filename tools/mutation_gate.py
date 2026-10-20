@@ -100,6 +100,8 @@ SCOPES = {
             "ofl.research.jurisdiction.x_exclusion",
             "ofl.research.jurisdiction.x_boosted",
             "ofl.research.jurisdiction.x_plan",
+            "ofl.research.jurisdiction.x_fold",
+            "ofl.research.jurisdiction.x_foreign",
             "ofl.research.jurisdiction.x_columns",
             "ofl.research.jurisdiction.x_batch_updates",
             # Search integration of the rule, extracted from search() so it can be gated.
@@ -231,6 +233,14 @@ EQUIVALENT = {
         **dict.fromkeys(
             (23, 26, 27),
             "passage_regions returns one region per text (its own strict zip): equal lengths",
+        ),
+    },
+    "ofl.research.jurisdiction.x_foreign": {
+        **dict.fromkeys(
+            (18, 29),
+            "a mention ends on a word character, '.' or '$'; a negated span starts after "
+            "'-' or a space and a strong marker starts on a word character after a non-word "
+            "one, so no span starts exactly where a mention ends",
         ),
     },
     "ofl.research.workspaces.x_validate": {

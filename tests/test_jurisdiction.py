@@ -622,6 +622,7 @@ def test_only_precision_gated_jurisdictions_activate_a_rule(monkeypatch):
             "ignored": [],
         }
     monkeypatch.setattr(places, "detect", lambda _: pytest.fail("off must not read the query"))
+    monkeypatch.setattr(places, "foreign", lambda _: pytest.fail("off must not read the query"))
     assert places.plan("off", "inflação no Brasil") == {
         "rule": "off",
         "named": [],
@@ -630,6 +631,98 @@ def test_only_precision_gated_jurisdictions_activate_a_rule(monkeypatch):
     }
     with pytest.raises(ValueError, match="off, boost or exclude"):
         places.plan("filter", "Brasil")
+
+
+@pytest.mark.parametrize(
+    ("query", "ignored"),
+    [
+        ("inflação no Brasil e Japão", ["JP"]),
+        ("Brasil e CN", ["CN"]),
+        ("Brasil e CHN", ["CN"]),
+        ("EUA e Reino Unido", ["GB"]),
+        ("Fed e BoE no UK", ["GB"]),
+        ("Brasil-Japão", ["JP"]),
+        ("inflação argentina e IPCA", ["AR"]),
+        ("Brasil e México", ["MX"]),
+        ("Brasil e Peru", ["PE"]),
+        ("Brasil e Índia", ["IN"]),
+        ("Brasil e Chile", ["CL"]),
+        ("Brasil e Turquia", ["TR"]),
+        ("Brasil, Alemanha e França", ["DE", "FR"]),
+        ("Brasil e América Latina", ["LATAM"]),
+        ("Brasil e mercados emergentes", ["EMERGING"]),
+        ("Brasil e Ásia", ["ASIA"]),
+        ("EUA e BRICS", ["BLOC"]),
+        ("Brasil e Bank of China", ["CN"]),
+        ("Brasil e yuan", ["CN"]),
+        ("inflação japonesa e Brasil", ["JP"]),
+        # Europe is not the euro area: it never activates EA and turns a rule off.
+        ("Brasil e Europa", ["EUROPE"]),
+        ("Brasil e inflação europeia", ["EUROPE"]),
+        ("Brasil e União Europeia", ["EU", "EUROPE"]),
+    ],
+)
+def test_any_ungated_mention_turns_a_gated_query_off(query, ignored):
+    for rule in ("boost", "exclude"):
+        result = places.plan(rule, query)
+        assert result["active"] == [] and result["ignored"] == ignored, query
+        assert result["named"] == detect(query)
+    assert places.foreign(query) == ignored
+
+
+@pytest.mark.parametrize(
+    ("query", "active"),
+    [
+        ("inflação no Brasil", ["BR"]),
+        ("Brasil -Japão", ["BR"]),
+        ('Brasil -"Reino Unido"', ["BR"]),
+        ("Brasil -China", ["BR"]),
+        ("Brasil -yuan", ["BR"]),
+        ("Brasil e BCE", ["BR", "EA"]),
+        ("Banco Central Europeu e Brasil", ["BR", "EA"]),
+        ("zona do euro e EUA", ["EA", "US"]),
+        ("câmbio euro real e Brasil", ["BR"]),
+        # Lower-case homographs are not countries: turkey, an indigenous woman.
+        ("peru de Natal no Brasil", ["BR"]),
+        ("índia e indígenas no Brasil", ["BR"]),
+        ("Rodovia Washington Luís no Brasil", ["BR"]),
+        ("Lojas Americanas e Brasil", ["BR"]),
+        ("China Mobile e Brasil", ["BR"]),
+        ("eu acho que o Brasil", ["BR"]),
+        ("notícias em português sobre o Brasil", ["BR"]),
+        ("Brasil: Petrobras PETR4 e VALE3", ["BR"]),
+        ("Brasileirão e Brasil", ["BR"]),
+    ],
+)
+def test_gated_queries_without_foreign_mentions_stay_active(query, active):
+    assert places.foreign(query) == []
+    assert places.plan("exclude", query) == {
+        "rule": "exclude",
+        "named": active,
+        "active": active,
+        "ignored": [],
+    }
+
+
+def test_foreign_matching_folds_accents_and_keeps_offsets():
+    assert places.fold("Japão Índia Turquía") == "Japao India Turquia"
+    assert len(places.fold("ção")) == 3
+    assert places.foreign("JAPAO e Brasil") == ["JP"]
+    assert places.foreign("japão, peru e PERU") == ["JP", "PE"]
+    assert places.foreign("Turkey and turkey") == ["TR"]
+    assert places.foreign("jp e cn") == []
+    assert places.foreign("Japãozinho") == []
+    assert places.foreign("pré-Japão") == ["JP"]
+    assert places.foreign("-Japão Japão") == ["JP"]
+    assert places.foreign("- Japão") == []
+    assert places.foreign("Banco Central Europeu") == []
+    assert places.foreign("europeu") == ["EUROPE"]
+    assert places.foreign("") == []
+    # Negation applies per term, also to ungated tagger codes.
+    assert places.foreign("China -Brasil") == ["CN"]
+    assert places.foreign('-"Brasil"China') == ["CN"]
+    assert places.foreign('-"Brasil"Japão') == ["JP"]
+    assert places.foreign("Japão -China") == ["JP"]
 
 
 def test_projection_adds_jurisdiction_columns_only_outside_off():
@@ -1323,8 +1416,17 @@ def test_closing_text_about_the_named_jurisdiction_survives_exclusion(research):
 
 
 @pytest.mark.parametrize("mode", ["keyword", "vector", "hybrid"])
-@pytest.mark.parametrize("query", ["inflação OR China", "inflação OR Brasil OR China"])
-def test_ungated_jurisdictions_search_exactly_as_off(research, mode, query):
+@pytest.mark.parametrize(
+    ("query", "named", "ignored"),
+    [
+        ("inflação OR China", ["CN"], ["CN"]),
+        ("inflação OR Brasil OR China", ["BR", "CN"], ["CN"]),
+        ("inflação OR Brasil OR Japão", ["BR"], ["JP"]),
+        ("inflação OR Brasil OR CN", ["BR"], ["CN"]),
+        ('inflação OR EUA OR "Reino Unido"', ["US"], ["GB"]),
+    ],
+)
+def test_ungated_jurisdictions_search_exactly_as_off(research, mode, query, named, ignored):
     from ofl.research.search import search
 
     db, _ = research
@@ -1335,8 +1437,8 @@ def test_ungated_jurisdictions_search_exactly_as_off(research, mode, query):
     for rule in ("boost", "exclude"):
         result = search(db, query, mode=mode, vector=vector, limit=50, jurisdiction=rule)
         disclosure = result.pop("jurisdiction")
-        assert disclosure["applied"] is False and disclosure["ignored"] == ["CN"]
-        assert disclosure["named"] == (["CN"] if "Brasil" not in query else ["BR", "CN"])
+        assert disclosure["applied"] is False and disclosure["ignored"] == ignored
+        assert disclosure["named"] == named
         assert not {"excluded_passages", "boosted_candidates"} & set(disclosure)
         stripped = [{k: v for k, v in r.items() if k not in columns} for r in result["results"]]
         assert result | {"results": stripped} == off
@@ -1345,6 +1447,12 @@ def test_ungated_jurisdictions_search_exactly_as_off(research, mode, query):
         db, "inflação OR Brasil", mode=mode, vector=vector, limit=50, jurisdiction="exclude"
     )
     assert len(excluded["results"]) == len(gated["results"]) - 2
+    # A negated foreign mention does not stop the gated rule.
+    negated = search(
+        db, "inflação OR Brasil -Japão", mode=mode, vector=vector, limit=50, jurisdiction="exclude"
+    )
+    assert negated["jurisdiction"]["applied"] is True
+    assert negated["jurisdiction"]["excluded_passages"] == 2
 
 
 def test_api_validates_and_discloses_the_rule(research):
