@@ -9,8 +9,8 @@ from urllib.parse import urlsplit
 
 from psycopg.types.json import Jsonb
 
-from .archive import index_text, lock_item, upsert_item
-from .db import digest
+from .archive import index_text, upsert_item
+from .db import digest, lock_item
 
 COLLECTION = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 SHA = re.compile(r"^[a-f0-9]{64}$")

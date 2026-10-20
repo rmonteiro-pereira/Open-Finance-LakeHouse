@@ -34,6 +34,7 @@ import unicodedata
 from psycopg.types.json import Jsonb
 
 from . import chunking
+from .db import lock_item
 
 VERSION = "jurisdiction-v4"
 RULES = ("off", "boost", "exclude")
@@ -607,7 +608,10 @@ def backfill(db, *, batch=1000, dry_run=False, progress=lambda _: None):
     Each passage is tagged in the context of its document, rebuilt from all passages of
     the same item revision (active or not), exactly as at ingestion. When the chain is
     incomplete, regions it cannot classify are marked `unclassified` and do not count.
-    `batch` bounds document groups per transaction.
+    Each item is re-read and updated in its own transaction under the item lock that
+    every passage writer takes, so a chain superseded meanwhile (by re-ingestion or
+    rechunk) is seen as it is now: its passages are no longer pending. `batch` bounds
+    the document groups read per round.
     """
     pending = db.rows(
         f"SELECT count(*) AS n FROM passages p JOIN items i ON i.id=p.item_id WHERE {PENDING}",
@@ -625,21 +629,27 @@ def backfill(db, *, batch=1000, dry_run=False, progress=lambda _: None):
         )
         if not groups:
             return result
-        rows = db.rows(
-            f"""SELECT p.id,p.item_id,p.revision,p.ordinal,p.text,i.title,{PENDING} AS pending
-            FROM passages p JOIN items i ON i.id=p.item_id
-            WHERE (p.item_id,p.revision) IN (SELECT * FROM unnest(%s::text[],%s::text[]))
-            ORDER BY p.item_id,p.revision,p.ordinal""",
-            (VERSION, [g["item_id"] for g in groups], [g["revision"] for g in groups]),
-        )
-        updates, partial = batch_updates(rows)
-        result["partial_context"] += partial
+        revisions = {}
+        for group in groups:
+            revisions.setdefault(group["item_id"], []).append(group["revision"])
         with db.connect() as con:
-            con.cursor().executemany(
-                """UPDATE passages SET jurisdiction=%s,jurisdiction_evidence=%s,
-                jurisdiction_tagger=%s WHERE id=%s""",
-                updates,
-            )
+            for item_id, item_revisions in revisions.items():
+                lock_item(con, item_id)
+                rows = con.execute(
+                    f"""SELECT p.id,p.item_id,p.revision,p.ordinal,p.text,i.title,
+                    {PENDING} AS pending FROM passages p JOIN items i ON i.id=p.item_id
+                    WHERE p.item_id=%s AND p.revision=ANY(%s)
+                    ORDER BY p.item_id,p.revision,p.ordinal""",
+                    (VERSION, item_id, item_revisions),
+                ).fetchall()
+                updates, partial = batch_updates(rows)
+                con.cursor().executemany(
+                    """UPDATE passages SET jurisdiction=%s,jurisdiction_evidence=%s,
+                    jurisdiction_tagger=%s WHERE id=%s""",
+                    sorted(updates, key=lambda update: update[-1]),
+                )
+                con.commit()  # releases the item lock
+                result["partial_context"] += partial
+                result["tagged"] += len(updates)
         last = (groups[-1]["item_id"], groups[-1]["revision"])
-        result["tagged"] += len(updates)
         progress(dict(result))

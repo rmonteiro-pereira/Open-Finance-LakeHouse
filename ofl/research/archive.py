@@ -11,7 +11,7 @@ from pathlib import Path, PurePosixPath
 from psycopg.types.json import Jsonb
 
 from . import chunking, jurisdiction
-from .db import digest
+from .db import digest, lock_item
 
 VERSION = "archive-v1"
 
@@ -23,27 +23,18 @@ def chunks(text: str, budget=chunking.TOKEN_BUDGET):
         yield " ".join(words[start:end])
 
 
-def lock_item(con, item_id):
-    """Serialise every transaction that writes an item's passages (transaction-scoped).
-
-    Taken before reading the passage state a write depends on: by upsert_item (catalog
-    and archive ingestion, letter sync), news sync, page processing, index_text and
-    rechunk. Order: an import or asset lock comes first and is never requested while an
-    item lock is held. Job enqueue locks may follow it. Rechunk holds one item lock and
-    requests nothing else, so it cannot take part in a wait cycle; writers that take
-    several item locks (catalog imports, library sync) run serially in the default
-    worker lane. Re-acquiring the lock within the same transaction does not block.
-    """
-    con.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", ("ofl-research-item:" + item_id,))
-
-
 def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None, evidence=None):
     lock_item(con, item_id)
-    # Only replace the appropriate metadata/page revision, never another asset.
+    # Only replace the appropriate metadata/page revision, never another asset. Row
+    # locks are taken in id order before the bulk update (defence in depth).
+    scope = """item_id=%s AND method=%s
+        AND asset_id IS NOT DISTINCT FROM %s AND page IS NOT DISTINCT FROM %s"""
     con.execute(
-        """UPDATE passages SET active=false WHERE item_id=%s AND method=%s
-        AND asset_id IS NOT DISTINCT FROM %s AND page IS NOT DISTINCT FROM %s""",
+        f"SELECT id FROM passages WHERE {scope} ORDER BY id FOR UPDATE",
         (item_id, method, asset_id, page),
+    )
+    con.execute(
+        f"UPDATE passages SET active=false WHERE {scope}", (item_id, method, asset_id, page)
     )
     title = con.execute("SELECT title FROM items WHERE id=%s", (item_id,)).fetchone()["title"]
     words = text.split()
@@ -53,8 +44,10 @@ def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None
         revision = digest([revision, chunking.VERSION])
     passages = [" ".join(words[start:end]) for start, end in spans]
     regions = jurisdiction.passage_regions(range(len(passages)), passages)
-    for ordinal, passage in enumerate(passages):
-        identity = digest([item_id, revision, ordinal])
+    identities = [digest([item_id, revision, ordinal]) for ordinal in range(len(passages))]
+    # Written in id order, so concurrent writers would touch these rows in one order.
+    for ordinal in sorted(range(len(passages)), key=identities.__getitem__):
+        identity, passage = identities[ordinal], passages[ordinal]
         con.execute(
             """INSERT INTO passages(id,item_id,asset_id,page,ordinal,text,revision,method,evidence,search,
             jurisdiction,jurisdiction_evidence,jurisdiction_tagger)

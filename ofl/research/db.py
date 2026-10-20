@@ -25,6 +25,22 @@ def digest(value) -> str:
     ).hexdigest()
 
 
+def lock_item(con, item_id):
+    """Serialise every transaction that writes an item's passages (transaction-scoped).
+
+    Taken before reading the passage state a write depends on: by upsert_item (catalog
+    and archive ingestion, letter sync), news sync, page processing, index_text, the
+    jurisdiction backfill and rechunk. An import or asset lock comes first and is never
+    requested while an item lock is held. Rechunk and the backfill hold one item lock
+    at a time and touch only that item's passages, so they do not wait for each other
+    or for other passage writers on row locks. Residual risk: catalog imports and
+    library sync take several item locks in one transaction, in no fixed order, so two
+    of them could deadlock; PostgreSQL then aborts one and its job is retried.
+    Re-acquiring the lock within the same transaction does not block.
+    """
+    con.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", ("ofl-research-item:" + item_id,))
+
+
 class Database:
     def __init__(self, settings: ResearchSettings):
         self.settings = settings
