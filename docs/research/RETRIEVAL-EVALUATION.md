@@ -92,6 +92,78 @@ are computed once and reused for vector/hybrid; their cost/latency is reported
 separately from retrieval. No raw source text or backend exception is emitted.
 A `held_out` label alone is not evidence of independent judgments or users.
 
+## Jurisdiction evidence and rules
+
+Each passage stores lexical jurisdiction evidence in `passages.jurisdiction`
+(codes `BR`, `US`, `EA`, `CN`), `jurisdiction_evidence` (every match with its term,
+offset, strength and location) and `jurisdiction_tagger` (`jurisdiction-v1`). NULL
+means not yet tagged; an empty array means tagged with no evidence (unknown). A
+passage can carry several codes.
+
+The tagger (`ofl/research/jurisdiction.py`) is deterministic:
+
+- Strong markers name one jurisdiction: places and demonyms (`Brasil`, `EUA`,
+  `americanos`, `zona do euro`, `China`), institutions and indicators (`IPCA`, `Selic`,
+  `Copom`, `Fed`, `BCE`, `PBoC`) and the `R$` symbol. Only strong markers create a tag.
+- Weak markers (`real`, `CPI`, `Treasury`, `payroll`, `US$`, `Banco Central`,
+  `Tesouro`, `euro`, `Europa`) are recorded but never create or support a tag, alone
+  or together. A strong match that overlaps a weak one wins (`Banco Central Europeu`).
+- Language is not a marker: Portuguese text does not imply Brazil.
+- Location: `title` (the item title, inherited by every passage of the item and
+  counted once), `body`, or `related`. Text from a related-link or navigation marker
+  (`Leia também`, `Veja mais`, `Saiba mais`, `Tags:` and similar) up to the end of its
+  sentence, at most 30 words, is `related` and never creates a tag.
+
+New and re-ingested passages are tagged when indexed. Existing passages are tagged
+without re-embedding by:
+
+```sh
+ofl research tag-jurisdiction --dry-run      # pending count only
+ofl research tag-jurisdiction --limit 1000   # committed batches; resumable
+```
+
+A passage is pending when its tagger version differs from the current one or its
+item title changed since tagging.
+
+Search takes `jurisdiction=off|boost|exclude` (API, MCP `search_archive`, dashboard;
+default `off`). A rule applies only when the query names a jurisdiction with a strong
+marker; `inflação`, `taxa de juros`, `Banco Central` or `câmbio dólar real` never fire
+it, and a negated term (`-Brasil`) is ignored.
+
+- `off`: results and response identical to the code without jurisdiction support.
+- `exclude`: removes passages whose evidence names some other jurisdiction and none
+  of the named ones. Untagged, unknown and mixed passages stay. The condition is part
+  of the scope, so the keyword arm, the vector arm and `index_coverage` see the same
+  passages.
+- `boost`: adds one list to the reciprocal-rank fusion with the same k=60: the
+  candidates already retrieved, in fused order, that carry evidence of a named
+  jurisdiction. A passage gains at most 1/61, the weight of a first place in one arm;
+  no passage is added or removed. In single-arm modes the score becomes the fused
+  score of the arm and this list, so the boost is relatively stronger there than in
+  hybrid.
+
+With a non-`off` rule, the response carries `jurisdiction`: rule, tagger, named codes,
+whether it applied, and counts of scope passages, passages with named evidence,
+conflicting and excluded passages, untagged passages, passages tagged by an older
+tagger and boosted candidates/results. Each result carries its codes and evidence;
+a boosted result has a `jurisdiction_boost` entry in `ranking`. The counts add one
+aggregate query over the filtered scope.
+
+`tools/review_retrieval.py collect SPEC OUT --jurisdiction off,boost,exclude` collects
+every mode under each rule into one pool; rankings are keyed `hybrid`,
+`hybrid+boost`, `hybrid+exclude` and so on, and the reviewer worksheet stays without
+modes, rules or tags. The pool records the tag snapshot digest; a tag change during
+collection invalidates it. Up to 16 cases are accepted, which covers
+`docs/product/retrieval-cases-heldout.json`.
+
+`tools/jurisdiction_audit.py sample OUT --n 100 [--source news]` writes a seeded
+random sample stratified by `BR`, `US`, both, none and other tags (current tagger
+only) to a new mode-0600 file, with each passage's text, tags and evidence. Reviewers
+mark each tag correct, incorrect or uncertain and list missed codes;
+`tools/jurisdiction_audit.py assess OUT` prints per-stratum tag precision (correct
+over correct plus incorrect) and missed-tag rate, without passage text. Strata are
+equal-sized, not population-weighted.
+
 ## Public synthetic development exercise
 
 `ofl research evaluate-fixture > /private/synthetic-report.json` creates twenty
