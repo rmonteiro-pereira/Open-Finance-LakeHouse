@@ -29,6 +29,7 @@ several jurisdictions or none (unknown).
 
 import hashlib
 import re
+import unicodedata
 
 from psycopg.types.json import Jsonb
 
@@ -38,6 +39,86 @@ RULES = ("off", "boost", "exclude")
 # precision gate (>= 0.90; BR 40/40, US 38-39/40, EA 3/3). CN (17/21 = 0.81) failed it:
 # CN passages are still tagged and stored, but a query naming China applies no rule.
 GATED_JURISDICTIONS = frozenset({"BR", "US", "EA"})
+
+# Query side only (never used for tagging): jurisdictions the tagger has no code for.
+# A query mentioning any of them is searched as `off`, because a rule acting on the
+# gated names alone would silently drop passages about the other one. Patterns match
+# accent-folded text, case-insensitively and as whole words; `(?-i:...)` marks names
+# that are ordinary lowercase words (`peru` turkey, `índia`, `turkey`) or short codes
+# matched only in upper case. Europe and the European Union are not the euro area:
+# they never name EA, and a query naming them is searched as `off`. Currency words
+# (`euro`, `iene`) are not mentions. `português` is left out: in this corpus it
+# overwhelmingly names the language. Codes are ISO 3166 alpha-2 or a region name.
+FOREIGN = [
+    ("JP", r"japao|japan|japones[ae]?s?|japanese|(?-i:JP|JPN)"),
+    ("GB", r"reino unido|united kingdom|gra-bretanha|great britain|britain|inglaterra"),
+    ("GB", r"england|britanic[oa]s?|british|ingles[ae]?s?|(?-i:UK|GBR)"),
+    ("DE", r"alemanha|germany|alema[oe]?s?|alemaes|german|(?-i:DEU)"),
+    ("FR", r"franca|france|frances[ae]?s?|french|(?-i:FRA)"),
+    ("IT", r"italia|italy|italian[oa]s?|italian|(?-i:ITA)"),
+    ("ES", r"espanha|spain|espanh[oi]la?s?|espanhois|spanish|(?-i:ESP)"),
+    ("PT", r"portugal|(?-i:PRT)"),
+    ("AR", r"argentina|argentin[oa]s?|argentine|(?-i:ARG)"),
+    ("MX", r"mexico|mexican[oa]s?|mexican|(?-i:MEX)"),
+    ("CL", r"chile|chilen[oa]s?|chilean|(?-i:CHL)"),
+    ("CO", r"colombia|colombian[oa]s?|colombian|(?-i:COL)"),
+    ("PE", r"(?-i:Peru|PERU)|peruan[oa]s?|peruvian"),
+    ("CA", r"canada|canadenses?|canadian"),
+    ("IN", r"(?-i:India|INDIA)|indian[oa]s?|indian"),
+    ("RU", r"russia|russ[oa]s?|russian|(?-i:RUS)"),
+    ("KR", r"coreia|korea|sul-corean[oa]s?|coreian[oa]s?|korean|(?-i:KOR)"),
+    ("AU", r"australia|australian[oa]s?|australian|(?-i:AUS)"),
+    ("CH", r"suica|switzerland|suic[oa]s?|swiss"),
+    ("TR", r"turquia|(?-i:Turkey|TURKEY)|turc[oa]s?|turkish|(?-i:TUR)"),
+    ("ZA", r"africa do sul|south africa|sul-african[oa]s?|south african|(?-i:ZAF)"),
+    ("SA", r"arabia saudita|saudi arabia|sauditas?|saudi"),
+    ("ID", r"indonesia|indonesi[oa]s?|indonesian|(?-i:IDN)"),
+    ("HK", r"hong kong|(?-i:HKG)"),
+    ("TW", r"taiwan|taiwanes[ae]?s?|(?-i:TWN)"),
+    ("NL", r"holanda|paises baixos|netherlands|holandes[ae]?s?|dutch"),
+    ("BE", r"belgica|belgium"),
+    ("SE", r"suecia|sweden"),
+    ("NO", r"noruega|norway"),
+    ("DK", r"dinamarca|denmark"),
+    ("FI", r"finlandia|finland"),
+    ("AT", r"austria"),
+    ("IE", r"irlanda|ireland"),
+    ("GR", r"grecia|greece|greg[oa]s?|greek"),
+    ("PL", r"polonia|poland"),
+    ("HU", r"hungria|hungary"),
+    ("CZ", r"republica tcheca|tchequia|czechia|czech republic"),
+    ("IL", r"israel"),
+    ("NZ", r"nova zelandia|new zealand"),
+    ("UY", r"uruguai|uruguay"),
+    ("PY", r"paraguai|paraguay"),
+    ("VE", r"venezuela"),
+    ("BO", r"bolivia"),
+    ("EC", r"equador|ecuador"),
+    ("EG", r"egito|egypt"),
+    ("NG", r"nigeria"),
+    ("IR", r"(?-i:Ira|IRA)|iran"),
+    ("IQ", r"iraque|iraq"),
+    ("UA", r"ucrania|ukraine"),
+    ("VN", r"vietna|vietnam"),
+    ("TH", r"tailandia|thailand"),
+    ("MY", r"malasia|malaysia"),
+    ("SG", r"singapura|cingapura|singapore"),
+    ("PH", r"filipinas|philippines"),
+    ("QA", r"catar|qatar"),
+    ("AE", r"emirados arabes|united arab emirates|dubai"),
+    ("CN", r"(?-i:CN|CHN)"),
+    ("EU", r"uniao europeia|european union|(?-i:UE|EU)"),
+    ("EUROPE", r"europa|europe|europeu|europeia|europeus|europeias|european"),
+    ("LATAM", r"america latina|latin america|latam|latino-american[oa]s?|america do sul"),
+    ("ASIA", r"asia|asiatic[oa]s?|asian"),
+    ("AFRICA", r"africa"),
+    ("MIDDLE_EAST", r"oriente medio|middle east"),
+    ("EMERGING", r"emergentes|emerging markets"),
+    ("BLOC", r"mercosul|mercosur|(?-i:G7|G-7|G20|G-20|BRICS|Brics|OPEP|Opep|OPEC)"),
+]
+FOREIGN_PATTERNS = [
+    (code, re.compile(rf"(?<!\w)(?:{pattern})(?!\w)", re.I)) for code, pattern in FOREIGN
+]
 MAX_MATCHES = 40
 RELATED_WORDS = 30
 DOMINANCE = 3
@@ -387,13 +468,47 @@ def plan(rule, query):
     """The rule a search applies: `active` names the jurisdictions it acts on.
 
     `off` never reads the query. When the query names any jurisdiction outside
-    GATED_JURISDICTIONS, the whole query is searched as `off` (no partial rule) and the
-    ungated codes are reported as `ignored`.
+    GATED_JURISDICTIONS (a tagger code such as CN, or a FOREIGN mention), the whole
+    query is searched as `off` (no partial rule) and those codes are reported as
+    `ignored`.
     """
     rule = check_rule(rule)
     named = detect(query) if rule != "off" else []
-    ignored = sorted(set(named) - GATED_JURISDICTIONS)
+    mentioned = foreign(query) if rule != "off" else []
+    ignored = sorted(set(named + mentioned) - GATED_JURISDICTIONS)
     return {"rule": rule, "named": named, "active": [] if ignored else named, "ignored": ignored}
+
+
+def fold(text):
+    """Accents removed, one character per character, so offsets stay valid."""
+    return "".join(unicodedata.normalize("NFD", c)[0] for c in text)
+
+
+def foreign(query):
+    """Ungated jurisdictions a query mentions at all, outside negated terms.
+
+    Any tagger match of an ungated code counts, weak ones included (`yuan`, `Bank of
+    China`, `chinês`): naming is not needed to make a rule unsafe. FOREIGN mentions
+    inside a strong tagger match (`Banco Central Europeu`) do not count.
+    """
+    negated = negated_spans(query)
+    matches = find(query)
+    taken = negated + [(start, end) for start, end, _, tier in matches if tier == "strong"]
+    folded = fold(query)
+    found = {
+        code
+        for code, pattern in FOREIGN_PATTERNS
+        for match in pattern.finditer(folded)
+        if not any(match.start() < b and match.end() > a for a, b in taken)
+    }
+    found |= {
+        code
+        for start, end, code, _ in matches
+        if code is not None
+        and code not in GATED_JURISDICTIONS
+        and not any(start < b and end > a for a, b in negated)
+    }
+    return sorted(found)
 
 
 def exclusion(codes):
