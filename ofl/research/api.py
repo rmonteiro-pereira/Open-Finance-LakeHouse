@@ -145,6 +145,11 @@ def require_reviewer(user):
     return user
 
 
+def can_read_feedback(owner, user):
+    """Feedback history is visible to its author and to reviewers or admins."""
+    return owner == user[0] or user[1] in {"reviewer", "admin"}
+
+
 def create_app(settings=None):
     settings = settings or ResearchSettings()
     db = Database(settings)
@@ -998,7 +1003,7 @@ def create_app(settings=None):
     @app.get("/api/v1/feedback/{feedback_id}/history")
     def feedback_history(feedback_id: str, user=Depends(identity)):
         items = db.rows("SELECT owner FROM research_feedback WHERE id=%s", (feedback_id,))
-        if not items or (items[0]["owner"] != user[0] and user[1] not in {"reviewer", "admin"}):
+        if not items or not can_read_feedback(items[0]["owner"], user):
             raise LookupError("feedback not found")
         return response(
             db.rows(

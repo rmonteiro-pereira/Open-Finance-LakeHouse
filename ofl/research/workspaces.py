@@ -7,6 +7,11 @@ from .db import digest, uid
 KINDS = {"investigation", "portfolio", "watchlist", "check", "dataset"}
 
 
+def has_research_access(roles_json, actor):
+    """True when the configured roles still grant `actor` a research role."""
+    return json.loads(roles_json or "{}").get(actor) in {"reader", "reviewer", "admin"}
+
+
 def owned(con, actor, workspace_id):
     item = con.execute(
         "SELECT * FROM workspaces WHERE id=%s AND owner=%s FOR UPDATE", (workspace_id, actor)
@@ -293,15 +298,12 @@ def rerun(db, store, actor, workspace_id):
 
 
 def schedule_due(db):
-    import json
-
-    roles = json.loads(db.settings.roles or "{}")
     with db.connect() as con:
         rows = con.execute(
             "SELECT s.* FROM check_schedules s WHERE enabled AND next_run_at<=now() ORDER BY next_run_at FOR UPDATE SKIP LOCKED LIMIT 10"
         ).fetchall()
         for row in rows:
-            if roles.get(row["owner"]) not in {"reader", "reviewer", "admin"}:
+            if not has_research_access(db.settings.roles, row["owner"]):
                 con.execute(
                     "UPDATE check_schedules SET enabled=false WHERE workspace_id=%s",
                     (row["workspace_id"],),
