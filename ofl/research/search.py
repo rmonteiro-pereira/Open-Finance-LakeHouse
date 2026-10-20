@@ -57,6 +57,7 @@ def embed(settings, texts):
                 "input": texts,
                 "truncate": False,
                 "keep_alive": -1,
+                "options": {"num_thread": settings.embedding_threads},
             },
             timeout=120,
         )
