@@ -14,15 +14,16 @@ export default function ResearchDesk({onDossier}:{onDossier?:(draft:{question:st
   const [assistantSelection,setAssistantSelection]=useState<{question:string;passageIds:string[]}|undefined>();
   const [assistantGeneration,setAssistantGeneration]=useState(0);
   const [coverage,setCoverage]=useState<IndexCoverage|null>(null);
+  const [jurisdiction,setJurisdiction]=useState("off"); const [placeRule,setPlaceRule]=useState<Record<string,unknown>|null>(null);
   const current = useRef(0); const inspection = useRef(0);
   async function search() {
     const version = ++current.current; ++inspection.current;
     setBusy(true); setError(""); setSelected(null);
-    const params = {q: question, mode, limit: "20", ...(source ? {source} : {}), ...(from ? {date_from: from} : {}), ...(to ? {date_to: to} : {})};
+    const params = {q: question, mode, limit: "20", ...(source ? {source} : {}), ...(from ? {date_from: from} : {}), ...(to ? {date_to: to} : {}), ...(jurisdiction !== "off" ? {jurisdiction} : {})};
     try {
       if (from && to && from > to) throw new Error("A data inicial precisa ser anterior à data final.");
       const result = await researchApi(`search?${new URLSearchParams(params)}`);
-      if (version === current.current) {setHits(result.results.map((hit:Hit)=>({...hit,model_revision:result.model_revision,model:result.model,approximate:result.approximate}))); setScope(params); setCoverage(result.index_coverage??null); setSearched(true);}
+      if (version === current.current) {setHits(result.results.map((hit:Hit)=>({...hit,model_revision:result.model_revision,model:result.model,approximate:result.approximate}))); setScope(params); setCoverage(result.index_coverage??null); setPlaceRule(result.jurisdiction??null); setSearched(true);}
     } catch(e) {if (version === current.current) setError(e instanceof Error ? e.message : "Falha na pesquisa");}
     finally {if (version === current.current) setBusy(false);}
   }
@@ -35,14 +36,15 @@ export default function ResearchDesk({onDossier}:{onDossier?:(draft:{question:st
     <section className="card"><h2>Investigue um tema nas fontes</h2><p>Busque notícias, cartas de gestoras e documentos. Os resultados são candidatos para leitura. A ordenação e a presença de uma citação não confirmam pertinência nem uma conclusão.</p>
       <form onSubmit={e => {e.preventDefault(); void search();}}>
         <label htmlFor="evidence-question">Tema ou pergunta</label><input id="evidence-question" value={question} maxLength={1000} onChange={e => setQuestion(e.target.value)} placeholder="Inflação, juros, câmbio ou uma tese que você quer investigar"/>
-        <div className="filters"><label>Modo de busca<select value={mode} onChange={e=>setMode(e.target.value)}><option value="keyword">Termos exatos</option><option value="hybrid">Termos e significado</option><option value="vector">Significado</option></select></label><label>Fontes<select value={source} onChange={e => setSource(e.target.value)}><option value="">Todas as fontes conectadas</option><option value="news">Notícias</option><option value="manager_letter">Cartas de gestoras</option><option value="b3_bulletin">Boletins B3</option><option value="mub3">Acervo MUB3</option></select></label>
+        <div className="filters"><label>Modo de busca<select value={mode} onChange={e=>setMode(e.target.value)}><option value="keyword">Termos exatos</option><option value="hybrid">Termos e significado</option><option value="vector">Significado</option></select></label><label>Fontes<select value={source} onChange={e => setSource(e.target.value)}><option value="">Todas as fontes conectadas</option><option value="news">Notícias</option><option value="manager_letter">Cartas de gestoras</option><option value="b3_bulletin">Boletins B3</option><option value="mub3">Acervo MUB3</option></select></label><label>País ou região citado<select value={jurisdiction} onChange={e=>setJurisdiction(e.target.value)}><option value="off">Sem regra</option><option value="boost">Priorizar trechos que citam o local</option><option value="exclude">Excluir trechos que citam só outros locais</option></select></label>
           <label>Publicação a partir de<input type="date" value={from} onChange={e => setFrom(e.target.value)}/></label><label>Publicação até<input type="date" value={to} onChange={e => setTo(e.target.value)}/></label>
           <button disabled={busy || !question.trim()}>{busy ? "Buscando…" : "Buscar evidências"}</button></div>
       </form><p className="muted">O período se refere à data de publicação registrada, não ao pregão nem à coleta. Documentos sem data ficam fora dos filtros de período.</p>
     </section>
     {error && <p className="status error" role="alert">{error}</p>}
-    {searched && <section className="card"><h3>{hits.length} documentos candidatos neste recorte</h3><p className="muted">Até 20 documentos por busca. Uma ausência de resultados não demonstra que um evento não aconteceu.</p><button disabled={!hits.length} onClick={() => downloadJson({scope, index_coverage:coverage, evidence: hits, qualification: "Retrieved evidence; not an analytical conclusion"}, "ofl-evidencias.json")}>Salvar referências</button></section>}
+    {searched && <section className="card"><h3>{hits.length} documentos candidatos neste recorte</h3><p className="muted">Até 20 documentos por busca. Uma ausência de resultados não demonstra que um evento não aconteceu.</p><button disabled={!hits.length} onClick={() => downloadJson({scope, index_coverage:coverage, ...(placeRule ? {jurisdiction: placeRule} : {}), evidence: hits, qualification: "Retrieved evidence; not an analytical conclusion"}, "ofl-evidencias.json")}>Salvar referências</button></section>}
     {searched&&<SemanticCoverage coverage={coverage}/>}
+    {searched&&placeRule&&<section className="card"><p className="muted">Regra de local: {String(placeRule.rule)} · {placeRule.applied ? `local citado na busca: ${(placeRule.named as string[]).join(", ")} · trechos excluídos: ${String(placeRule.excluded_passages)} · resultados priorizados: ${String(placeRule.boosted_results ?? 0)} · trechos ainda sem marcação: ${String(placeRule.untagged_passages)}` : "a busca não cita um país ou região; nenhuma regra aplicada"}. A marcação é uma evidência lexical, não uma classificação do assunto.</p></section>}
     {hits.map(hit => <article className="card" key={hit.id}><p className="eyebrow">{labels[hit.source] ?? hit.source} · {hit.collection || "coleção não informada"}</p><h3>{hit.title}</h3>
       <p>{hit.snippet}</p><p className="muted">Publicação: {hit.date_start ? `${hit.date_start}${hit.date_end !== hit.date_start ? ` a ${hit.date_end}` : ""}` : "data desconhecida"} · precisão: {show(hit.date_precision)} · extração: {hit.method}{hit.page ? ` · página ${hit.page}` : ""}</p>
       {hit.epistemic_status === "attributed_opinion" && <p>Opinião atribuída à gestora. Não representa um resultado verificado nem comprova desempenho.</p>}

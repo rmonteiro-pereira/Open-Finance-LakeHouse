@@ -4,6 +4,7 @@ import hashlib
 import math
 from functools import lru_cache
 
+from . import jurisdiction as places
 from .db import digest
 
 SEMANTIC_CONTENT = (
@@ -247,9 +248,12 @@ def search(
     date_to=None,
     limit=20,
     vector=None,
+    jurisdiction="off",
 ):
     if mode not in {"keyword", "vector", "hybrid"}:
         raise ValueError("unknown search mode")
+    rule = places.check_rule(jurisdiction)
+    named = places.detect(text) if rule != "off" else []
     where, params = scope_conditions(
         source=source,
         item_type=item_type,
@@ -257,11 +261,18 @@ def search(
         date_from=date_from,
         date_to=date_to,
     )
+    disclosure = _jurisdiction_scope(db, rule, named, where, params)
+    if named and rule == "exclude":
+        # Both arms and the coverage denominator see the same narrowed scope.
+        condition, extra = places.exclusion(named)
+        where, params = f"{where} AND {condition}", [*params, *extra]
     coverage = index_coverage(db, where=where, params=params)
     projection = """p.id,p.item_id,p.asset_id,p.page,p.text,p.method,p.evidence,
         i.title,i.source,i.item_type,i.collection,i.date_start,i.date_end,i.date_precision,
         i.metadata->>'url' AS source_url,i.metadata->>'content_tier' AS content_tier,
         i.metadata->>'epistemic_status' AS epistemic_status"""
+    if rule != "off":
+        projection += ",p.jurisdiction,p.jurisdiction_evidence,p.jurisdiction_tagger"
     rankings = []
     # Extracted bodies have only Portuguese lexemes; applying a simple NOT
     # against that vector can silently bypass exclusions (`tesouro` vs `tesour`).
@@ -318,13 +329,20 @@ def search(
             )
         )
     labels = ["keyword", "vector"] if mode == "hybrid" else [mode]
+    if named and rule == "boost":
+        # One more list in the same RRF (k=60): at most 1/61 per passage, only for
+        # candidates the arms already retrieved, in their fused order.
+        base = fuse(rankings) if len(rankings) > 1 else rankings[0]
+        rankings.append(places.boosted(base, named))
+        labels.append("jurisdiction_boost")
+        disclosure["boosted_candidates"] = len(rankings[-1])
     contributions = {}
     for label, ranking in zip(labels, rankings, strict=True):
         for position, row in enumerate(ranking, 1):
             contributions.setdefault(row["id"], {})[label] = {
                 "rank": position,
                 "raw_score": float(row["score"]),
-                "rrf_contribution": 1 / (60 + position) if mode == "hybrid" else None,
+                "rrf_contribution": 1 / (60 + position) if len(rankings) > 1 else None,
             }
     combined = fuse(rankings) if len(rankings) > 1 else rankings[0]
     # Group by document without allowing one long scanned volume to occupy every hit.
@@ -344,7 +362,7 @@ def search(
         )
         if len(results) >= limit:
             break
-    return {
+    response = {
         "mode": mode,
         "model": db.settings.embedding_model if mode != "keyword" else None,
         "model_revision": db.settings.embedding_revision if mode != "keyword" else None,
@@ -352,6 +370,48 @@ def search(
         "index_coverage": coverage,
         "results": results,
     }
+    if disclosure is not None:
+        if "boosted_candidates" in disclosure:
+            disclosure["boosted_results"] = sum(
+                "jurisdiction_boost" in row["ranking"] for row in results
+            )
+        response["jurisdiction"] = disclosure
+    return response
+
+
+def _jurisdiction_scope(db, rule, named, where, params):
+    """Disclosure for a non-off rule; counts only when the query names a jurisdiction."""
+    if rule == "off":
+        return None
+    disclosure = {
+        "rule": rule,
+        "tagger": places.VERSION,
+        "named": named,
+        "applied": bool(named),
+        "qualification": "Lexical evidence of a named place, institution, indicator or "
+        "currency symbol, not topic classification. Applied only when the query names a "
+        "jurisdiction; untagged and evidence-free passages are never excluded.",
+    }
+    if named:
+        condition, extra = places.exclusion(named)
+        row = db.rows(
+            f"""SELECT count(*) AS scope,count(*) FILTER (WHERE p.jurisdiction IS NULL) AS untagged,
+            count(*) FILTER (WHERE p.jurisdiction_tagger IS DISTINCT FROM %s
+                AND p.jurisdiction IS NOT NULL) AS older_tagger,
+            count(*) FILTER (WHERE p.jurisdiction && %s::text[]) AS named_evidence,
+            count(*) FILTER (WHERE NOT {condition}) AS conflicting
+            FROM passages p JOIN items i ON i.id=p.item_id WHERE {where}""",
+            (places.VERSION, named, *extra, *params),
+        )[0]
+        disclosure.update(
+            scope_passages=row["scope"],
+            passages_with_named_evidence=row["named_evidence"],
+            conflicting_passages=row["conflicting"],
+            excluded_passages=row["conflicting"] if rule == "exclude" else 0,
+            untagged_passages=row["untagged"],
+            older_tagger_passages=row["older_tagger"],
+        )
+    return disclosure
 
 
 def create_vector_index(db):

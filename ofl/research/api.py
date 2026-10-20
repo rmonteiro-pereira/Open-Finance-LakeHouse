@@ -404,6 +404,7 @@ def create_app(settings=None):
         date_from: date | None = None,
         date_to: date | None = None,
         limit: int = Query(20, ge=1, le=100),
+        jurisdiction: Literal["off", "boost", "exclude"] = "off",
         _user=Depends(identity),
     ):
         from .search import search
@@ -424,6 +425,7 @@ def create_app(settings=None):
                 date_from=date_from,
                 date_to=date_to,
                 limit=limit,
+                jurisdiction=jurisdiction,
             )
         )
 
