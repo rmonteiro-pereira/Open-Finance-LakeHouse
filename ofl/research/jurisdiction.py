@@ -1,12 +1,25 @@
 """Deterministic jurisdiction evidence for passages and explicitly named query jurisdictions.
 
 Evidence is a lexical observation with provenance, never a classification of what a
-document is about. Strong markers name one jurisdiction unambiguously (a place, demonym,
-institution, indicator or currency symbol). Weak markers ("real", "CPI", "Treasury",
-"Banco Central", "euro") are recorded for audit but never create a tag, alone or together.
-Language is not a marker: Portuguese text does not imply Brazil. Matches inside
-related-link/navigation text ("Leia também: ...", "Tags: ...") are recorded as `related`
-and never create a tag. A passage may carry several jurisdictions or none (unknown).
+document is about. Two tiers:
+
+- strong: a country or currency-area name in substantive position (`Brasil`, `EUA`,
+  `zona do euro`, `China`), a national institution or indicator (`IPCA`, `Copom`, `Fed`,
+  `BCE`, `PBoC`) or a national market (`Ibovespa`, `Wall Street`, `Nasdaq`);
+- weak: demonyms (`brasileiro`, `americana`, `chinês`), cities (`Brasília`,
+  `Washington`, `Xangai`), currencies and symbols (`real`, `R$`, `US$`, `euro`, `yuan`)
+  and generic terms (`Banco Central`, `CPI`, `Treasury`). Weak evidence is recorded but
+  never creates a tag.
+
+Reviewed multiword entities that contain a country word without referring to the
+country (company, brand, road, sports names: `Lojas Americanas`, `CNN Brasil`,
+`Rodovia Washington Luís`, `futebol americano`) mask their words and count as nothing.
+
+A jurisdiction is tagged with a strong title mention or at least two strong body
+mentions. When another jurisdiction has at least three times its strong evidence, it
+needs at least two strong mentions. Matches inside related-link/navigation text are
+`related` and never count. Portuguese text does not imply Brazil. A passage may carry
+several jurisdictions or none (unknown).
 """
 
 import hashlib
@@ -14,51 +27,112 @@ import re
 
 from psycopg.types.json import Jsonb
 
-VERSION = "jurisdiction-v2"
+VERSION = "jurisdiction-v3"
 RULES = ("off", "boost", "exclude")
-WEIGHTED = ("title", "body")
 MAX_MATCHES = 40
 RELATED_WORDS = 30
+TRAILING_WORDS = 60
+TAIL_WORDS = 40
+TAIL_CONTEXT = 60
+DOMINANCE = 3
 # Must equal ofl.research.archive.chunks: passages are 350-word windows overlapping by 40.
 CHUNK_WORDS = 350
 CHUNK_OVERLAP = 40
 
-# (code, strength, pattern). `(?-i:...)` marks case-sensitive acronyms.
+# (code, tier, kind, pattern). `(?-i:...)` marks case-sensitive acronyms and names.
 MARKERS = [
-    ("BR", "strong", r"brasil"),
-    ("BR", "strong", r"brasileir[oa]s?"),
-    ("BR", "strong", r"bras[ií]lia"),
-    ("BR", "strong", r"(?-i:IPCA|IGP-M|IGP-DI|INPC|IBGE|BCB|COPOM|Copom|CVM|CMN|Caged|CAGED)"),
-    ("BR", "strong", r"selic|ibovespa|tesouro nacional"),
-    ("BR", "strong", r"(?<!\w)(?-i:R)\$"),
-    ("BR", "weak", r"real|reais|banco central|tesouro"),
-    ("US", "strong", r"estados unidos|united states|(?-i:EUA|U\.S\.|USA)"),
-    ("US", "strong", r"(?<![\w-])american[oa]s?(?!\w)|(?<!\w)norte-american[oa]s?(?!\w)"),
-    ("US", "strong", r"(?-i:Fed|FOMC)|federal reserve|wall street|casa branca|white house"),
-    ("US", "strong", r"(?-i:Nasdaq|NASDAQ)|dow jones|washington"),
-    ("US", "weak", r"(?-i:CPI)|treasury|treasuries|payroll"),
-    ("US", "weak", r"(?<!\w)(?-i:US)\$"),
-    ("EA", "strong", r"zona do euro|[áa]rea do euro|eurozona|euro ?zone|euro area"),
-    ("EA", "strong", r"banco central europeu|european central bank|(?-i:BCE|ECB|HICP)"),
-    ("EA", "weak", r"euros?|europa|europe|europeu|europeia|europeus|europeias|european"),
-    ("CN", "strong", r"china|chin[eê]s|chines[ae]s?|pequim|beijing|xangai|shanghai"),
-    ("CN", "strong", r"yuan|renminbi|(?-i:PBoC|PBOC)"),
+    ("BR", "strong", "name", r"brasil"),
+    ("BR", "strong", "institution", r"(?-i:IPCA|IGP-M|IGP-DI|INPC|IBGE|BCB|COPOM|Copom|CVM|CMN)"),
+    ("BR", "strong", "institution", r"(?-i:Caged|CAGED)|selic|tesouro nacional"),
+    ("BR", "strong", "market", r"ibovespa"),
+    ("BR", "weak", "demonym", r"brasileir[oa]s?"),
+    ("BR", "weak", "city", r"bras[ií]lia"),
+    ("BR", "weak", "currency", r"(?<!\w)(?-i:R)\$"),
+    ("BR", "weak", "generic", r"real|reais|banco central|tesouro"),
+    ("US", "strong", "name", r"estados unidos|united states|(?-i:EUA|U\.S\.|USA)"),
+    ("US", "strong", "institution", r"(?-i:Fed|FOMC)|federal reserve|casa branca|white house"),
+    ("US", "strong", "market", r"wall street|(?-i:Nasdaq|NASDAQ)|dow jones|s&p ?500"),
+    (
+        "US",
+        "weak",
+        "demonym",
+        r"(?<![\w-])american[oa]s?(?!\w)|(?<!\w)norte-american[oa]s?(?!\w)",
+    ),
+    ("US", "weak", "city", r"washington|nova york|new york"),
+    ("US", "weak", "currency", r"(?<!\w)(?-i:US)\$"),
+    ("US", "weak", "generic", r"(?-i:CPI)|treasury|treasuries|payroll"),
+    ("EA", "strong", "name", r"zona do euro|[áa]rea do euro|eurozona|euro ?zone|euro area"),
+    (
+        "EA",
+        "strong",
+        "institution",
+        r"banco central europeu|european central bank|eurostat|(?-i:BCE|ECB|HICP)",
+    ),
+    ("EA", "weak", "demonym", r"europeu|europeia|europeus|europeias|european"),
+    ("EA", "weak", "currency", r"euros?"),
+    ("EA", "weak", "generic", r"europa|europe"),
+    ("CN", "strong", "name", r"china"),
+    ("CN", "strong", "institution", r"(?-i:PBoC|PBOC)"),
+    ("CN", "strong", "market", r"bolsa de (?:xangai|shanghai)"),
+    ("CN", "weak", "demonym", r"chin[eê]s|chines[ae]s?"),
+    ("CN", "weak", "city", r"pequim|beijing|xangai|shanghai"),
+    ("CN", "weak", "currency", r"yuan|renminbi"),
+]
+# Reviewed entities whose country word does not refer to the country.
+ENTITIES = [
+    r"(?:rodovia |avenida |av\. )?washington lu[ií]s",
+    r"washington post|wall street journal|new york times",
+    r"lojas americanas|americanas s\.?a\.?|(?-i:Americanas)",
+    r"(?:cnn|tv|agência|agencia|rádio|radio) brasil|brasil paralelo|banco do brasil",
+    r"copa do brasil|(?:gp|grande prêmio|grande premio) do brasil|seleção brasileira",
+    r"futebol americano|(?:moeda|divisa) (?:americana|norte-americana)|sonho americano",
+    r"china mobile|bank of china|air china|china evergrande|china construction bank",
 ]
 PATTERNS = [
     (
         code,
-        strength,
+        tier,
+        kind,
         re.compile(pattern if pattern.startswith("(?<") else rf"(?<!\w)(?:{pattern})(?!\w)", re.I),
     )
-    for code, strength, pattern in MARKERS
-]
+    for code, tier, kind, pattern in MARKERS
+] + [(None, "entity", "entity", re.compile(rf"(?<!\w)(?:{p})(?!\w)", re.I)) for p in ENTITIES]
+PRIORITY = {"entity": 0, "strong": 1, "weak": 2}
 RELATED = re.compile(
     r"(?<!\w)(?:leia (?:também|mais|a seguir)|veja (?:também|mais)|saiba mais|confira (?:também|mais)"
-    r"|mais lidas|últimas notícias|(?:notícias|matérias|conteúdos?) relacionad[ao]s|read (?:more|also)"
+    r"|assista (?:também|mais)|mais lidas|últimas notícias|mais notícias|recomendad[ao]s"
+    r"|(?:notícias|matérias|conteúdos?|reportagens) relacionad[ao]s|read (?:more|also)"
     r"|related(?: articles| stories| news)?|(?:tags|tópicos|temas|assuntos)\s*:)(?!\w)",
     re.I,
 )
-END = re.compile(r"[.!?](?=\s|$)")
+FOOTER = re.compile(r"(?<!\w)the post\s.{0,600}?\sappeared first on\s[^.]{0,80}\.?", re.I | re.S)
+END = re.compile(r"[.!?…](?=\s|$)")
+ABBREVIATIONS = {
+    "sr",
+    "sra",
+    "srs",
+    "dr",
+    "dra",
+    "prof",
+    "profa",
+    "av",
+    "vs",
+    "nº",
+    "jr",
+    "mr",
+    "mrs",
+    "ms",
+    "inc",
+    "ltd",
+    "corp",
+    "gov",
+    "dep",
+    "sen",
+    "pres",
+    "min",
+    "etc",
+}
+INITIALS = re.compile(r"(?:\w\.)+")
 
 
 def check_rule(rule):
@@ -67,26 +141,54 @@ def check_rule(rule):
     return rule
 
 
-def related_spans(text):
-    """Related-link/navigation regions: a marker up to its sentence end, at most 30 words."""
+def sentence_end(text, start):
+    """End of the sentence from `start`; abbreviations (U.S., E.U.A., Sr.) do not end it."""
+    for stop in END.finditer(text, start):
+        token = re.search(r"\S*$", text[max(start, stop.start() - 40) : stop.end()]).group()
+        bare = token.strip("()[]\"'“”«»")
+        if stop.group() == "." and (INITIALS.fullmatch(bare) or bare[:-1].lower() in ABBREVIATIONS):
+            continue
+        return stop.end()
+    return None
+
+
+def related_spans(text, whole=True):
+    """Related-link/navigation regions.
+
+    A marker runs to its sentence end, at most 30 words, or to the end of the text when
+    at most 60 words follow it (a trailing link block). Feed footers ("The post ...
+    appeared first on ...") are related. With `whole`, an unterminated tail of at most
+    40 words after the last sentence of a longer text is a trailing headline.
+    """
+    words = [w.span() for w in re.finditer(r"\S+", text)]
     spans = []
     for marker in RELATED.finditer(text):
-        start = marker.end()
-        words = list(re.finditer(r"\S+", text[start:]))
-        limit = start + words[RELATED_WORDS - 1].end() if len(words) >= RELATED_WORDS else len(text)
-        stop = END.search(text, start)
-        spans.append((marker.start(), min(limit, stop.end() if stop else len(text))))
-    return spans
+        after = [w for w in words if w[0] >= marker.end()]
+        if whole and len(after) <= TRAILING_WORDS:
+            spans.append((marker.start(), len(text)))
+            continue
+        limit = after[RELATED_WORDS - 1][1] if len(after) >= RELATED_WORDS else len(text)
+        stop = sentence_end(text, marker.end())
+        spans.append((marker.start(), min(limit, len(text) if stop is None else stop)))
+    spans += [m.span() for m in FOOTER.finditer(text)]
+    if whole:
+        last, position = None, 0
+        while (stop := sentence_end(text, position)) is not None:
+            last, position = stop, stop
+        tail = [w for w in words if last is not None and w[0] >= last]
+        if 0 < len(tail) <= TAIL_WORDS and len(words) - len(tail) >= TAIL_CONTEXT:
+            spans.append((tail[0][0], len(text)))
+    return sorted(spans)
 
 
 def find(text):
-    """Non-overlapping marker matches; strong and longer matches win overlaps."""
+    """Non-overlapping matches; entities, then strong, then longer, then earlier win."""
     found = [
-        (match.start(), match.end(), code, strength)
-        for code, strength, pattern in PATTERNS
+        (match.start(), match.end(), code, tier)
+        for code, tier, _, pattern in PATTERNS
         for match in pattern.finditer(text)
     ]
-    found.sort(key=lambda m: (m[3] != "strong", m[0] - m[1], m[0]))
+    found.sort(key=lambda m: (PRIORITY[m[3]], m[0] - m[1], m[0]))
     kept = []
     for match in found:
         if all(match[1] <= other[0] or match[0] >= other[1] for other in kept):
@@ -136,7 +238,7 @@ def passage_regions(ordinals, texts):
             spans = _word_spans(text.split())[:RELATED_WORDS] if ordinal else []
             regions.append(
                 {
-                    "related": related_spans(text),
+                    "related": related_spans(text, whole=False),
                     "unclassified": [(spans[0][0], spans[-1][1])] if spans else [],
                     "context": "passage",
                 }
@@ -164,11 +266,27 @@ def passage_regions(ordinals, texts):
     ]
 
 
+def decide(counts):
+    """Tag decision per jurisdiction from strong title/body counts, with its reason."""
+    totals = {code: n["strong"]["title"] + n["strong"]["body"] for code, n in counts.items()}
+    decisions = {}
+    for code, n in counts.items():
+        strong, total = n["strong"], totals[code]
+        if strong["title"] or strong["body"] >= 2:
+            dominated = total < 2 and any(
+                other != code and totals[other] >= DOMINANCE * total for other in totals
+            )
+            decisions[code] = "dominated" if dominated else "title" if strong["title"] else "body"
+        else:
+            decisions[code] = "single_body" if strong["body"] else "no_strong_evidence"
+    return decisions
+
+
 def tag(text, title="", related=None, unclassified=(), context="passage"):
-    """Passage tags from strong title/body matches, with every match's provenance.
+    """Passage tags with every match's provenance, per-tier counts and decision.
 
     `related`/`unclassified` are spans of `text`; without them, related regions come
-    from the passage text alone.
+    from `text` alone, read as a whole document.
     """
     title = title or ""
     flat = " ".join(title.split())
@@ -176,36 +294,39 @@ def tag(text, title="", related=None, unclassified=(), context="passage"):
     body = text[shift:]
     related = related_spans(text) if related is None else related
     matches = [(*m, "title") for m in find(title)]
-    for start, end, code, strength in find(body):
+    for start, end, code, tier in find(body):
         where = "body"
         if any(start + shift >= a and end + shift <= b for a, b in related):
             where = "related"
         elif any(start + shift < b and end + shift > a for a, b in unclassified):
             where = "unclassified"
-        matches.append((start, end, code, strength, where))
-    counts = {}
-    for start, end, code, strength, where in matches:
-        key = where if strength == "strong" else "weak"
-        counts.setdefault(
-            code, {"title": 0, "body": 0, "related": 0, "unclassified": 0, "weak": 0}
-        )[key] += 1
-    codes = sorted(c for c, n in counts.items() if n["title"] + n["body"])
+        matches.append((start, end, code, tier, where))
+    counts, entities = {}, 0
+    for _, _, code, tier, where in matches:
+        if tier == "entity":
+            entities += 1
+            continue
+        empty = {"title": 0, "body": 0, "related": 0, "unclassified": 0}
+        counts.setdefault(code, {"strong": dict(empty), "weak": dict(empty)})[tier][where] += 1
+    decisions = decide(counts)
     return {
-        "jurisdiction": codes,
+        "jurisdiction": sorted(c for c, reason in decisions.items() if reason in {"title", "body"}),
         "evidence": {
             "tagger": VERSION,
             "context": context,
             "title_sha256": hashlib.sha256(title.encode()).hexdigest(),
             "counts": counts,
+            "decisions": decisions,
+            "entities": entities,
             "matches": [
                 {
                     "code": code,
                     "term": (title if where == "title" else body)[start:end],
                     "where": where,
-                    "strength": strength,
+                    "strength": tier,
                     "offset": start,
                 }
-                for start, end, code, strength, where in matches[:MAX_MATCHES]
+                for start, end, code, tier, where in matches[:MAX_MATCHES]
             ],
         },
     }
@@ -240,13 +361,24 @@ def negated_spans(query):
 
 
 def detect(query):
-    """Jurisdictions the query names with a strong marker outside negated terms."""
+    """Jurisdictions the query names: strong markers or demonyms outside negated terms.
+
+    A marker overlapping a negated term at all (`-Estados Unidos` negates `Estados`) is
+    ignored; entity names (`futebol americano`) never name a jurisdiction.
+    """
     negated = negated_spans(query)
+    demonyms = {
+        match.span()
+        for _, _, kind, pattern in PATTERNS
+        if kind == "demonym"
+        for match in pattern.finditer(query)
+    }
     return sorted(
         {
             code
-            for start, end, code, strength in find(query)
-            if strength == "strong" and not any(a <= start and end <= b for a, b in negated)
+            for start, end, code, tier in find(query)
+            if (tier == "strong" or (tier == "weak" and (start, end) in demonyms))
+            and not any(start < b and end > a for a, b in negated)
         }
     )
 
