@@ -28,6 +28,7 @@ def configure(subparsers):
                 "mcp",
                 "sync",
                 "tag-jurisdiction",
+                "rechunk",
             ),
         )
         parser.add_argument("path", nargs="?", type=Path)
@@ -66,7 +67,7 @@ def dispatch(args):
     db = Database(settings)
     store = (
         None
-        if args.action in {"evaluate", "evaluate-fixture", "tag-jurisdiction"}
+        if args.action in {"evaluate", "evaluate-fixture", "tag-jurisdiction", "rechunk"}
         else Store.from_settings(settings)
     )
     if args.action == "migrate":
@@ -155,6 +156,19 @@ def dispatch(args):
         if not 1 <= args.limit <= 10000:
             raise ValueError("tag-jurisdiction batch (--limit) must be between 1 and 10000")
         result = backfill(
+            db,
+            batch=args.limit,
+            dry_run=args.dry_run,
+            progress=lambda value: print(json.dumps(value), file=sys.stderr, flush=True),
+        )
+    elif args.action == "rechunk":
+        import sys
+
+        from .archive import rechunk
+
+        if not 1 <= args.limit <= 10000:
+            raise ValueError("rechunk batch (--limit) must be between 1 and 10000")
+        result = rechunk(
             db,
             batch=args.limit,
             dry_run=args.dry_run,

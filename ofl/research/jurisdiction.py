@@ -33,6 +33,8 @@ import unicodedata
 
 from psycopg.types.json import Jsonb
 
+from . import chunking
+
 VERSION = "jurisdiction-v4"
 RULES = ("off", "boost", "exclude")
 # Query-side rules act only for jurisdictions whose v4 tags passed the hand-check
@@ -122,9 +124,9 @@ FOREIGN_PATTERNS = [
 MAX_MATCHES = 40
 RELATED_WORDS = 30
 DOMINANCE = 3
-# Must equal ofl.research.archive.chunks: passages are 350-word windows overlapping by 40.
-CHUNK_WORDS = 350
-CHUNK_OVERLAP = 40
+# Passages are the windows of ofl.research.chunking: at most 350 words, overlapping by 40.
+CHUNK_WORDS = chunking.WORDS
+CHUNK_OVERLAP = chunking.OVERLAP
 
 # (code, tier, kind, pattern). `(?-i:...)` marks case-sensitive acronyms and names.
 MARKERS = [
@@ -295,14 +297,30 @@ def _merge(spans):
     return merged
 
 
+def _starts(texts):
+    """First document word of each chunk, from the chunk sizes and their overlaps."""
+    starts, start = [], 0
+    for text in texts:
+        size = len(text.split())
+        starts.append(start)
+        start += size - chunking.overlap(size)
+    return starts
+
+
 def document(texts):
-    """Rebuild a document's words from its chunk sequence, or None if they do not chain."""
-    words = [text.split() for text in texts]
-    step = CHUNK_WORDS - CHUNK_OVERLAP
-    for previous, current in zip(words, words[1:]):
-        if len(previous) != CHUNK_WORDS or current[:CHUNK_OVERLAP] != previous[step:]:
-            return None
-    return words[0] + [word for chunk in words[1:] for word in chunk[CHUNK_OVERLAP:]]
+    """Rebuild a document's words from its chunk sequence, or None if they do not chain.
+
+    The chain must be exactly what chunking cuts from the rebuilt words, with the token
+    budget or with the word-only windows that passages were cut with before it.
+    """
+    chunks = [text.split() for text in texts]
+    words = []
+    for start, chunk in zip(_starts(texts), chunks, strict=True):
+        words[start:] = chunk
+    for budget in (chunking.TOKEN_BUDGET, None):
+        if [words[a:b] for a, b in chunking.windows(words, budget)] == chunks:
+            return words
+    return None
 
 
 def passage_regions(ordinals, texts):
@@ -332,13 +350,13 @@ def passage_regions(ordinals, texts):
         for index, (start, end) in enumerate(joined)
         if start >= a and end <= b
     }
-    step = CHUNK_WORDS - CHUNK_OVERLAP
+    starts = _starts(texts)
     return [
         {
             "related": _merge(
                 span
                 for index, span in enumerate(_word_spans(text.split()))
-                if ordinal * step + index in inside
+                if starts[ordinal] + index in inside
             ),
             "unclassified": [],
             "context": "document",

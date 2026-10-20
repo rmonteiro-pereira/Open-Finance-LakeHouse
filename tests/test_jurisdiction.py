@@ -1221,7 +1221,7 @@ def test_ingestion_tags_passages_and_backfill_never_reembeds(research):
 
 def long_document():
     """A related-link region opened at word 305 runs past the 310-word chunk boundary."""
-    words = [f"palavra{i}" for i in range(700)]
+    words = [f"w{i}" for i in range(700)]
     words[300:305] = ["no", "Brasil", "e", "IPCA", "sobem."]
     words[305:307] = ["Leia", "também:"]
     words[320] = "EUA"
@@ -1310,7 +1310,7 @@ def test_related_region_crossing_a_chunk_boundary_never_tags():
     alone = tag(passages[1], "", **partial[0])
     assert alone["jurisdiction"] == ["BR"]
     assert alone["evidence"]["counts"]["US"]["strong"]["unclassified"] == 1
-    broken = [passages[0], passages[1].replace("palavra310", "outra", 1), passages[2]]
+    broken = [passages[0], passages[1].replace("w310", "outra", 1), passages[2]]
     assert places.passage_regions(range(3), broken)[1]["context"] == "passage"
     assert places.document(passages[:1]) == passages[0].split()
     assert places.passage_regions([0], [passages[0]])[0]["unclassified"] == []
