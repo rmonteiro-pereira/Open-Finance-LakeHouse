@@ -2,6 +2,8 @@
 
 import pytest
 
+pytest.importorskip("psycopg")
+
 from ofl.research import chunking
 from ofl.research import jurisdiction as places
 from ofl.research.archive import chain_plan, chunks
