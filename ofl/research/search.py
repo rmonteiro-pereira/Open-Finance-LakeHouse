@@ -18,6 +18,16 @@ class ContextLengthExceeded(ValueError):
     pass
 
 
+def _context_refusal(response):
+    # Only Ollama's exact refusal; a proxy or outage body quoting it must not reject passages.
+    try:
+        body = response.json()
+    except ValueError:
+        return False
+    error = body.get("error") if isinstance(body, dict) else None
+    return isinstance(error, str) and error.strip() == "the input length exceeds the context length"
+
+
 def fuse(rankings, k=60):
     scores = {}
     records = {}
@@ -72,7 +82,8 @@ def embed(settings, texts):
         try:
             response.raise_for_status()
         except requests.HTTPError as error:
-            if "exceeds the context length" in response.text:
+            too_large = response.status_code == requests.codes.request_entity_too_large
+            if too_large and _context_refusal(response):
                 raise ContextLengthExceeded(
                     "passage exceeds model context length; rechunk rather than silently truncate"
                 ) from error

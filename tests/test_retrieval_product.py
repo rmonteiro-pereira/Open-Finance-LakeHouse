@@ -438,16 +438,17 @@ def fake_ollama(monkeypatch, db, *, failure=None):
 
     def reply(status, body):
         response = requests.Response()
-        response.status_code, response._content = status, json.dumps(body).encode()
+        response.status_code = status
+        response._content = body if isinstance(body, bytes) else json.dumps(body).encode()
         return response
 
     def post(_url, json, timeout):
         assert json["truncate"] is False
         calls.append(len(json["input"]))
-        if failure:
-            return reply(*failure)
+        if failure and (status := failure(len(calls))):
+            return reply(*status)
         if any("OVERSIZE" in text for text in json["input"]):
-            return reply(500, {"error": "the input length exceeds the context length"})
+            return reply(413, {"error": "the input length exceeds the context length"})
         return reply(200, {"embeddings": [[1, 0, 0] for _ in json["input"]]})
 
     tags = {"models": [{"name": "test-model", "digest": "test-revision"}]}
@@ -507,11 +508,23 @@ def test_all_oversize_batch_is_rejected_without_failing_the_job(research, monkey
     assert coverage["pending_passages"] == 0 and coverage["fraction"] == 0
 
 
+PHRASE = "the input length exceeds the context length"
+
+
 @pytest.mark.parametrize(
-    "failure",
-    [(500, {"error": "model runner has unexpectedly stopped"}), (400, {"error": "invalid input"})],
+    ("failure", "calls_made"),
+    [
+        (lambda _: (500, {"error": "model runner has unexpectedly stopped"}), [4]),
+        (lambda _: (400, {"error": "invalid input"}), [4]),
+        (lambda _: (503, f"<html><body>upstream: {PHRASE}</body></html>".encode()), [4]),
+        (lambda _: (500, {"error": f"upstream: {PHRASE} upstream"}), [4]),
+        (lambda _: (413, PHRASE.encode()), [4]),
+        (lambda _: (413, {"error": f"{PHRASE} (proxy)"}), [4]),
+        # The first refusal is genuine; an outage during bisection still fails the batch.
+        (lambda call: None if call == 1 else (503, b"Service Unavailable"), [4, 2]),
+    ],
 )
-def test_other_remote_errors_still_fail_the_job(research, monkeypatch, failure):
+def test_other_remote_errors_still_fail_the_job(research, monkeypatch, failure, calls_made):
     import requests
 
     from ofl.research.search import embed_pending
@@ -521,7 +534,8 @@ def test_other_remote_errors_still_fail_the_job(research, monkeypatch, failure):
     calls = fake_ollama(monkeypatch, db, failure=failure)
     with pytest.raises(requests.HTTPError):
         embed_pending(db, 100)
-    assert calls == [4] and not rejections(db)
+    assert calls == calls_made and not rejections(db)
+    assert not db.rows("SELECT 1 FROM embeddings")
     assert index_coverage(db)["pending_passages"] == 4
 
 
