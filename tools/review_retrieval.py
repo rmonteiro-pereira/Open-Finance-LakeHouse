@@ -35,6 +35,11 @@ def main():
         default="off",
         help="comma-separated rules pooled into one blinded worksheet, e.g. off,boost,exclude",
     )
+    collector.add_argument(
+        "--vocabulary",
+        default="",
+        help="comma-separated vocabulary variants pooled with the rules, e.g. vocab-k,vocab-kv",
+    )
     grader = commands.add_parser("assess")
     grader.add_argument("pool", type=Path)
     grader.add_argument("reviews", type=Path)
@@ -48,7 +53,7 @@ def main():
                 collect(
                     Database(ResearchSettings()),
                     read(args.specification),
-                    args.jurisdiction.split(","),
+                    args.jurisdiction.split(",") + [v for v in args.vocabulary.split(",") if v],
                 ),
                 default=str,
             )

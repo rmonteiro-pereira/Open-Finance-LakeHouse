@@ -10,6 +10,7 @@ from copy import deepcopy
 from datetime import date
 
 from . import jurisdiction as places
+from . import vocabulary as lexicon
 from .db import digest
 from .retrieval_eval import corpus_manifest
 from .search import embed, search
@@ -74,13 +75,16 @@ def ranking_key(mode, variant):
 def collect(db, specification, variants=("off",)):
     """Read only; freeze rankings and source context before any relevance judgments.
 
-    Several jurisdiction variants pool into one blinded worksheet; the rule applied
-    to each ranking stays in the pool, never in the reviewer's view.
+    Several variants (jurisdiction rules, vocabulary variants in lexicon.VARIANTS) pool
+    into one blinded worksheet; the variant applied to each ranking stays in the pool,
+    never in the reviewer's view.
     """
     prepared = _prepare(specification)
-    variants = list(dict.fromkeys(places.check_rule(v) for v in variants))
+    variants = list(
+        dict.fromkeys(v if v in lexicon.VARIANTS else places.check_rule(v) for v in variants)
+    )
     if not variants:
-        raise ValueError("at least one jurisdiction variant required")
+        raise ValueError("at least one variant required")
     if not db.settings.embedding_revision or db.settings.approximate_search:
         raise ValueError("pinned embedding revision and exact retrieval required")
     # A changing live corpus cannot yield comparable sequential rankings. Use one
@@ -114,15 +118,39 @@ def _tags(db):
     )
 
 
+def _search_options(variant, expanded):
+    """search() keyword arguments of one pooled variant."""
+    if variant in lexicon.VARIANTS:
+        return {
+            "vocabulary": "on",
+            "vocabulary_arms": lexicon.VARIANTS[variant],
+            "expanded_vector": expanded,
+        }
+    return {"jurisdiction": variant}
+
+
+def _expanded_vector(db, query, variants):
+    """The expanded query's vector when a pooled variant expands the vector arm."""
+    rule = lexicon.plan("on", query)
+    if not rule["concepts"] or not any(
+        "vector" in lexicon.VARIANTS.get(variant, ()) for variant in variants
+    ):
+        return None
+    return embed(db.settings, [lexicon.expanded_text(rule, query)])[0]
+
+
 def _collect(db, prepared, variants=("off",)):
     before = corpus_manifest(db)
-    tags = _tags(db) if variants != ["off"] else None
+    rules = [v for v in variants if v not in lexicon.VARIANTS]
+    vocabularies = [v for v in variants if v in lexicon.VARIANTS]
+    tags = _tags(db) if rules != ["off"] and rules else None
     results = []
     for case, filters in prepared:
         # Embed once per query, never once per ranking mode. Failure remains visible.
-        vector, embedding_failed = None, False
+        vector, expanded, embedding_failed = None, None, False
         try:
             vector = embed(db.settings, [case["query"]])[0]
+            expanded = _expanded_vector(db, case["query"], vocabularies)
         except Exception:
             embedding_failed = True
         candidates, rankings = {}, {}
@@ -137,14 +165,16 @@ def _collect(db, prepared, variants=("off",)):
                     mode=mode,
                     vector=vector,
                     limit=10,
-                    jurisdiction=variant,
+                    **_search_options(variant, expanded),
                     **filters,
                 )
                 rankings[key] = {
                     "status": "ok",
                     "item_ids": [r["item_id"] for r in found["results"]],
                 }
-                if variant != "off":
+                if variant in lexicon.VARIANTS:
+                    rankings[key]["vocabulary"] = found["vocabulary"]
+                elif variant != "off":
                     rankings[key]["jurisdiction"] = found["jurisdiction"]
                 for row in found["results"]:
                     # Review all selected passages for each document. A passage from
@@ -192,11 +222,13 @@ def _collect(db, prepared, variants=("off",)):
         )
     if corpus_manifest(db)["sha256"] != before["sha256"] or (tags and _tags(db) != tags):
         raise ValueError("corpus changed during collection; discard pool and retry")
-    extra = {"jurisdiction": {"variants": variants, "tagger": places.VERSION, "tags_sha256": tags}}
+    extra = {"jurisdiction": {"variants": rules, "tagger": places.VERSION, "tags_sha256": tags}}
+    words = {"vocabulary": {"variants": vocabularies, "lexicon": lexicon.VERSION}}
     return {
         "version": 1,
         "corpus": before,
         **(extra if tags else {}),
+        **(words if vocabularies else {}),
         "cases": results,
         "qualification": (
             "Private frozen candidate pool, not exhaustive relevance judgments. "
