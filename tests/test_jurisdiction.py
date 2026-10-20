@@ -709,14 +709,72 @@ def test_gated_queries_without_foreign_mentions_stay_active(query, active):
     [q for q, _ in UNGATED_QUERIES + ACTIVE_QUERIES]
     + ["Brasil OR França", "inflação OR China", 'Brasil -"Reino Unido" e Japão'],
 )
-def test_decomposed_accents_give_the_same_plan(query):
+def test_unicode_variants_give_the_same_plan(query):
+    import re
     import unicodedata
 
-    decomposed = unicodedata.normalize("NFD", query)
+    variants = {
+        "NFD": unicodedata.normalize("NFD", query),
+        "NFKD": unicodedata.normalize("NFKD", query),
+        "ZWSP between letters": re.sub(r"(?<=\w)(?=\w)", "\u200b", query),
+        "soft hyphen between letters": re.sub(r"(?<=\w)(?=\w)", "\u00ad", query),
+        "NBSP": query.replace(" ", "\u00a0"),
+        "narrow NBSP": query.replace(" ", "\u202f"),
+        "tabs and runs": query.replace(" ", " \t\n "),
+    }
+    for name, variant in variants.items():
+        for rule in ("boost", "exclude"):
+            assert places.plan(rule, variant) == places.plan(rule, query), name
+        assert detect(variant) == detect(query), name
+        assert places.foreign(variant) == places.foreign(query), name
+
+
+@pytest.mark.parametrize(
+    ("query", "ignored"),
+    [
+        ("Brasil e Reino\u00a0Unido", ["GB"]),
+        ("Brasil e Hong\u202fKong", ["HK"]),
+        ("Brasil e \uff2a\uff41\uff50\u00e3\uff4f", ["JP"]),
+        ("Brasil e \ufb01nlandia", ["FI"]),
+        ("Brasil e Jap\u200b\u00e3o", ["JP"]),
+        ("Brasil e Ja\u00adp\u00e3o", ["JP"]),
+        ("Brasil e \ufeffJap\u00e3o", ["JP"]),
+        ("Brasil e Jap\u2060\u00e3o", ["JP"]),
+        ("Brasil\u3000e\u3000Jap\u00e3o", ["JP"]),
+    ],
+)
+def test_spacing_width_ligature_and_format_characters_cannot_dodge(query, ignored):
     for rule in ("boost", "exclude"):
-        assert places.plan(rule, decomposed) == places.plan(rule, query)
-    assert detect(decomposed) == detect(query)
-    assert places.foreign(decomposed) == places.foreign(query)
+        assert places.plan(rule, query) == {
+            "rule": rule,
+            "named": ["BR"],
+            "active": [],
+            "ignored": ignored,
+        }
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "Brasil -JP",
+        "Brasil -UK",
+        "Brasil -CN",
+        "Brasil -Reino Unido",
+        "Brasil -Reino\u00a0Unido",
+        "Brasil\u00a0-Jap\u00e3o",
+        "Brasil -\u200bJap\u00e3o",
+    ],
+)
+def test_negated_codes_and_names_still_let_the_gated_rule_fire(query):
+    assert places.foreign(query) == []
+    assert places.plan("exclude", query)["active"] == ["BR"]
+
+
+def test_canonical_query_form():
+    assert places.canonical(" a\u00a0\u202f b\t\nc\u200b\u00add ") == "a b cd"
+    assert places.canonical("\uff2a\ufb01") == "Jfi"
+    assert places.canonical("Jap\u00e3o") == places.canonical("Japa\u0303o") == "Jap\u00e3o"
+    assert places.canonical("") == ""
 
 
 def test_decomposed_gated_and_masked_cases():
@@ -730,7 +788,7 @@ def test_decomposed_gated_and_masked_cases():
     assert places.plan("exclude", nfd("Banco Central Europeu e Brasil"))["active"] == ["BR", "EA"]
     # Marks NFC cannot compose are dropped when folding; spans map back to the query.
     stray = "Fran\u0327\u0301ca"
-    assert places.nfc(stray) != places.fold(stray) == "Franca"
+    assert places.canonical(stray) != places.fold(stray) == "Franca"
     assert places.foreign(f"Brasil e {stray}") == ["FR"]
     assert places.foreign(f"Brasil -{stray}") == []
     assert places.foreign("\u0301Japão -\u0301Brasil") == ["JP"]

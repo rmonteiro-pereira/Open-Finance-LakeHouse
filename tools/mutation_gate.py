@@ -100,7 +100,7 @@ SCOPES = {
             "ofl.research.jurisdiction.x_exclusion",
             "ofl.research.jurisdiction.x_boosted",
             "ofl.research.jurisdiction.x_plan",
-            "ofl.research.jurisdiction.x_nfc",
+            "ofl.research.jurisdiction.x_canonical",
             "ofl.research.jurisdiction.x__folded",
             "ofl.research.jurisdiction.x_fold",
             "ofl.research.jurisdiction.x_foreign",
@@ -239,10 +239,12 @@ EQUIVALENT = {
     },
     "ofl.research.jurisdiction.x_foreign": {
         **dict.fromkeys(
-            (20, 22, 23),
-            "no taken span starts inside a mention: negated spans start after a "
-            "term-initial '-' and no FOREIGN match contains ' -'; no strong marker begins "
-            "with the tail of a FOREIGN pattern; overlap is decided by the mention start",
+            (22, 23),
+            "no taken span starts inside a mention (negated spans start after a "
+            "term-initial '-', which no FOREIGN match contains; no strong marker begins "
+            "inside a FOREIGN match): a mention at or after a span start has "
+            "index[end - 2] + 1 >= start + 1 > a, also for 2-letter codes, and +2 only "
+            "differs for a span starting where the mention ends",
         ),
         **dict.fromkeys(
             (24, 35),
