@@ -85,12 +85,14 @@ SCOPES = {
         0.90,
         [
             "ofl.research.jurisdiction.x_check_rule",
+            "ofl.research.jurisdiction.x_sentence_end",
             "ofl.research.jurisdiction.x_related_spans",
             "ofl.research.jurisdiction.x_find",
             "ofl.research.jurisdiction.x__word_spans",
             "ofl.research.jurisdiction.x__merge",
             "ofl.research.jurisdiction.x_document",
             "ofl.research.jurisdiction.x_passage_regions",
+            "ofl.research.jurisdiction.x_decide",
             "ofl.research.jurisdiction.x_tag",
             "ofl.research.jurisdiction.x_negated_spans",
             "ofl.research.jurisdiction.x_detect",
@@ -188,7 +190,18 @@ EQUIVALENT = {
         190: _EXPONENT,
     },
     "ofl.research.jurisdiction.x_find": {
-        12: "same-length overlapping matches: end order equals start order",
+        9: "same-length overlapping matches: end order equals start order",
+    },
+    "ofl.research.jurisdiction.x_decide": {
+        30: "a dominance check only runs at total == 1, where 3 * 1 == 3 / 1",
+    },
+    "ofl.research.jurisdiction.x_detect": {
+        24: "a negated span starts after a term-initial '-', where no marker can end",
+    },
+    "ofl.research.jurisdiction.x_related_spans": {
+        14: "a marker ends on a non-space character, so no word starts exactly there",
+        39: "a terminator at 0 leaves no tail with 60 words before it",
+        50: "a terminator is followed by whitespace, so no word starts exactly there",
     },
     "ofl.research.jurisdiction.x_negated_spans": {
         37: "a closing quote is searched from start + 1 >= 2, so find() never returns 0",
@@ -196,8 +209,9 @@ EQUIVALENT = {
         57: "every term ends at least one character after it starts: end >= index + 1",
     },
     "ofl.research.jurisdiction.x_passage_regions": {
+        22: "whole=None and whole=False are both falsy",
         **dict.fromkeys(
-            (61, 64, 65),
+            (65, 68, 69),
             "document branch only runs when ordinals == range(len(texts)): equal lengths",
         ),
     },
