@@ -96,7 +96,7 @@ A `held_out` label alone is not evidence of independent judgments or users.
 
 Each passage stores lexical jurisdiction evidence in `passages.jurisdiction`
 (codes `BR`, `US`, `EA`, `CN`), `jurisdiction_evidence` (every match with its term,
-offset, strength and location) and `jurisdiction_tagger` (`jurisdiction-v1`). NULL
+offset, strength and location) and `jurisdiction_tagger` (`jurisdiction-v2`). NULL
 means not yet tagged; an empty array means tagged with no evidence (unknown). A
 passage can carry several codes.
 
@@ -113,6 +113,9 @@ The tagger (`ofl/research/jurisdiction.py`) is deterministic:
   counted once), `body`, or `related`. Text from a related-link or navigation marker
   (`Leia também`, `Veja mais`, `Saiba mais`, `Tags:` and similar) up to the end of its
   sentence, at most 30 words, is `related` and never creates a tag.
+- Related regions are found on the whole document before it is split into passages
+  (350-word windows overlapping by 40), so a region opened in one passage stays
+  `related` in the next. The evidence records `context: document`.
 
 New and re-ingested passages are tagged when indexed. Existing passages are tagged
 without re-embedding by:
@@ -123,12 +126,24 @@ ofl research tag-jurisdiction --limit 1000   # committed batches; resumable
 ```
 
 A passage is pending when its tagger version differs from the current one or its
-item title changed since tagging.
+item title changed since tagging. Original document text is not stored, so the
+backfill rebuilds each document from all passages of the same item revision; their
+overlaps must chain exactly, and the result then equals ingestion. When a chain is
+incomplete or does not chain, each passage is tagged on its own text, its first 30
+words (where a region from an earlier passage could reach) are `unclassified` and do
+not count, and the evidence records `context: passage`. The backfill reports how many
+passages were tagged that way (`partial_context`).
+
+Schema migration runs in one transaction with `lock_timeout = 5s`; if another session
+holds a research table (for example a running worker), it fails with a clear error and
+changes nothing instead of queueing behind that session and blocking readers.
 
 Search takes `jurisdiction=off|boost|exclude` (API, MCP `search_archive`, dashboard;
 default `off`). A rule applies only when the query names a jurisdiction with a strong
 marker; `inflação`, `taxa de juros`, `Banco Central` or `câmbio dólar real` never fire
-it, and a negated term (`-Brasil`) is ignored.
+it. Markers inside a term that PostgreSQL's `websearch_to_tsquery` negates are
+ignored: `-Brasil`, `- Brasil`, `-"Estados Unidos"`, including an unclosed quote; a
+hyphen inside a word (`Brasil-EUA`) or inside quotes is not negation.
 
 - `off`: results and response identical to the code without jurisdiction support.
 - `exclude`: removes passages whose evidence names some other jurisdiction and none
@@ -146,8 +161,14 @@ With a non-`off` rule, the response carries `jurisdiction`: rule, tagger, named 
 whether it applied, and counts of scope passages, passages with named evidence,
 conflicting and excluded passages, untagged passages, passages tagged by an older
 tagger and boosted candidates/results. Each result carries its codes and evidence;
-a boosted result has a `jurisdiction_boost` entry in `ranking`. The counts add one
-aggregate query over the filtered scope.
+a boosted result has a `jurisdiction_boost` entry in `ranking`. When a jurisdiction
+is named, the counts and `index_coverage` come from one scan of the filtered scope,
+replacing the coverage query.
+
+`tools/jurisdiction_latency.py [--modes keyword,hybrid] [--repetitions 15]` times the
+held-out cases that name a jurisdiction under each rule, interleaved, with read-only
+sessions and query embeddings excluded. It reports median and p95 per mode and rule
+and exits non-zero when a rule's median exceeds `off` by more than 20%.
 
 `tools/review_retrieval.py collect SPEC OUT --jurisdiction off,boost,exclude` collects
 every mode under each rule into one pool; rankings are keyed `hybrid`,
