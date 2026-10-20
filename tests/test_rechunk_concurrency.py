@@ -3,13 +3,15 @@
 import json
 import threading
 import time
+from contextlib import contextmanager
 
 import pytest
 
 pytest.importorskip("psycopg")
 
-from ofl.research import chunking
-from ofl.research.archive import index_text, lock_item, rechunk, upsert_item
+from ofl.research import chunking, jurisdiction, processing
+from ofl.research.archive import index_text, rechunk, upsert_item
+from ofl.research.db import lock_item
 from ofl.research.library import index_news, sync_library
 from ofl.research.search import search
 from ofl.research.workspaces import load, save
@@ -44,29 +46,78 @@ def active(db, item, method="text"):
     )
 
 
-def rechunk_blocked_by(db, con, item):
-    """Start rechunk while `con` holds the item lock; return once it waits for it."""
-    lock_item(con, item)
-    outcome = {}
-    worker = threading.Thread(target=lambda: outcome.update(rechunk(db)))
-    worker.start()
-    deadline = time.monotonic() + 20
-    while not db.rows("SELECT 1 FROM pg_locks WHERE locktype='advisory' AND NOT granted"):
-        assert time.monotonic() < deadline and worker.is_alive(), "rechunk never waited"
-        time.sleep(0.05)
-    return worker, outcome
+# Waiting on exactly this key: hashtext() widened to bigint, split as pg_locks stores it.
+WAITING = """SELECT 1 FROM pg_locks WHERE locktype='advisory' AND NOT granted AND objsubid=1
+    AND pid=ANY(%s) AND classid::bigint=((hashtext(%s)::bigint >> 32) & 4294967295)
+    AND objid::bigint=(hashtext(%s)::bigint & 4294967295)"""
+
+
+class Writer:
+    """Runs `write` in its own thread; records the backend of every connection it opens."""
+
+    def __init__(self, db, monkeypatch, write):
+        self.db, self.pids, self.error, self.result = db, [], None, None
+        connect = db.connect
+
+        @contextmanager
+        def tracked():
+            with connect() as con:
+                if threading.get_ident() == self.thread.ident:
+                    self.pids.append(con.info.backend_pid)
+                yield con
+
+        monkeypatch.setattr(db, "connect", tracked)
+
+        def run():
+            try:
+                self.result = write()
+            except BaseException as error:  # re-raised in the test thread by finish()
+                self.error = error
+
+        self.thread = threading.Thread(target=run)
+        self.thread.start()
+
+    def waits_for(self, item, timeout=20):
+        """Assert this writer's own backend is queued on the item lock of `item`."""
+        key = "ofl-research-item:" + item
+        deadline = time.monotonic() + timeout
+        while not self.db.rows(WAITING, (self.pids or [0], key, key)):
+            if not self.thread.is_alive():
+                self.finish()
+                raise AssertionError("writer finished without waiting for the item lock")
+            assert time.monotonic() < deadline, "writer never waited for the item lock"
+            time.sleep(0.05)
+        return self
+
+    def finish(self, timeout=20):
+        self.thread.join(timeout)
+        assert not self.thread.is_alive(), "writer did not finish after the lock was released"
+        if self.error:
+            raise self.error
+        return self.result
+
+
+@contextmanager
+def holding(db, item):
+    """A transaction holding the item lock, as a concurrent passage writer would."""
+    with db.connect() as con:
+        lock_item(con, item)
+        yield con
+
+
+def rechunk_blocked_by(db, monkeypatch, item):
+    return Writer(db, monkeypatch, lambda: rechunk(db)).waits_for(item)
 
 
 def test_rechunk_skips_a_chain_superseded_while_it_waited(research, monkeypatch):
     db, _ = research
     item = letter(db, monkeypatch)
-    with db.connect() as con:
-        worker, outcome = rechunk_blocked_by(db, con, item)
+    with holding(db, item) as con:
+        worker = rechunk_blocked_by(db, monkeypatch, item)
         index_text(
             con, item_id=item, revision="r2", text="Texto novo e curto", method="text", page=1
         )
-    worker.join(20)
-    assert not worker.is_alive()
+    outcome = worker.finish()
     assert (outcome["rechunk"], outcome["changed"]) == (0, 1)
     assert [r["revision"] for r in active(db, item)] == ["r2"]
     # The superseded chain was never re-cut: no derived revision was written.
@@ -101,12 +152,11 @@ def test_policy_downgrade_during_rechunk_never_reactivates_body_text(research, m
     db, store = research
     item = full_news(db, store, monkeypatch)
     row, source = downgraded()
-    with db.connect() as con:
-        worker, outcome = rechunk_blocked_by(db, con, item)
+    with holding(db, item) as con:
+        worker = rechunk_blocked_by(db, monkeypatch, item)
         later = {**row, "fetched_at": "2026-01-07T12:00:00Z"}
         assert index_news(con, db, store, later, NEWS_KEY, policies=source.news_tiers)
-    worker.join(20)
-    assert not worker.is_alive()
+    outcome = worker.finish()
     assert (outcome["rechunk"], outcome["changed"]) == (0, 1)
     assert not body_visible(db)
     assert not search(db, GLUED[400], mode="keyword")["results"]
@@ -211,39 +261,111 @@ def test_restricted_news_reference_stays_blocked_on_edit(research, monkeypatch):
         )
 
 
-def waits_for_item_lock(db, item, write):
-    """True when `write` (its own transaction) blocks while another one holds the item lock."""
+def stale_tags(db, item):
     with db.connect() as con:
-        lock_item(con, item)
-        worker = threading.Thread(target=write)
-        worker.start()
-        deadline = time.monotonic() + 5
-        while not db.rows("SELECT 1 FROM pg_locks WHERE locktype='advisory' AND NOT granted"):
-            if not worker.is_alive() or time.monotonic() > deadline:
-                worker.join()
-                return False
-            time.sleep(0.05)
-    worker.join(20)
-    return True
+        con.execute(
+            "UPDATE passages SET jurisdiction_tagger='jurisdiction-v0' WHERE item_id=%s", (item,)
+        )
 
 
-def test_every_passage_writer_takes_the_item_lock(research, monkeypatch):
+def tagger(db, item):
+    return {
+        r["t"]
+        for r in db.rows(
+            "SELECT jurisdiction_tagger AS t FROM passages WHERE item_id=%s AND active", (item,)
+        )
+    }
+
+
+def test_backfill_rereads_a_chain_superseded_while_it_waited(research, monkeypatch):
+    db, _ = research
+    item = letter(db, monkeypatch)
+    old = {r["id"] for r in active(db, item)}
+    stale_tags(db, item)
+    with holding(db, item) as con:
+        worker = Writer(db, monkeypatch, lambda: jurisdiction.backfill(db)).waits_for(item)
+        # What rechunk writes for this item, while the backfill waits for the lock.
+        index_text(con, item_id=item, revision="r", text=TEXT, method="text", page=1)
+    result = worker.finish()
+    # The superseded passages were no longer pending under the lock: left untouched.
+    rows = db.rows("SELECT id,jurisdiction_tagger FROM passages WHERE id=ANY(%s)", (list(old),))
+    assert {r["jurisdiction_tagger"] for r in rows} == {"jurisdiction-v0"}
+    assert tagger(db, item) == {jurisdiction.VERSION}
+    assert result["tagged"] == 1  # the item's metadata passage, still current
+    assert jurisdiction.backfill(db, dry_run=True)["pending"] == 0
+
+
+def test_backfill_and_rechunk_on_one_item_both_complete(research, monkeypatch):
+    db, _ = research
+    item = letter(db, monkeypatch)
+    stale_tags(db, item)
+    with holding(db, item):
+        tagging = Writer(db, monkeypatch, lambda: jurisdiction.backfill(db)).waits_for(item)
+        recut = rechunk_blocked_by(db, monkeypatch, item)
+    tagging.finish()
+    assert recut.finish()["rechunk"] == 1
+    assert rechunk(db, dry_run=True)["rechunk"] == 0
+    assert tagger(db, item) == {jurisdiction.VERSION}
+    assert jurisdiction.backfill(db, dry_run=True)["pending"] == 0
+
+
+def test_every_passage_writer_waits_for_the_item_lock(research, monkeypatch, tmp_path):
     db, store = research
     item = letter(db, monkeypatch)
 
+    def blocked(write, touch="SELECT 1"):
+        with holding(db, item) as con:
+            con.execute(touch)  # e.g. row locks a concurrent writer of the page holds
+            worker = Writer(db, monkeypatch, write).waits_for(item)
+        return worker.finish()
+
     def reindex():
         with db.connect() as con:
-            index_text(con, item_id=item, revision="r4", text="Outra", method="text", page=1)
+            index_text(con, item_id=item, revision="r4", text="Outra carta", method="text", page=1)
+
+    blocked(reindex)
+    assert [r["revision"] for r in active(db, item)] == ["r4"]
 
     def recatalog():
         with db.connect() as con:
-            upsert_item(con, "manager_letter", {"source_id": "g", "title": "Carta 2"}, "g")
+            return upsert_item(con, "manager_letter", {"source_id": "g", "title": "Carta 2"}, "g")
 
-    assert waits_for_item_lock(db, item, reindex)
-    assert waits_for_item_lock(db, item, recatalog)
+    assert blocked(recatalog) == item
+    assert db.rows("SELECT title FROM items WHERE id=%s", (item,)) == [{"title": "Carta 2"}]
+
+    stale_tags(db, item)
+    assert blocked(lambda: jurisdiction.backfill(db))["tagged"] == 2
+    assert tagger(db, item) == {jurisdiction.VERSION}
+
+    from PIL import Image
+
+    image = tmp_path / "page.png"
+    Image.new("RGB", (8, 8), "white").save(image)
+    with db.connect() as con:
+        con.execute(
+            """INSERT INTO assets(id,item_id,sha256,object_key,name,media_type)
+            VALUES ('page-asset',%s,'sha','k','page.png','image/png')""",
+            (item,),
+        )
+    asset = {"id": "page-asset", "item_id": item, "sha256": "sha"}
+    monkeypatch.setattr(processing, "ocr_image", lambda *_a, **_k: ("Página lida por OCR", []))
+    monkeypatch.setattr(processing, "scan_tables", lambda *_a: iter(()))
+    page = lambda: processing._page(db, store, asset, 1, image, None, lambda _: None)  # noqa: E731
+    page()
+    store.path("pages/page-asset/1/complete.json").unlink()  # process the page again
+    # The holder also row-locks the page's passages: a page write that touched them
+    # before taking the item lock would wait on those rows instead.
+    blocked(page, "UPDATE passages SET active=true WHERE asset_id='page-asset'")
+    assert db.rows("SELECT text,method FROM passages WHERE asset_id='page-asset' AND active") == [
+        {"text": "Página lida por OCR", "method": "ocr"}
+    ]
+
     news_item = full_news(db, store, monkeypatch)
-    later = news(fetched="2026-01-08T12:00:00Z")
+    later = news(fetched="2026-01-08T12:00:00Z", body="Corpo curto")
     source = LibraryFixture({NEWS_KEY: json.dumps(later).encode()})
-    assert waits_for_item_lock(
-        db, news_item, lambda: sync_library(db, store, "news", source=source)
-    )
+    with holding(db, news_item):
+        worker = Writer(
+            db, monkeypatch, lambda: sync_library(db, store, "news", source=source)
+        ).waits_for(news_item)
+    assert worker.finish()["items"] == 1
+    assert any("Corpo curto" in r["text"] for r in active(db, news_item, "collector_news"))
