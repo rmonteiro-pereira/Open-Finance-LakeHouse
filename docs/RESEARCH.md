@@ -209,6 +209,29 @@ the tokenizer limit instead of silently truncated. Changed passages get new
 identities; inactive revisions never participate in retrieval even if their vectors
 are retained. Embeddings are private and model/version-scoped.
 
+Passages are windows of at most 350 words that also stay within an estimated
+2,046-token budget (the deployed model's 2,048-token context minus its two sequence
+markers; `ofl/research/chunking.py` documents the estimate and its calibration).
+The budget matters for text whose extraction glued words together: such a window
+ends early and the next one repeats a proportional overlap. Text whose windows all
+fit is cut exactly as before and keeps its passage identities; text the budget
+re-cuts gets a derived passage revision, so its new passages get new identities,
+jurisdiction tags in document context and embeddings, while the superseded ones
+and their rejections stop counting. Existing passages are brought in line with:
+
+```sh
+ofl research rechunk --dry-run   # chains to re-cut, passages superseded and new
+ofl research rechunk             # one transaction per chain; rerunning finds nothing
+ofl research embed --if-idle     # the embedding lane embeds the new passages
+```
+
+Original page text is not stored, so a chain is rebuilt from its passages' chained
+overlaps (as in the jurisdiction backfill); a chain that does not rebuild exactly is
+counted as `unchained` and left as it is.
+
+A single whitespace-free run over the budget still forms its own window and stays
+rejected by the embedding step rather than being cut inside a word.
+
 The default research image omits model runtimes. Build with
 `--build-arg INCLUDE_EMBEDDINGS=1` when enabling local inference, and persist
 `HF_HOME` on private storage to avoid downloading weights on each restart. Measure
