@@ -415,6 +415,25 @@ def columns(text, title, **regions):
     return result["jurisdiction"], Jsonb(result["evidence"]), VERSION
 
 
+def batch_updates(rows):
+    """UPDATE parameters for the pending rows of a batch, tagged in document context.
+
+    `rows` hold every passage of each item revision in (item, revision, ordinal) order;
+    non-pending rows only supply context. Returns the parameters and how many pending
+    passages fell back to passage context.
+    """
+    chains, updates, partial = {}, [], 0
+    for row in rows:
+        chains.setdefault((row["item_id"], row["revision"]), []).append(row)
+    for chain in chains.values():
+        regions = passage_regions([r["ordinal"] for r in chain], [r["text"] for r in chain])
+        for row, region in zip(chain, regions, strict=True):
+            if row["pending"]:
+                updates.append((*columns(row["text"], row["title"], **region), row["id"]))
+                partial += region["context"] == "passage"
+    return updates, partial
+
+
 PENDING = """p.active AND (p.jurisdiction_tagger IS DISTINCT FROM %s
     OR p.jurisdiction_evidence->>'title_sha256' IS DISTINCT FROM
     encode(sha256(convert_to(i.title,'UTF8')),'hex'))"""
@@ -451,15 +470,8 @@ def backfill(db, *, batch=1000, dry_run=False, progress=lambda _: None):
             ORDER BY p.item_id,p.revision,p.ordinal""",
             (VERSION, [g["item_id"] for g in groups], [g["revision"] for g in groups]),
         )
-        updates, chains = [], {}
-        for row in rows:
-            chains.setdefault((row["item_id"], row["revision"]), []).append(row)
-        for chain in chains.values():
-            regions = passage_regions([r["ordinal"] for r in chain], [r["text"] for r in chain])
-            for row, region in zip(chain, regions, strict=True):
-                if row["pending"]:
-                    updates.append((*columns(row["text"], row["title"], **region), row["id"]))
-                    result["partial_context"] += region["context"] == "passage"
+        updates, partial = batch_updates(rows)
+        result["partial_context"] += partial
         with db.connect() as con:
             con.cursor().executemany(
                 """UPDATE passages SET jurisdiction=%s,jurisdiction_evidence=%s,
