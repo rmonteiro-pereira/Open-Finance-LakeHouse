@@ -9,6 +9,7 @@ import statistics
 from copy import deepcopy
 from datetime import date
 
+from . import jurisdiction as places
 from .db import digest
 from .retrieval_eval import corpus_manifest
 from .search import embed, search
@@ -16,7 +17,7 @@ from .search import embed, search
 MODES = ("keyword", "vector", "hybrid")
 FILTERS = {"source", "item_type", "collection", "date_from", "date_to"}
 VERDICTS = {"relevant", "irrelevant", "uncertain"}
-MAX_CASES = 6
+MAX_CASES = 16
 MAX_ID = 100
 MAX_QUERY = 1000
 MAX_LABEL = 200
@@ -32,7 +33,7 @@ def _prepare(specification):
         or not isinstance(cases, list)
         or not 1 <= len(cases) <= MAX_CASES
     ):
-        raise ValueError("version 1 and one to six cases required")
+        raise ValueError(f"version 1 and one to {MAX_CASES} cases required")
     prepared, identifiers = [], set()
     for case in cases:
         if not isinstance(case, dict):
@@ -65,9 +66,21 @@ def _prepare(specification):
     return prepared
 
 
-def collect(db, specification):
-    """Read only; freeze rankings and source context before any relevance judgments."""
+def ranking_key(mode, variant):
+    """`off` keeps the plain mode name so earlier pools score unchanged."""
+    return mode if variant == "off" else f"{mode}+{variant}"
+
+
+def collect(db, specification, variants=("off",)):
+    """Read only; freeze rankings and source context before any relevance judgments.
+
+    Several jurisdiction variants pool into one blinded worksheet; the rule applied
+    to each ranking stays in the pool, never in the reviewer's view.
+    """
     prepared = _prepare(specification)
+    variants = list(dict.fromkeys(places.check_rule(v) for v in variants))
+    if not variants:
+        raise ValueError("at least one jurisdiction variant required")
     if not db.settings.embedding_revision or db.settings.approximate_search:
         raise ValueError("pinned embedding revision and exact retrieval required")
     # A changing live corpus cannot yield comparable sequential rankings. Use one
@@ -84,7 +97,7 @@ def collect(db, specification):
                 return connection.execute(query, params).fetchall()
 
         began = connection.execute("SELECT CURRENT_TIMESTAMP AS started_at").fetchone()
-        pool = _collect(Snapshot(), prepared)
+        pool = _collect(Snapshot(), prepared, variants)
         pool["collection"] = {
             "started_at": began["started_at"],
             "isolation": "repeatable_read_read_only",
@@ -92,8 +105,18 @@ def collect(db, specification):
         return pool
 
 
-def _collect(db, prepared):
+def _tags(db):
+    return digest(
+        db.rows(
+            """SELECT p.id,p.jurisdiction,p.jurisdiction_tagger FROM passages p
+            WHERE p.active ORDER BY p.id"""
+        )
+    )
+
+
+def _collect(db, prepared, variants=("off",)):
     before = corpus_manifest(db)
+    tags = _tags(db) if variants != ["off"] else None
     results = []
     for case, filters in prepared:
         # Embed once per query, never once per ranking mode. Failure remains visible.
@@ -103,15 +126,26 @@ def _collect(db, prepared):
         except Exception:
             embedding_failed = True
         candidates, rankings = {}, {}
-        for mode in MODES:
+        for variant, mode in ((v, m) for v in variants for m in MODES):
+            key = ranking_key(mode, variant)
             try:
                 if mode != "keyword" and embedding_failed:
                     raise ValueError("query embedding unavailable")
-                found = search(db, case["query"], mode=mode, vector=vector, limit=10, **filters)
-                rankings[mode] = {
+                found = search(
+                    db,
+                    case["query"],
+                    mode=mode,
+                    vector=vector,
+                    limit=10,
+                    jurisdiction=variant,
+                    **filters,
+                )
+                rankings[key] = {
                     "status": "ok",
                     "item_ids": [r["item_id"] for r in found["results"]],
                 }
+                if variant != "off":
+                    rankings[key]["jurisdiction"] = found["jurisdiction"]
                 for row in found["results"]:
                     # Review all selected passages for each document. A passage from
                     # one mode can differ from another; never overwrite that context.
@@ -139,7 +173,7 @@ def _collect(db, prepared):
                         )
                     }
             except Exception:
-                rankings[mode] = {"status": "error", "item_ids": []}
+                rankings[key] = {"status": "error", "item_ids": []}
         frozen = []
         for candidate in candidates.values():
             candidate["passages"] = sorted(candidate["passages"].values(), key=lambda p: p["id"])
@@ -156,11 +190,13 @@ def _collect(db, prepared):
                 "candidates": frozen,
             }
         )
-    if corpus_manifest(db)["sha256"] != before["sha256"]:
+    if corpus_manifest(db)["sha256"] != before["sha256"] or (tags and _tags(db) != tags):
         raise ValueError("corpus changed during collection; discard pool and retry")
+    extra = {"jurisdiction": {"variants": variants, "tagger": places.VERSION, "tags_sha256": tags}}
     return {
         "version": 1,
         "corpus": before,
+        **(extra if tags else {}),
         "cases": results,
         "qualification": (
             "Private frozen candidate pool, not exhaustive relevance judgments. "
@@ -227,6 +263,8 @@ def assess(pool, reviews):
     if not isinstance(reviewer, str) or not 1 <= len(reviewer.strip()) <= MAX_LABEL:
         raise ValueError("bounded self-reported reviewer required")
     expected = {case["id"]: case for case in pool["cases"]}
+    if len({tuple(case["rankings"]) for case in pool["cases"]}) > 1:
+        raise ValueError("every case must carry the same rankings")
     submitted = reviews.get("cases")
     if (
         not isinstance(submitted, list)
@@ -248,7 +286,7 @@ def assess(pool, reviews):
             "unassessed_candidates": sum(v == "not_assessed" for v in labels.values()),
             "modes": {},
         }
-        for mode in MODES:
+        for mode in case["rankings"]:
             ranking = case["rankings"][mode]
             ranked = ranking["item_ids"]
             judged = [item for item in ranked if labels[item] in {"relevant", "irrelevant"}]
@@ -275,7 +313,7 @@ def assess(pool, reviews):
             }
         results.append(row)
     summary = {}
-    for mode in MODES:
+    for mode in pool["cases"][0]["rankings"] if pool["cases"] else ():
         values = [case["modes"][mode] for case in results]
         summary[mode] = {
             "planned_cases": len(values),

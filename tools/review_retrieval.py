@@ -30,6 +30,11 @@ def main():
     collector = commands.add_parser("collect")
     collector.add_argument("specification", type=Path)
     collector.add_argument("output", type=Path, help="new private directory")
+    collector.add_argument(
+        "--jurisdiction",
+        default="off",
+        help="comma-separated rules pooled into one blinded worksheet, e.g. off,boost,exclude",
+    )
     grader = commands.add_parser("assess")
     grader.add_argument("pool", type=Path)
     grader.add_argument("reviews", type=Path)
@@ -39,7 +44,14 @@ def main():
         args.output.mkdir(mode=0o700, parents=False, exist_ok=False)
         # Normalize dates before hashing/export so reopening yields identical bytes' meaning.
         pool = json.loads(
-            json.dumps(collect(Database(ResearchSettings()), read(args.specification)), default=str)
+            json.dumps(
+                collect(
+                    Database(ResearchSettings()),
+                    read(args.specification),
+                    args.jurisdiction.split(","),
+                ),
+                default=str,
+            )
         )
         private_write(args.output / "pool.json", pool)
         private_write(args.output / "reviews.json", worksheet(pool))
