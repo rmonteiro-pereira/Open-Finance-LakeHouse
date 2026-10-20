@@ -263,5 +263,9 @@ The production deployment can reuse a private Ollama service instead of installi
 PyTorch in each API and worker. Set `OFL_RESEARCH_EMBEDDING_URL`, the exact model
 name (including tag), and `OFL_RESEARCH_EMBEDDING_REVISION` to its full manifest
 digest. The adapter checks that digest on every call and disables truncation.
+`OFL_RESEARCH_EMBEDDING_THREADS` bounds Ollama's request-level CPU threads
+(default 1, range 1–32). Keep the service warmup on the same thread setting to
+avoid reloading the runner on the first search. This option preserves the model
+tag/digest and existing vector namespace; it does not establish retrieval quality.
 Ollama vectors remain in a separate model/revision namespace from Hugging Face
 vectors, even when both models are called BGE-M3.

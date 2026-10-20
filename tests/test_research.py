@@ -632,6 +632,7 @@ def test_private_ollama_embeddings_validate_revision_and_response(monkeypatch):
         embedding_dimensions=3,
     )
     result = {"embeddings": [[1.0, 0.0, 0.0]]}
+    expected_threads = 1
 
     class Response:
         def __init__(self, data):
@@ -650,9 +651,14 @@ def test_private_ollama_embeddings_validate_revision_and_response(monkeypatch):
 
     def post(*args, **kwargs):
         assert kwargs["json"]["truncate"] is False
+        assert kwargs["json"]["model"] == "bge:latest"
+        assert kwargs["json"]["options"] == {"num_thread": expected_threads}
         return Response(result)
 
     monkeypatch.setattr("requests.post", post)
+    assert embed(settings, ["mercado de ações"]) == [[1.0, 0.0, 0.0]]
+    settings.embedding_threads = 2
+    expected_threads = 2
     assert embed(settings, ["mercado de ações"]) == [[1.0, 0.0, 0.0]]
     result["embeddings"] = []
     with pytest.raises(ValueError, match="count"):
