@@ -69,6 +69,13 @@ CREATE TABLE IF NOT EXISTS embeddings (
  revision text NOT NULL, embedding vector NOT NULL,
  PRIMARY KEY(passage_id,model,revision)
 );
+-- A passage the model cannot embed whole is rejected for that exact text and
+-- model space, never truncated. Changed passage content becomes eligible again.
+CREATE TABLE IF NOT EXISTS embedding_rejections (
+ passage_id text NOT NULL REFERENCES passages(id), model text NOT NULL, revision text NOT NULL,
+ passage_revision text NOT NULL, text_sha256 text NOT NULL, reason text NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(passage_id,model,revision)
+);
 CREATE TABLE IF NOT EXISTS candidates (
  id text PRIMARY KEY, asset_id text NOT NULL REFERENCES assets(id), page integer NOT NULL,
  bbox jsonb NOT NULL, cells jsonb NOT NULL, version text NOT NULL,

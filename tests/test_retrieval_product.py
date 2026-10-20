@@ -415,11 +415,133 @@ def test_keyword_exclusion_cannot_escape_through_unindexed_simple_dictionary(res
     found = search(db, "IPCA -Tesouro", mode="keyword")["results"]
     assert {r["item_id"] for r in found} == {ids["included"]}
     assert {r["item_id"] for r in search(db, "BRXYZ123")["results"]} == {
-        ids["metadata"], ids["identifier"]
+        ids["metadata"],
+        ids["identifier"],
     }
     assert {r["item_id"] for r in search(db, '"inflação ao consumidor"')["results"]} == {
         ids["included"]
     }
     assert {r["item_id"] for r in search(db, "IPCA OR EUA", source="news")["results"]} == {
-        ids["included"], ids["excluded"], ids["foreign"]
+        ids["included"],
+        ids["excluded"],
+        ids["foreign"],
     }
+
+
+def fake_ollama(monkeypatch, db, *, failure=None):
+    """Remote endpoint refusing any input marked oversize, as Ollama does with truncate=false."""
+    import requests
+
+    db.settings.embedding_url = "http://ollama.invalid"
+    db.settings.embedding_batch_size = 32
+    calls = []
+
+    def reply(status, body):
+        response = requests.Response()
+        response.status_code, response._content = status, json.dumps(body).encode()
+        return response
+
+    def post(_url, json, timeout):
+        assert json["truncate"] is False
+        calls.append(len(json["input"]))
+        if failure:
+            return reply(*failure)
+        if any("OVERSIZE" in text for text in json["input"]):
+            return reply(500, {"error": "the input length exceeds the context length"})
+        return reply(200, {"embeddings": [[1, 0, 0] for _ in json["input"]]})
+
+    tags = {"models": [{"name": "test-model", "digest": "test-revision"}]}
+    monkeypatch.setattr(requests, "get", lambda *_a, **_k: reply(200, tags))
+    monkeypatch.setattr(requests, "post", post)
+    return calls
+
+
+def seed_letters(db, count, oversize=()):
+    with db.connect() as con:
+        for number in range(count):
+            title = f"Carta {number}" + (" OVERSIZE" if number in oversize else "")
+            upsert_item(con, "manager_letter", {"source_id": str(number), "title": title}, "x")
+
+
+def rejections(db):
+    return db.rows("SELECT passage_id,model,revision,reason FROM embedding_rejections")
+
+
+def test_remote_context_overflow_is_isolated_and_the_queue_progresses(research, monkeypatch):
+    from ofl.research.search import embed_pending
+
+    db, _ = research
+    seed_letters(db, 32, oversize={17})
+    calls, progress = fake_ollama(monkeypatch, db), []
+    assert embed_pending(db, 100, progress.append) == 32
+    assert calls[0] == 32 and len(calls) == 11
+    assert progress == [{"embedded": 31, "total": 32, "rejected": 1}]
+    [rejected] = rejections(db)
+    assert (rejected["model"], rejected["revision"]) == ("test-model", "test-revision")
+    assert "context length" in rejected["reason"]
+    coverage = index_coverage(db)
+    assert (
+        coverage["eligible_passages"],
+        coverage["indexed_passages"],
+        coverage["rejected_passages"],
+        coverage["pending_passages"],
+        coverage["status"],
+    ) == (32, 31, 1, 0, "partial")
+    assert "Rejected passages" in coverage["qualification"]
+    calls.clear()
+    assert embed_pending(db, 100) == 0 and not calls
+    db.settings.embedding_revision = "other-revision"
+    assert index_coverage(db)["rejected_passages"] == 0
+
+
+def test_all_oversize_batch_is_rejected_without_failing_the_job(research, monkeypatch):
+    from ofl.research.search import embed_pending
+
+    db, _ = research
+    seed_letters(db, 3, oversize={0, 1, 2})
+    fake_ollama(monkeypatch, db)
+    assert embed_pending(db, 100) == 3
+    assert len(rejections(db)) == 3
+    coverage = index_coverage(db)
+    assert (coverage["indexed_passages"], coverage["rejected_passages"]) == (0, 3)
+    assert coverage["pending_passages"] == 0 and coverage["fraction"] == 0
+
+
+@pytest.mark.parametrize(
+    "failure",
+    [(500, {"error": "model runner has unexpectedly stopped"}), (400, {"error": "invalid input"})],
+)
+def test_other_remote_errors_still_fail_the_job(research, monkeypatch, failure):
+    import requests
+
+    from ofl.research.search import embed_pending
+
+    db, _ = research
+    seed_letters(db, 4, oversize={1})
+    calls = fake_ollama(monkeypatch, db, failure=failure)
+    with pytest.raises(requests.HTTPError):
+        embed_pending(db, 100)
+    assert calls == [4] and not rejections(db)
+    assert index_coverage(db)["pending_passages"] == 4
+
+
+def test_changed_passage_content_clears_its_rejection(research, monkeypatch):
+    from ofl.research.search import embed_pending
+
+    db, _ = research
+    seed_letters(db, 2, oversize={0, 1})
+    fake_ollama(monkeypatch, db)
+    assert embed_pending(db, 100) == 2
+    [first, second] = sorted(row["passage_id"] for row in rejections(db))
+    with db.connect() as con:
+        con.execute("UPDATE passages SET text='Carta dividida' WHERE id=%s", (first,))
+        con.execute("UPDATE passages SET revision='rechunked' WHERE id=%s", (second,))
+    coverage = index_coverage(db)
+    assert (coverage["rejected_passages"], coverage["pending_passages"]) == (0, 2)
+    assert embed_pending(db, 100) == 2
+    coverage = index_coverage(db)
+    assert (coverage["indexed_passages"], coverage["rejected_passages"]) == (1, 1)
+    # The still-oversize passage is rejected again for its new revision.
+    assert db.rows(
+        "SELECT passage_revision FROM embedding_rejections WHERE passage_id=%s", (second,)
+    ) == [{"passage_revision": "rechunked"}]

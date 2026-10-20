@@ -1,5 +1,6 @@
 """Revision-aware keyword/vector fusion. pgvector is a measured baseline, not a lock-in."""
 
+import hashlib
 import math
 from functools import lru_cache
 
@@ -8,6 +9,13 @@ from .db import digest
 SEMANTIC_CONTENT = (
     "(p.method<>'metadata' OR COALESCE(i.metadata->>'content_tier','')<>'private_original')"
 )
+# A rejection holds only for the exact passage text and model space it was made for.
+REJECTED = """embedding_rejections r ON r.passage_id=p.id AND r.model=%s AND r.revision=%s
+    AND r.passage_revision=p.revision AND r.text_sha256=encode(sha256(convert_to(p.text,'UTF8')),'hex')"""
+
+
+class ContextLengthExceeded(ValueError):
+    pass
 
 
 def fuse(rankings, k=60):
@@ -61,7 +69,14 @@ def embed(settings, texts):
             },
             timeout=120,
         )
-        response.raise_for_status()
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as error:
+            if "exceeds the context length" in response.text:
+                raise ContextLengthExceeded(
+                    "passage exceeds model context length; rechunk rather than silently truncate"
+                ) from error
+            raise
         vectors = response.json()["embeddings"]
         if len(vectors) != len(texts):
             raise ValueError("embedding response count does not match input")
@@ -80,40 +95,73 @@ def embed(settings, texts):
     return vectors.tolist()
 
 
+def _embed_isolating(settings, rows):
+    """Bisect only context-length refusals; any other provider error fails the job."""
+    try:
+        return list(zip(rows, embed(settings, [row["text"] for row in rows]), strict=True)), []
+    except ContextLengthExceeded as error:
+        if len(rows) == 1:
+            return [], [(rows[0], str(error))]
+        halves = [
+            _embed_isolating(settings, part)
+            for part in (rows[: len(rows) // 2], rows[len(rows) // 2 :])
+        ]
+        return halves[0][0] + halves[1][0], halves[0][1] + halves[1][1]
+
+
 def embed_pending(db, limit=1000, heartbeat=lambda _: None):
     settings = db.settings
     if not settings.embedding_revision:
         raise ValueError("embedding revision is not pinned")
+    space = (settings.embedding_model, settings.embedding_revision)
     rows = db.rows(
-        f"""SELECT p.id,p.text FROM passages p JOIN items i ON i.id=p.item_id LEFT JOIN embeddings e
-        ON e.passage_id=p.id AND e.model=%s AND e.revision=%s WHERE p.active AND e.passage_id IS NULL
+        f"""SELECT p.id,p.text,p.revision FROM passages p JOIN items i ON i.id=p.item_id LEFT JOIN embeddings e
+        ON e.passage_id=p.id AND e.model=%s AND e.revision=%s LEFT JOIN {REJECTED}
+        WHERE p.active AND e.passage_id IS NULL AND r.passage_id IS NULL
         AND (p.asset_id IS NULL OR EXISTS(SELECT 1 FROM assets a WHERE a.id=p.asset_id AND a.active))
         AND {SEMANTIC_CONTENT}
         ORDER BY p.id LIMIT %s""",
-        (settings.embedding_model, settings.embedding_revision, limit),
+        (*space, *space, limit),
     )
+    rejected_total = 0
     # CPU-backed remote models can exceed the request deadline on eight long
     # passages. Keep that safe default; measured GPU workers can opt into bounded batches.
     # Each committed batch survives retries, with progress after every commit.
     batch_size = settings.embedding_batch_size if settings.embedding_url else 8
     for start in range(0, len(rows), batch_size):
         batch = rows[start : start + batch_size]
-        vectors = embed(settings, [row["text"] for row in batch])
+        embedded, rejected = _embed_isolating(settings, batch)
         with db.connect() as con:
             con.cursor().executemany(
                 """INSERT INTO embeddings(passage_id,model,revision,embedding)
                 VALUES (%s,%s,%s,%s::vector) ON CONFLICT DO NOTHING""",
                 [
-                    (
-                        row["id"],
-                        settings.embedding_model,
-                        settings.embedding_revision,
-                        vector_literal(vector, settings.embedding_dimensions),
-                    )
-                    for row, vector in zip(batch, vectors, strict=True)
+                    (row["id"], *space, vector_literal(vector, settings.embedding_dimensions))
+                    for row, vector in embedded
                 ],
             )
-        heartbeat({"embedded": min(start + batch_size, len(rows)), "total": len(rows)})
+            con.cursor().executemany(
+                """INSERT INTO embedding_rejections(passage_id,model,revision,passage_revision,text_sha256,reason)
+                VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT(passage_id,model,revision) DO UPDATE SET
+                passage_revision=EXCLUDED.passage_revision,text_sha256=EXCLUDED.text_sha256,
+                reason=EXCLUDED.reason,created_at=now()""",
+                [
+                    (
+                        row["id"],
+                        *space,
+                        row["revision"],
+                        hashlib.sha256(row["text"].encode()).hexdigest(),
+                        reason,
+                    )
+                    for row, reason in rejected
+                ],
+            )
+        rejected_total += len(rejected)
+        done = min(start + batch_size, len(rows))
+        heartbeat(
+            {"embedded": done - rejected_total, "total": len(rows)}
+            | ({"rejected": rejected_total} if rejected_total else {})
+        )
     return len(rows)
 
 
@@ -143,15 +191,18 @@ def index_coverage(db, *, where=None, params=()):
     where = f"({where}) AND {SEMANTIC_CONTENT}"
     settings = db.settings
     configured = bool(settings.embedding_revision)
+    space = (settings.embedding_model, settings.embedding_revision or "")
     row = db.rows(
-        f"""SELECT count(*) AS eligible_passages, count(e.passage_id) AS indexed_passages
+        f"""SELECT count(*) AS eligible_passages, count(e.passage_id) AS indexed_passages,
+        count(r.passage_id) FILTER (WHERE e.passage_id IS NULL) AS rejected_passages
         FROM passages p JOIN items i ON i.id=p.item_id LEFT JOIN embeddings e
-        ON e.passage_id=p.id AND e.model=%s AND e.revision=%s WHERE {where}""",
-        (settings.embedding_model, settings.embedding_revision or "", *params),
+        ON e.passage_id=p.id AND e.model=%s AND e.revision=%s LEFT JOIN {REJECTED} WHERE {where}""",
+        (*space, *space, *params),
     )[0]
-    total, indexed = (
+    total, indexed, rejected = (
         int(row["eligible_passages"]),
         int(row["indexed_passages"]) if configured else 0,
+        int(row["rejected_passages"]) if configured else 0,
     )
     return {
         "configured": configured,
@@ -159,7 +210,8 @@ def index_coverage(db, *, where=None, params=()):
         "model_revision": settings.embedding_revision if configured else None,
         "eligible_passages": total,
         "indexed_passages": indexed,
-        "pending_passages": total - indexed,
+        "rejected_passages": rejected,
+        "pending_passages": total - indexed - rejected,
         "fraction": indexed / total if configured and total else None,
         "status": "disabled"
         if not configured
@@ -168,7 +220,7 @@ def index_coverage(db, *, where=None, params=()):
         else "complete"
         if indexed == total
         else "partial",
-        "qualification": "Current active semantic passages within source/publication filters; catalog-only private-original metadata is excluded. Query terms are not a coverage filter. This is not relevance, historical completeness or truth.",
+        "qualification": "Current active semantic passages within source/publication filters; catalog-only private-original metadata is excluded. Query terms are not a coverage filter. Rejected passages exceed the model context, stay eligible but unindexed and are not pending until their content changes. This is not relevance, historical completeness or truth.",
     }
 
 

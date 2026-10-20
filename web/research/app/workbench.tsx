@@ -14,12 +14,13 @@ export function downloadJson(value: unknown, filename: string) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(value, null, 2)], {type: "application/json"}));
   const a = document.createElement("a"); a.href = url; a.download = filename; a.click(); URL.revokeObjectURL(url);
 }
-export type IndexCoverage = {configured:boolean; eligible_passages:number; indexed_passages:number; pending_passages:number; fraction:number|null; status:"disabled"|"empty"|"partial"|"complete"; model_revision:string|null};
+export type IndexCoverage = {configured:boolean; eligible_passages:number; indexed_passages:number; pending_passages:number; rejected_passages?:number; fraction:number|null; status:"disabled"|"empty"|"partial"|"complete"; model_revision:string|null};
 export function SemanticCoverage({coverage}:{coverage:IndexCoverage|null|undefined}) {
   if(!coverage)return null;
   return <aside className="card" aria-label="Cobertura da busca semântica"><h3>Cobertura da busca semântica</h3>
     {!coverage.configured?<p>A busca por significado não está configurada. A busca por termos continua disponível.</p>:coverage.status==="empty"?<p>Não há passagens disponíveis neste recorte.</p>:<><p>{coverage.indexed_passages.toLocaleString("pt-BR")} de {coverage.eligible_passages.toLocaleString("pt-BR")} passagens com vetores ({((coverage.fraction??0)*100).toLocaleString("pt-BR",{maximumFractionDigits:1})}%).</p>
-    {coverage.status==="partial"?<p>A busca por significado cobre parte deste recorte. A busca combinada também procura por termos nas passagens disponíveis, inclusive nas que ainda não têm vetores.</p>:<p>Todas as passagens disponíveis neste recorte têm vetores para a versão atual do modelo.</p>}</>}
+    {coverage.status==="partial"?<p>A busca por significado cobre parte deste recorte. A busca combinada também procura por termos nas passagens disponíveis, inclusive nas que ainda não têm vetores.</p>:<p>Todas as passagens disponíveis neste recorte têm vetores para a versão atual do modelo.</p>}
+    {coverage.rejected_passages?<p>{coverage.rejected_passages.toLocaleString("pt-BR")} passagens excedem o contexto do modelo e ficam sem vetores até serem divididas; continuam encontráveis por termos.</p>:null}</>}
     <p className="muted">Contagem das passagens ativas nas fontes e datas selecionadas; os termos da pergunta não reduzem essa contagem. Cobertura de vetores não mede relevância, veracidade nem a completude do histórico original.</p>
   </aside>;
 }
