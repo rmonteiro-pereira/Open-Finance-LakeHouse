@@ -29,6 +29,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MUTANTS = ROOT / "mutants"
+STATUS = MUTANTS / "run.status.json"
 
 SCOPES = {
     "access": (
@@ -177,11 +178,44 @@ def wait_for_capacity(cores):
         time.sleep(60)
 
 
+def gated_functions():
+    return [f for _, functions in SCOPES.values() for f in functions]
+
+
+def meta_path(function):
+    module = function.rpartition(".")[0]
+    return MUTANTS / (module.replace(".", "/") + ".py.meta")
+
+
+def run_problems():
+    """A failed or missing mutmut run must fail the gate, never score as a pass."""
+    if not STATUS.exists():
+        return ["no completed mutation run in mutants/ (run without --report-only)"]
+    returncode = json.loads(STATUS.read_text())["returncode"]
+    if returncode != 0:
+        log = (MUTANTS / "run.log").read_text(errors="replace").splitlines()[-15:]
+        return [f"mutmut exited with {returncode}; end of mutants/run.log:", *log]
+    missing = sorted({str(meta_path(f)) for f in gated_functions() if not meta_path(f).exists()})
+    return [f"mutation metadata missing: {path}" for path in missing]
+
+
 def results():
     codes = {}
     for meta in MUTANTS.rglob("*.meta"):
         codes.update(json.loads(meta.read_text())["exit_code_by_key"])
     return codes
+
+
+def missing_functions(codes):
+    """Every configured function must produce at least one mutant, all of them run."""
+    problems = []
+    for function in gated_functions():
+        names = [n for n in codes if n.startswith(function + "__mutmut_")]
+        if not names:
+            problems.append(f"no mutants generated for {function}")
+        elif any(codes[n] is None for n in names):
+            problems.append(f"mutants of {function} were not run")
+    return problems
 
 
 def identical_source():
@@ -229,7 +263,7 @@ def report(codes, verbose):
         killed = [n for n in live if codes[n] in KILLED]
         survived = [n for n in live if codes[n] in SURVIVED]
         untested = [n for n in live if codes[n] not in KILLED | SURVIVED]
-        score = len(killed) / len(live) if live else 1.0
+        score = len(killed) / len(live) if live else 0.0  # nothing testable is not a pass
         failed |= score < target
         print(
             f"{scope:<10}{target:>7.0%}{len(names):>9}{len(killed):>8}{len(survived):>10}"
@@ -329,7 +363,7 @@ def main():
         wait_for_capacity(len(cores))
         shutil.rmtree(MUTANTS, ignore_errors=True)
         MUTANTS.mkdir()
-        patterns = [f + "__mutmut_*" for _, functions in SCOPES.values() for f in functions]
+        patterns = [f + "__mutmut_*" for f in gated_functions()]
         # Offline tests only: the PostgreSQL tests publish Delta tables, and the Delta
         # writer's runtime does not survive the fork that mutmut makes for each mutant.
         env = {**os.environ, "OFL_RESEARCH_TEST_DATABASE_URL": ""}
@@ -346,16 +380,23 @@ def main():
         pinned = set(cores[-workers:])
         started = time.monotonic()
         with open(MUTANTS / "run.log", "w") as log:
-            subprocess.run(
+            returncode = subprocess.run(
                 command,
                 env=env,
                 check=False,
                 stdout=log,
                 stderr=subprocess.STDOUT,
                 preexec_fn=lambda: os.sched_setaffinity(0, pinned),
-            )
+            ).returncode
+        STATUS.write_text(json.dumps({"returncode": returncode}))
         print(f"mutation run: {time.monotonic() - started:.0f} s, {workers} workers")
-    codes = results()
+    problems = run_problems()
+    codes = results() if not problems else {}
+    problems += missing_functions(codes)
+    if problems:
+        for problem in problems:
+            print(f"gate error: {problem}")
+        sys.exit(2)
     failed = report(codes, args.verbose)
     if args.idle_tests:
         idle_tests(codes, workers)

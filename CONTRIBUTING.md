@@ -49,7 +49,8 @@ uv run --extra dev --extra research --with mutmut==3.3.1 python tools/mutation_g
 | evidence | `reference_review.reference_reviews`, `text_hash`; `dataset_bundle.bundle`; `dataset_replay.replay` | 95 % |
 | other | `workspaces.evidence`, `validate`; `analytics.release_diff`, `prepare_dataset` | 85 % |
 
-The command exits non-zero when a scope is below target. `-v` lists every mutant that was
+The command exits 1 when a scope is below target, and 2 when the mutmut run itself failed,
+its metadata is missing, or a configured function produced no mutants. `-v` lists every mutant that was
 not killed and each equivalent mutant with its reason; `--idle-tests` lists tests that touch
 a gated function but kill no mutant. Equivalent mutants are either source-identical to the
 original or listed, with the reason, in `EQUIVALENT` in `tools/mutation_gate.py`; mutant
