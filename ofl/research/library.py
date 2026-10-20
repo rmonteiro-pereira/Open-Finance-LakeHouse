@@ -10,7 +10,7 @@ from urllib.parse import urlsplit
 from psycopg.types.json import Jsonb
 
 from .archive import index_text, upsert_item
-from .db import digest
+from .db import digest, lock_item
 
 COLLECTION = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 SHA = re.compile(r"^[a-f0-9]{64}$")
@@ -205,7 +205,7 @@ def index_news(con, db, store, row, object_key, *, policies=None):
     )
     record.update(item_type="news", description=summary, creators=str(row.get("author") or ""))
     identity = digest(["news", record["source_id"]])
-    con.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (identity,))
+    lock_item(con, identity)
     previous = con.execute("SELECT metadata FROM items WHERE id=%s", (identity,)).fetchone()
     observed_time = datetime.fromisoformat(str(row.get("fetched_at") or "").replace("Z", "+00:00"))
     if observed_time.tzinfo is None:

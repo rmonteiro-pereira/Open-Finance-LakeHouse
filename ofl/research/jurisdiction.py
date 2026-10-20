@@ -33,6 +33,9 @@ import unicodedata
 
 from psycopg.types.json import Jsonb
 
+from . import chunking
+from .db import lock_item
+
 VERSION = "jurisdiction-v4"
 RULES = ("off", "boost", "exclude")
 # Query-side rules act only for jurisdictions whose v4 tags passed the hand-check
@@ -122,9 +125,9 @@ FOREIGN_PATTERNS = [
 MAX_MATCHES = 40
 RELATED_WORDS = 30
 DOMINANCE = 3
-# Must equal ofl.research.archive.chunks: passages are 350-word windows overlapping by 40.
-CHUNK_WORDS = 350
-CHUNK_OVERLAP = 40
+# Passages are the windows of ofl.research.chunking: at most 350 words, overlapping by 40.
+CHUNK_WORDS = chunking.WORDS
+CHUNK_OVERLAP = chunking.OVERLAP
 
 # (code, tier, kind, pattern). `(?-i:...)` marks case-sensitive acronyms and names.
 MARKERS = [
@@ -295,14 +298,30 @@ def _merge(spans):
     return merged
 
 
+def _starts(texts):
+    """First document word of each chunk, from the chunk sizes and their overlaps."""
+    starts, start = [], 0
+    for text in texts:
+        size = len(text.split())
+        starts.append(start)
+        start += size - chunking.overlap(size)
+    return starts
+
+
 def document(texts):
-    """Rebuild a document's words from its chunk sequence, or None if they do not chain."""
-    words = [text.split() for text in texts]
-    step = CHUNK_WORDS - CHUNK_OVERLAP
-    for previous, current in zip(words, words[1:]):
-        if len(previous) != CHUNK_WORDS or current[:CHUNK_OVERLAP] != previous[step:]:
-            return None
-    return words[0] + [word for chunk in words[1:] for word in chunk[CHUNK_OVERLAP:]]
+    """Rebuild a document's words from its chunk sequence, or None if they do not chain.
+
+    The chain must be exactly what chunking cuts from the rebuilt words, with the token
+    budget or with the word-only windows that passages were cut with before it.
+    """
+    chunks = [text.split() for text in texts]
+    words = []
+    for start, chunk in zip(_starts(texts), chunks, strict=True):
+        words[start:] = chunk
+    for budget in (chunking.TOKEN_BUDGET, None):
+        if [words[a:b] for a, b in chunking.windows(words, budget)] == chunks:
+            return words
+    return None
 
 
 def passage_regions(ordinals, texts):
@@ -332,13 +351,13 @@ def passage_regions(ordinals, texts):
         for index, (start, end) in enumerate(joined)
         if start >= a and end <= b
     }
-    step = CHUNK_WORDS - CHUNK_OVERLAP
+    starts = _starts(texts)
     return [
         {
             "related": _merge(
                 span
                 for index, span in enumerate(_word_spans(text.split()))
-                if ordinal * step + index in inside
+                if starts[ordinal] + index in inside
             ),
             "unclassified": [],
             "context": "document",
@@ -589,7 +608,10 @@ def backfill(db, *, batch=1000, dry_run=False, progress=lambda _: None):
     Each passage is tagged in the context of its document, rebuilt from all passages of
     the same item revision (active or not), exactly as at ingestion. When the chain is
     incomplete, regions it cannot classify are marked `unclassified` and do not count.
-    `batch` bounds document groups per transaction.
+    Each item is re-read and updated in its own transaction under the item lock that
+    every passage writer takes, so a chain superseded meanwhile (by re-ingestion or
+    rechunk) is seen as it is now: its passages are no longer pending. `batch` bounds
+    the document groups read per round.
     """
     pending = db.rows(
         f"SELECT count(*) AS n FROM passages p JOIN items i ON i.id=p.item_id WHERE {PENDING}",
@@ -607,21 +629,27 @@ def backfill(db, *, batch=1000, dry_run=False, progress=lambda _: None):
         )
         if not groups:
             return result
-        rows = db.rows(
-            f"""SELECT p.id,p.item_id,p.revision,p.ordinal,p.text,i.title,{PENDING} AS pending
-            FROM passages p JOIN items i ON i.id=p.item_id
-            WHERE (p.item_id,p.revision) IN (SELECT * FROM unnest(%s::text[],%s::text[]))
-            ORDER BY p.item_id,p.revision,p.ordinal""",
-            (VERSION, [g["item_id"] for g in groups], [g["revision"] for g in groups]),
-        )
-        updates, partial = batch_updates(rows)
-        result["partial_context"] += partial
+        revisions = {}
+        for group in groups:
+            revisions.setdefault(group["item_id"], []).append(group["revision"])
         with db.connect() as con:
-            con.cursor().executemany(
-                """UPDATE passages SET jurisdiction=%s,jurisdiction_evidence=%s,
-                jurisdiction_tagger=%s WHERE id=%s""",
-                updates,
-            )
+            for item_id, item_revisions in revisions.items():
+                lock_item(con, item_id)
+                rows = con.execute(
+                    f"""SELECT p.id,p.item_id,p.revision,p.ordinal,p.text,i.title,
+                    {PENDING} AS pending FROM passages p JOIN items i ON i.id=p.item_id
+                    WHERE p.item_id=%s AND p.revision=ANY(%s)
+                    ORDER BY p.item_id,p.revision,p.ordinal""",
+                    (VERSION, item_id, item_revisions),
+                ).fetchall()
+                updates, partial = batch_updates(rows)
+                con.cursor().executemany(
+                    """UPDATE passages SET jurisdiction=%s,jurisdiction_evidence=%s,
+                    jurisdiction_tagger=%s WHERE id=%s""",
+                    sorted(updates, key=lambda update: update[-1]),
+                )
+                con.commit()  # releases the item lock
+                result["partial_context"] += partial
+                result["tagged"] += len(updates)
         last = (groups[-1]["item_id"], groups[-1]["revision"])
-        result["tagged"] += len(updates)
         progress(dict(result))

@@ -105,7 +105,7 @@ do_not_mutate = [
     "ofl/streaming/*",
     "ofl/transform/*",
     "ofl/research/__init__.py",
-    "ofl/research/archive.py",
+    # archive.py is mutated, but only its functions listed in the gate's SCOPES run.
     "ofl/research/cli.py",
     "ofl/research/db.py",
     "ofl/research/imports.py",
@@ -131,6 +131,7 @@ tests_dir = [
     "tests/test_workbench.py",
     "tests/test_product_workflows.py",
     "tests/test_jurisdiction.py",
+    "tests/test_chunking.py",
     # These start a separate interpreter that cannot load the mutated package.
     "--deselect=tests/test_research_agents.py::test_real_stdio_mcp_initialization_and_discovery",
     "--deselect=tests/test_dataset_reproduction.py::test_offline_reproduction_matches_server_for_null_calendars_and_transforms",

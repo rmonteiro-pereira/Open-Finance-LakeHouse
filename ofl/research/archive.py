@@ -10,33 +10,44 @@ from pathlib import Path, PurePosixPath
 
 from psycopg.types.json import Jsonb
 
-from . import jurisdiction
-from .db import digest
+from . import chunking, jurisdiction
+from .db import digest, lock_item
 
 VERSION = "archive-v1"
 
 
-def chunks(text: str, words=jurisdiction.CHUNK_WORDS, overlap=jurisdiction.CHUNK_OVERLAP):
-    """Page-bounded passages; embedding adapters enforce their tokenizer limit."""
-    tokens = text.split()
-    for start in range(0, len(tokens), words - overlap):
-        yield " ".join(tokens[start : start + words])
-        if start + words >= len(tokens):
-            break
+def chunks(text: str, budget=chunking.TOKEN_BUDGET):
+    """Page-bounded passages within the embedding token budget (see chunking)."""
+    words = text.split()
+    for start, end in chunking.windows(words, budget):
+        yield " ".join(words[start:end])
 
 
 def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None, evidence=None):
-    # Only replace the appropriate metadata/page revision, never another asset.
+    lock_item(con, item_id)
+    # Only replace the appropriate metadata/page revision, never another asset. Row
+    # locks are taken in id order before the bulk update (defence in depth).
+    scope = """item_id=%s AND method=%s
+        AND asset_id IS NOT DISTINCT FROM %s AND page IS NOT DISTINCT FROM %s"""
     con.execute(
-        """UPDATE passages SET active=false WHERE item_id=%s AND method=%s
-        AND asset_id IS NOT DISTINCT FROM %s AND page IS NOT DISTINCT FROM %s""",
+        f"SELECT id FROM passages WHERE {scope} ORDER BY id FOR UPDATE",
         (item_id, method, asset_id, page),
     )
+    con.execute(
+        f"UPDATE passages SET active=false WHERE {scope}", (item_id, method, asset_id, page)
+    )
     title = con.execute("SELECT title FROM items WHERE id=%s", (item_id,)).fetchone()["title"]
-    passages = list(chunks(text))
+    words = text.split()
+    spans = chunking.windows(words)
+    if spans != chunking.windows(words, None):
+        # The token budget re-cut this text: new passage identities, never in-place edits.
+        revision = digest([revision, chunking.VERSION])
+    passages = [" ".join(words[start:end]) for start, end in spans]
     regions = jurisdiction.passage_regions(range(len(passages)), passages)
-    for ordinal, passage in enumerate(passages):
-        identity = digest([item_id, revision, ordinal])
+    identities = [digest([item_id, revision, ordinal]) for ordinal in range(len(passages))]
+    # Written in id order, so concurrent writers would touch these rows in one order.
+    for ordinal in sorted(range(len(passages)), key=identities.__getitem__):
+        identity, passage = identities[ordinal], passages[ordinal]
         con.execute(
             """INSERT INTO passages(id,item_id,asset_id,page,ordinal,text,revision,method,evidence,search,
             jurisdiction,jurisdiction_evidence,jurisdiction_tagger)
@@ -63,9 +74,114 @@ def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None
         )
 
 
+def chain_plan(chain):
+    """What the current chunker does to one active chain (an item revision's passages).
+
+    `chain` rows hold ordinal, text, method, asset_id, page and evidence, in ordinal
+    order. Returns ("unchanged", None), ("unchained", None) when the passages cannot be
+    rebuilt into their source words, or ("rechunk", words).
+    """
+    shared = {(r["method"], r["asset_id"], r["page"], digest(r["evidence"])) for r in chain}
+    texts = [r["text"] for r in chain]
+    ordinals = [r["ordinal"] for r in chain]
+    words = jurisdiction.document(texts) if ordinals == list(range(len(chain))) else None
+    if words is None or len(shared) != 1:
+        return "unchained", None
+    if [words[a:b] for a, b in chunking.windows(words)] == [t.split() for t in texts]:
+        return "unchanged", None
+    return "rechunk", words
+
+
+def rechunk(db, *, batch=1000, dry_run=False, progress=lambda _: None):
+    """Re-cut active passage chains that the current chunker would cut differently.
+
+    A chain is rebuilt into its words and indexed again exactly as at ingestion: its
+    passages become inactive, the new ones are tagged in document context and wait for
+    embedding. Rejections of superseded passages stop counting with them. Chains whose
+    words cannot be rebuilt are counted and left alone. `batch` bounds chains per read.
+    """
+    keys = db.rows("SELECT DISTINCT item_id,revision FROM passages WHERE active ORDER BY 1,2")
+    result = {
+        "chunker": chunking.VERSION,
+        "token_budget": chunking.TOKEN_BUDGET,
+        "chains": len(keys),
+        "rechunk": 0,
+        "unchained": 0,
+        "superseded_passages": 0,
+        "new_passages": 0,
+        "superseded_rejections": 0,
+        "changed": 0,
+        "dry_run": dry_run,
+    }
+    for offset in range(0, len(keys), batch):
+        part = keys[offset : offset + batch]
+        rows = db.rows(
+            """SELECT p.id,p.item_id,p.revision,p.ordinal,p.text,p.method,p.asset_id,p.page,
+            p.evidence,(SELECT count(*) FROM embedding_rejections r WHERE r.passage_id=p.id
+            AND r.passage_revision=p.revision) AS rejections
+            FROM passages p WHERE p.active
+            AND (p.item_id,p.revision) IN (SELECT * FROM unnest(%s::text[],%s::text[]))
+            ORDER BY p.item_id,p.revision,p.ordinal""",
+            ([k["item_id"] for k in part], [k["revision"] for k in part]),
+        )
+        chains = {}
+        for row in rows:
+            chains.setdefault((row["item_id"], row["revision"]), []).append(row)
+        for chain in chains.values():
+            state, words = chain_plan(chain)
+            if state == "unchained":
+                result["unchained"] += 1
+            if state != "rechunk":
+                continue
+            if not dry_run and not _replace_chain(db, chain, words):
+                result["changed"] += 1  # superseded since it was read: left to its writer
+                continue
+            result["rechunk"] += 1
+            result["superseded_passages"] += len(chain)
+            result["new_passages"] += len(chunking.windows(words))
+            result["superseded_rejections"] += sum(r["rejections"] for r in chain)
+        progress(dict(result))
+    return result
+
+
+def chain_current(chain, active):
+    """True when the passages still active for the chain's page are exactly the chain.
+
+    `active` holds the ids active now for the chain's item, method, asset and page (with
+    an active asset). Anything else means another write superseded or extended it.
+    """
+    return sorted(active) == sorted(r["id"] for r in chain)
+
+
+def _replace_chain(db, chain, words):
+    first = chain[0]
+    with db.connect() as con:
+        lock_item(con, first["item_id"])
+        active = con.execute(
+            """SELECT p.id FROM passages p LEFT JOIN assets a ON a.id=p.asset_id
+            WHERE p.item_id=%s AND p.method=%s AND p.asset_id IS NOT DISTINCT FROM %s
+            AND p.page IS NOT DISTINCT FROM %s AND p.active AND (p.asset_id IS NULL OR a.active)""",
+            (first["item_id"], first["method"], first["asset_id"], first["page"]),
+        ).fetchall()
+        if not chain_current(chain, [r["id"] for r in active]):
+            return False
+        index_text(
+            con,
+            item_id=first["item_id"],
+            revision=first["revision"],
+            text=" ".join(words),
+            method=first["method"],
+            asset_id=first["asset_id"],
+            page=first["page"],
+            evidence=first["evidence"],
+        )
+    return True
+
+
 def upsert_item(con, source, record, fallback_id):
     source_id = str(record.get("source_id") or fallback_id)
     identity = digest([source, source_id])
+    lock_item(con, identity)
     title = str(record.get("title") or source_id)
     revision = digest(record)
     date_start, date_end = record.get("date_start") or None, record.get("date_end") or None

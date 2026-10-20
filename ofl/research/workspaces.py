@@ -21,7 +21,24 @@ def owned(con, actor, workspace_id):
     return item
 
 
-def evidence(con, references):
+def restricted(row):
+    """A reference the current news policy withholds: its item is now headline-only and
+    the passage or its asset is no longer active (the captured text exceeded the tier)."""
+    return (
+        row["source"] == "news"
+        and row["metadata"].get("content_tier") == "headline_only"
+        and (not row["passage_active"] or row["asset_active"] is False)
+    )
+
+
+def evidence(con, references, previous=()):
+    """Capture referenced passages as stored, for a new revision.
+
+    A new reference needs an active passage of an active asset. A reference already
+    captured by the previous revision (`previous`) may point to a passage since
+    superseded by re-ingestion or re-chunking; it keeps its stored text unless the
+    current source policy restricts it.
+    """
     if len(references) > 50 or len(set(references)) != len(references):
         raise ValueError("provide at most 50 distinct passage references")
     result = []
@@ -29,18 +46,20 @@ def evidence(con, references):
         row = con.execute(
             """SELECT p.id,p.text,p.revision,p.method,p.page,p.asset_id,p.item_id,
           i.title,i.source,i.date_start,i.date_end,i.date_precision,i.metadata,
-          a.sha256 FROM passages p JOIN items i ON i.id=p.item_id
-          LEFT JOIN assets a ON a.id=p.asset_id WHERE p.id=%s AND p.active
-          AND (p.asset_id IS NULL OR a.active)""",
+          a.sha256,p.active AS passage_active,a.active AS asset_active
+          FROM passages p JOIN items i ON i.id=p.item_id
+          LEFT JOIN assets a ON a.id=p.asset_id WHERE p.id=%s""",
             (passage_id,),
         ).fetchone()
-        if not row:
+        current = row and row["passage_active"] and row["asset_active"] is not False
+        if not row or not (current or (passage_id in previous and not restricted(row))):
             raise ValueError("evidence reference unavailable")
+        del row["passage_active"], row["asset_active"]
         result.append(json.loads(json.dumps(row, default=str)))
     return result
 
 
-def validate(con, kind, body, *, generated=False, reviewer=None):
+def validate(con, kind, body, *, generated=False, reviewer=None, previous=()):
     if kind == "check" and not generated:
         body = {k: v for k, v in body.items() if k not in {"result", "comparison", "executed_at"}}
     if len(json.dumps(body, ensure_ascii=False)) > 500000:
@@ -52,7 +71,7 @@ def validate(con, kind, body, *, generated=False, reviewer=None):
         refs = body.get("references", [])
         if not isinstance(refs, list) or any(not isinstance(x, str) for x in refs):
             raise ValueError("invalid references")
-        captured = evidence(con, refs)
+        captured = evidence(con, refs, previous)
         findings = body.get("findings", [])
         if not isinstance(findings, list) or len(findings) > 50:
             raise ValueError("at most 50 findings")
@@ -143,7 +162,13 @@ def save(db, actor, kind, title, body, *, workspace_id=None, expected_revision=0
             )
         if item["current_revision"] != expected_revision:
             raise FileExistsError("workspace revision changed; reload before saving")
-        body = validate(con, kind, body, generated=generated, reviewer=actor)
+        prior = con.execute(
+            "SELECT body FROM workspace_revisions WHERE workspace_id=%s AND revision=%s",
+            (workspace_id, expected_revision),
+        ).fetchone()
+        captured = prior["body"]["content"].get("evidence", []) if prior else []
+        previous = {ref["id"] for ref in captured if isinstance(ref, dict)}
+        body = validate(con, kind, body, generated=generated, reviewer=actor, previous=previous)
         revision = expected_revision + 1
         checksum = digest({"kind": kind, "title": title, "body": body})
         con.execute(
@@ -177,12 +202,7 @@ def load(db, actor, workspace_id, revision=None):
                 "SELECT p.active AS passage_active,a.active AS asset_active,i.source,i.metadata FROM passages p JOIN items i ON i.id=p.item_id LEFT JOIN assets a ON a.id=p.asset_id WHERE p.id=%s",
                 (ref["id"],),
             ).fetchone()
-            if (
-                current
-                and current["source"] == "news"
-                and current["metadata"].get("content_tier") == "headline_only"
-                and (not current["passage_active"] or current["asset_active"] is False)
-            ):
+            if current and restricted(current):
                 blocked.add(ref["id"])
         if blocked:
             content["evidence"] = [
@@ -198,8 +218,12 @@ def load(db, actor, workspace_id, revision=None):
                 for finding in content.get("findings", [])
             ]
             content["reference_reviews"] = [
-                {**review, "rationale": "[source-linked review restricted by current source policy]"}
-                if review["passage_id"] in blocked else review
+                {
+                    **review,
+                    "rationale": "[source-linked review restricted by current source policy]",
+                }
+                if review["passage_id"] in blocked
+                else review
                 for review in content.get("reference_reviews", [])
             ]
     return {

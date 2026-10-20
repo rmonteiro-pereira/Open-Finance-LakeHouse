@@ -47,6 +47,7 @@ SCOPES = {
             "ofl.research.workspaces.x_owned",
             "ofl.research.workspaces.x_schedule_due",
             "ofl.research.workspaces.x_load",
+            "ofl.research.workspaces.x_restricted",
         ],
     ),
     "money": (
@@ -91,6 +92,7 @@ SCOPES = {
             "ofl.research.jurisdiction.x_find",
             "ofl.research.jurisdiction.x__word_spans",
             "ofl.research.jurisdiction.x__merge",
+            "ofl.research.jurisdiction.x__starts",
             "ofl.research.jurisdiction.x_document",
             "ofl.research.jurisdiction.x_passage_regions",
             "ofl.research.jurisdiction.x_decide",
@@ -106,6 +108,12 @@ SCOPES = {
             "ofl.research.jurisdiction.x_foreign",
             "ofl.research.jurisdiction.x_columns",
             "ofl.research.jurisdiction.x_batch_updates",
+            # Token-bounded passage windows and the plan that re-cuts older chains.
+            "ofl.research.chunking.x_word_cost",
+            "ofl.research.chunking.x_overlap",
+            "ofl.research.chunking.x_windows",
+            "ofl.research.archive.x_chain_plan",
+            "ofl.research.archive.x_chain_current",
             # Search integration of the rule, extracted from search() so it can be gated.
             "ofl.research.search.x_fuse",
             "ofl.research.search.x__projection",
@@ -214,9 +222,12 @@ EQUIVALENT = {
     "ofl.research.jurisdiction.x_related_spans": {
         13: "a marker ends on a non-space character, so no word starts exactly there",
     },
+    "ofl.research.jurisdiction.x_document": {
+        **dict.fromkeys((5, 8, 10), "_starts returns one start per text: equal lengths"),
+    },
     "ofl.research.jurisdiction.x_passage_regions": {
         **dict.fromkeys(
-            (61, 64, 65),
+            (60, 63, 64),
             "document branch only runs when ordinals == range(len(texts)): equal lengths",
         ),
     },
@@ -256,10 +267,10 @@ EQUIVALENT = {
     "ofl.research.workspaces.x_validate": {
         26: _DEFAULT_SAME_ERROR,
         28: _DEFAULT_SAME_ERROR,
-        99: _DEFAULT_SAME_ERROR,
         101: _DEFAULT_SAME_ERROR,
-        191: _DEFAULT_SAME_ERROR,
+        103: _DEFAULT_SAME_ERROR,
         193: _DEFAULT_SAME_ERROR,
+        195: _DEFAULT_SAME_ERROR,
     },
 }
 

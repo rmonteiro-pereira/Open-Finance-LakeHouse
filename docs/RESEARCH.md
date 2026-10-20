@@ -209,6 +209,49 @@ the tokenizer limit instead of silently truncated. Changed passages get new
 identities; inactive revisions never participate in retrieval even if their vectors
 are retained. Embeddings are private and model/version-scoped.
 
+Passages are windows of at most 350 words that also stay within an estimated
+2,046-token budget (the deployed model's 2,048-token context minus its two sequence
+markers; `ofl/research/chunking.py` documents the estimate and its calibration).
+The budget matters for text whose extraction glued words together: such a window
+ends early and the next one repeats a proportional overlap. Text whose windows all
+fit is cut exactly as before and keeps its passage identities; text the budget
+re-cuts gets a derived passage revision, so its new passages get new identities,
+jurisdiction tags in document context and embeddings, while the superseded ones
+and their rejections stop counting. Existing passages are brought in line with:
+
+```sh
+ofl research rechunk --dry-run   # chains to re-cut, passages superseded and new
+ofl research rechunk             # one transaction per chain; rerunning finds nothing
+ofl research embed --if-idle     # the embedding lane embeds the new passages
+```
+
+Original page text is not stored, so a chain is rebuilt from its passages' chained
+overlaps (as in the jurisdiction backfill); a chain that does not rebuild exactly is
+counted as `unchained` and left as it is.
+
+Every transaction that writes an item's passages (catalog and archive ingestion,
+news and letter sync, page processing, the jurisdiction backfill, rechunk) first
+takes the same item-level advisory lock and reads the passage state it depends on
+only after that; import and asset locks always come before it. Rechunk re-reads the
+item's active passages under that lock and replaces a chain only if they are still
+exactly the chain it planned; otherwise it counts the chain as `changed` and leaves
+it to the writer that superseded it, so a concurrent re-ingestion or news policy
+downgrade is never undone. The backfill likewise re-reads and tags each item in its
+own transaction under the lock, so passages superseded meanwhile are no longer
+pending. Bulk deactivations lock their rows in id order and new passages are written
+in id order. Rechunk and the backfill hold one item lock at a time and touch only
+that item's passages; the remaining deadlock risk is between writers that take
+several item locks in one transaction in no fixed order (catalog imports, library
+sync), which PostgreSQL detects by aborting one of them, whose job is then retried.
+
+Saved investigations keep working across re-ingestion and re-chunking: when an
+existing investigation is edited, a reference its previous revision already captured
+may point to a superseded passage and keeps its stored text and reviews, unless the
+current news policy restricts it. A new reference still needs an active passage.
+
+A single whitespace-free run over the budget still forms its own window and stays
+rejected by the embedding step rather than being cut inside a word.
+
 The default research image omits model runtimes. Build with
 `--build-arg INCLUDE_EMBEDDINGS=1` when enabling local inference, and persist
 `HF_HOME` on private storage to avoid downloading weights on each restart. Measure

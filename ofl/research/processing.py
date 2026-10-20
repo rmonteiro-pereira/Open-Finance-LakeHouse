@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 
 from .archive import add_candidate, import_csv_table, index_text
-from .db import digest
+from .db import digest, lock_item
 
 VERSION = "pages-v1"
 
@@ -212,7 +212,14 @@ def _page(db, store, asset, number, path, page, heartbeat):
     (folder / "text.txt").write_text(text, encoding="utf-8")
     (folder / "evidence.json").write_text(json.dumps(evidence, ensure_ascii=False))
     with db.connect() as con:
+        # The asset lock is held by process_asset's own transaction; this one takes
+        # only the item lock, which every passage writer shares.
+        lock_item(con, asset["item_id"])
         # A revision that switches text/OCR methods supersedes the old page too.
+        con.execute(
+            "SELECT id FROM passages WHERE asset_id=%s AND page=%s ORDER BY id FOR UPDATE",
+            (asset["id"], number),
+        )
         con.execute(
             "UPDATE passages SET active=false WHERE asset_id=%s AND page=%s", (asset["id"], number)
         )
