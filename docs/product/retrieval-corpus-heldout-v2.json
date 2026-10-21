@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "split": "held_out",
+  "cases": "retrieval-cases-heldout-v2.json",
+  "corpus": "research items table of the frozen evaluation copy",
+  "item_count": 6600,
+  "item_count_by_source": {
+    "news": 6309,
+    "manager_letter": 291
+  },
+  "max_date": "2026-10-19",
+  "max_date_definition": "max(COALESCE(date_end, date_start)) over items; manager letters carry no date",
+  "item_ids_sha256": "0c9bb83d69db4744d7aaa13c3f3a75376ad2310c3571d630847e51fb81e3c2ec",
+  "item_ids_hash_definition": "SHA-256 of the item ids sorted by Python code-point order, each followed by a newline, UTF-8"
+}

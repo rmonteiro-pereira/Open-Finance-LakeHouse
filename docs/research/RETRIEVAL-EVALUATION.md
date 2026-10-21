@@ -61,7 +61,7 @@ from ofl.research.retrieval_eval import corpus_manifest
 receipt = corpus_manifest(Database(ResearchSettings()))
 ```
 
-Keep the judgments in private storage for private sources:
+Judgments of non-public documents are kept outside the repository, in this form:
 
 ```json
 {
@@ -372,6 +372,50 @@ is unjudged:
 
 These are development cases: they were used to design the change and are not a held-out
 measurement.
+
+### Held-out measurement
+
+The second held-out set (`docs/product/retrieval-cases-heldout-v2.json`, 24 positive cases
+and 2 absent topics, with its corpus manifest `retrieval-corpus-heldout-v2.json`) was frozen
+before any result of this change was seen and run once, with no tuning afterwards. Both arms
+ran on the same corpus copy, whose 6,600 item ids match the manifest digest: the all-terms
+keyword arm as it was before this change, and the coverage arm. Vocabulary expansion and
+jurisdiction rules were off and vector search was exact, so the vector arm is identical in
+both.
+
+The top 20 of each arm and mode, plus up to ten documents per case whose title matches a query
+term, were pooled: 1,041 documents. They were judged blind to arm and mode with the same
+protocol as before (two judges on all tiers, a third on public tiers only, then an adjudicator
+on the 86 disagreements). 379 documents are relevant; the 22 that stayed `uncertain` count as
+not relevant. Agreement between the two all-tier judges was 96% (1,000 of 1,041), and 95% and
+94% between each of them and the public-tier judge (854 public documents).
+
+Over the 24 positive cases, with a ceiling of 0.883 (the mean of min(10, known relevant)/10)
+and a 95% interval from a 10,000-sample bootstrap over cases for the paired difference:
+
+| Mode | P@10 before | P@10 after | P@10 / ceiling | nDCG@10 | Paired P@10 difference |
+|---|---|---|---|---|---|
+| Keyword | 0.188 | 0.579 | 0.212 to 0.656 | 0.241 to 0.642 | +0.392 (+0.292 to +0.504) |
+| Vector | 0.729 | 0.729 | 0.825 | 0.854 | 0 |
+| Hybrid | 0.721 | 0.704 | 0.816 to 0.797 | 0.835 to 0.815 | -0.017 (-0.054 to +0.025) |
+
+- Keyword search rises on 22 cases and falls on none. The all-terms arm returned 56 documents
+  in total over the 24 cases; the coverage arm fills every top ten.
+- Hybrid search does not change beyond noise. It falls by 0.2 on `suspensão de rotas aéreas
+  pela alta do querosene de aviação` and `por que a bolsa de Tóquio subiu tanto e os juros lá
+  estão subindo`, and by 0.1 on six cases. It rises by 0.2 on `perspectivas do Partido
+  Republicano nas eleições de meio de mandato` and `carta anual: revisão do exercício e
+  perspectivas para o ano seguinte`, and by 0.1 on two. The nDCG@10 difference is -0.020
+  (-0.118 to +0.053).
+- Absent topics (`como cultivar orquídeas em vaso dentro de apartamento`, `regulamento de
+  torneios de xadrez por correspondência`): the all-terms keyword arm returns nothing for
+  either; the coverage arm returns ten documents for each (top scores 3.08 and 2.05, that is
+  three and two query terms covered), none relevant. Vector and hybrid search return ten
+  documents for each in both arms (top cosine similarity 0.43 and 0.45), none relevant.
+- The targets set before the run (hybrid P@10 of at least 0.75, at least 0.85 of the ceiling,
+  and a paired gain of at least 0.05) are not met: hybrid stays at 0.704, 0.797 of the ceiling.
+  The change makes keyword search usable on its own; it does not improve hybrid search on this
+  set, and keyword search no longer abstains on absent topics.
 
 ## Curated vocabulary expansion
 
