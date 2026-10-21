@@ -29,6 +29,7 @@ def configure(subparsers):
                 "sync",
                 "tag-jurisdiction",
                 "rechunk",
+                "rebuild-search",
             ),
         )
         parser.add_argument("path", nargs="?", type=Path)
@@ -38,6 +39,12 @@ def configure(subparsers):
             "--supersedes", help="published import replaced by an equal-priority correction"
         )
         parser.add_argument("--dry-run", action="store_true")
+        parser.add_argument(
+            "--target",
+            choices=("lexical-v1", "legacy"),
+            default="lexical-v1",
+            help="rebuild-search: vector version to write (legacy rolls back)",
+        )
         parser.add_argument("--once", action="store_true")
         parser.add_argument(
             "--lane", choices=("all", "default", "embedding", "checks"), default="all"
@@ -67,12 +74,12 @@ def dispatch(args):
     db = Database(settings)
     store = (
         None
-        if args.action in {"evaluate", "evaluate-fixture", "tag-jurisdiction", "rechunk"}
+        if args.action
+        in {"evaluate", "evaluate-fixture", "tag-jurisdiction", "rechunk", "rebuild-search"}
         else Store.from_settings(settings)
     )
     if args.action == "migrate":
-        db.migrate()
-        result = {"schema": 1}
+        result = {"schema": 1, "search": db.migrate()}
     elif args.action == "import":
         if args.path is None:
             raise ValueError("input path required")
@@ -174,6 +181,20 @@ def dispatch(args):
             dry_run=args.dry_run,
             progress=lambda value: print(json.dumps(value), file=sys.stderr, flush=True),
         )
+    elif args.action == "rebuild-search":
+        import sys
+
+        from .lexical import rebuild
+
+        if not 1 <= args.limit <= 10000:
+            raise ValueError("rebuild-search batch (--limit) must be between 1 and 10000")
+        result = rebuild(
+            db,
+            batch=args.limit,
+            dry_run=args.dry_run,
+            target=args.target,
+            progress=lambda value: print(json.dumps(value), file=sys.stderr, flush=True),
+        )
     elif args.action == "evaluate-fixture":
         import sys
         from .retrieval_fixture import evaluate_fixture
@@ -200,4 +221,14 @@ def dispatch(args):
     else:
         result = {"job_id": db.enqueue("build_observations", {})}
     print(json.dumps(result, ensure_ascii=False, default=str))
+    if args.action == "rebuild-search" and not args.dry_run and result["remaining"]:
+        import sys
+
+        # Rows a concurrent writer held stay in the old form: not a finished rebuild.
+        print(
+            f"rebuild-search: {result['remaining']} passages are still not in {args.target}; "
+            "pause passage writers and run it again",
+            file=sys.stderr,
+        )
+        return 1
     return 0
