@@ -1,7 +1,12 @@
 """Revision-aware keyword/vector fusion. pgvector is a measured baseline, not a lock-in."""
 
+import contextvars
 import hashlib
 import math
+import threading
+import time
+from collections import OrderedDict
+from contextlib import nullcontext
 from functools import lru_cache
 
 from . import jurisdiction as places
@@ -247,7 +252,82 @@ def _coverage(settings, row):
     }
 
 
-def search(
+# Scope coverage reused by search (coverage_cache_seconds), and the scopes being refreshed.
+_COVERAGE = OrderedDict()
+_COVERAGE_LIMIT = 256
+_COVERAGE_REFRESHING = set()
+_COVERAGE_REFRESH_LIMIT = 2
+_COVERAGE_LOCK = threading.Lock()
+
+
+def _coverage_key(db, where, params):
+    settings = db.settings
+    space = (settings.embedding_model, settings.embedding_revision)
+    return (settings.database_url, *space, where, tuple(params))
+
+
+def _store_coverage(key, value):
+    with _COVERAGE_LOCK:
+        _COVERAGE[key] = (time.monotonic(), value)
+        _COVERAGE.move_to_end(key)
+        while len(_COVERAGE) > _COVERAGE_LIMIT:
+            _COVERAGE.popitem(last=False)
+
+
+def _refresh_coverage(db, key, where, params):
+    try:
+        _store_coverage(key, index_coverage(db, where=where, params=params))
+    finally:
+        with _COVERAGE_LOCK:
+            _COVERAGE_REFRESHING.discard(key)
+
+
+def search_coverage(db, where, params):
+    """index_coverage of a search scope, reused for coverage_cache_seconds (ttl).
+
+    Up to ttl old, the cached value is returned. Between ttl and 2 x ttl it is still
+    returned while a background thread recomputes it (at most _COVERAGE_REFRESH_LIMIT
+    at a time). Older, missing, or after a failed refresh, the search scans. So a value
+    is never more than 2 x ttl old. 0 (the default) scans on every search.
+    """
+    ttl = getattr(db.settings, "coverage_cache_seconds", 0)
+    if not ttl:
+        return index_coverage(db, where=where, params=params)
+    key = _coverage_key(db, where, params)
+    with _COVERAGE_LOCK:
+        entry = _COVERAGE.get(key)
+        age = None if entry is None else time.monotonic() - entry[0]
+        usable = age is not None and age <= 2 * ttl
+        refresh = (
+            usable
+            and age > ttl
+            and key not in _COVERAGE_REFRESHING
+            and len(_COVERAGE_REFRESHING) < _COVERAGE_REFRESH_LIMIT
+        )
+        if refresh:
+            _COVERAGE_REFRESHING.add(key)
+    if not usable:
+        value = index_coverage(db, where=where, params=params)
+        _store_coverage(key, value)
+        return value
+    if refresh:
+        # A fresh context: the refresh must not borrow this request's session connection.
+        threading.Thread(
+            target=contextvars.Context().run,
+            args=(_refresh_coverage, db, key, where, params),
+            daemon=True,
+        ).start()
+    return entry[1]
+
+
+def search(db, text, **options):
+    """Search on one database connection (Database.session) when the database offers it."""
+    session = getattr(db, "session", None)
+    with session() if session else nullcontext():
+        return _search(db, text, **options)
+
+
+def _search(
     db,
     text,
     *,
@@ -280,7 +360,7 @@ def search(
     # Both arms and the coverage denominator see the same (for exclude, narrowed) scope.
     where, params = _narrowed_scope(rule, where, params)
     if coverage is None:
-        coverage = index_coverage(db, where=where, params=params)
+        coverage = search_coverage(db, where, params)
     projection = _projection(rule)
     rankings = []
     # Extracted bodies have only Portuguese lexemes; applying a simple NOT
@@ -293,7 +373,7 @@ def search(
     if mode in {"keyword", "hybrid"}:
         terms = _keyword_terms(db, text, expansion, arms)
         query, head, minimum = _keyword_query(projection, where, text, terms)
-        rows = db.rows(query, (*head, *params, minimum, candidates))
+        rows = db.rows(query, (*head, *params, *_keyword_tail(minimum, candidates)))
         count = len(terms["operands"])
         rankings.append(_keyword_fusion(rows, count) if mode == "hybrid" else rows)
     if mode in {"vector", "hybrid"} and not coverage["configured"]:
@@ -401,17 +481,28 @@ def _keyword_terms(db, text, expansion, arms):
     return terms | {"operands": operands, "expanded": combined, "matched": combined or ranked}
 
 
+# An item title's vector at weight A. schema.sql stores it in item_headings with this
+# same expression; a missing row is computed here.
+HEADING = "setweight(to_tsvector('{config}',research_search_text(COALESCE(i.title,''))),'A')"
+# Cost notes, because every hit is scored on a slow host:
+# - titles come from item_headings, not one to_tsvector per hit;
+# - `OFFSET 0` keeps each lateral from being inlined, so each rank is computed once;
+# - the expanded rank is skipped when its weight is 0 (no keyword expansion);
+# - `floor` drops items that cannot reach the result: the score is coverage plus a part
+#   below 1, so when `limit` items cover at least c operands, an item covering fewer
+#   scores below all of them. Coverage tiers below the minimum never count;
+# - the projection, with passage text, is read only for the returned rows.
 KEYWORD = """WITH query AS (
                 SELECT %s::tsquery AS strict, %s::tsquery AS ranked, %s::tsquery AS matched,
                     %s::text[]::tsquery[] AS operands, %s::float8 AS weight,
                     %s::tsquery AS expanded,
                     websearch_to_tsquery('{literal}',research_search_text(%s)) AS literal
                 ), hits AS (
-                SELECT p.id AS hit, p.item_id AS hit_item, p.search AS vector,
-                    setweight(to_tsvector('{config}',
-                        research_search_text(COALESCE(i.title,''))),'A') AS heading,
+                SELECT p.id AS hit, p.item_id AS hit_item, p.search AS vector, p.method,
+                    COALESCE(t.heading,{heading}) AS heading,
                     NOT p.search @@ query.matched AS literal_only
-                FROM passages p JOIN items i ON i.id=p.item_id CROSS JOIN query
+                FROM passages p JOIN items i ON i.id=p.item_id
+                LEFT JOIN item_headings t ON t.item_id=p.item_id CROSS JOIN query
                 WHERE {where} AND (p.search @@ query.matched OR
                     (p.method='metadata' AND strpos(query.literal::text,'!')=0
                     AND p.search @@ query.literal))
@@ -419,21 +510,32 @@ KEYWORD = """WITH query AS (
                 SELECT h.hit_item, count(DISTINCT o.n) AS covered FROM hits h CROSS JOIN query
                 CROSS JOIN LATERAL unnest(query.operands) WITH ORDINALITY AS o(operand,n)
                 WHERE h.vector @@ o.operand OR h.heading @@ o.operand GROUP BY h.hit_item
+                ), floor AS (
+                SELECT COALESCE(max(t.covered),0) AS covered FROM (SELECT covered,
+                    count(*) OVER (ORDER BY covered DESC) AS reach FROM coverage) t
+                WHERE t.covered >= %s AND t.reach >= %s
                 ), scored AS (
-                SELECT DISTINCT ON (p.item_id) {projection},COALESCE(c.covered,0) AS covered,
+                SELECT DISTINCT ON (h.hit_item) h.hit AS id,COALESCE(c.covered,0) AS covered,
                     COALESCE(c.covered,0)+0.9*r.strict/(1+r.strict)+0.1*r.loose/(1+r.loose) AS score
-                FROM hits h JOIN passages p ON p.id=h.hit JOIN items i ON i.id=p.item_id
-                CROSS JOIN query LEFT JOIN coverage c ON c.hit_item=h.hit_item
-                CROSS JOIN LATERAL (SELECT strpos(query.literal::text,'!')=0
-                    AND p.method='metadata' AS literal_rank) m
-                CROSS JOIN LATERAL (SELECT ts_rank_cd(h.heading || h.vector, CASE WHEN m.literal_rank
+                FROM hits h CROSS JOIN query LEFT JOIN coverage c ON c.hit_item=h.hit_item
+                CROSS JOIN LATERAL (SELECT h.heading || h.vector AS document,
+                    strpos(query.literal::text,'!')=0 AND h.method='metadata' AS literal_rank
+                    OFFSET 0) d
+                CROSS JOIN LATERAL (SELECT ts_rank_cd(d.document, CASE WHEN d.literal_rank
                     THEN query.strict || query.literal ELSE query.strict END) AS strict,
-                    ts_rank_cd(h.heading || h.vector, CASE WHEN m.literal_rank
+                    ts_rank_cd(d.document, CASE WHEN d.literal_rank
                     THEN query.ranked || query.literal ELSE query.ranked END)
-                    + query.weight*ts_rank_cd(h.heading || h.vector,query.expanded) AS loose) r
-                WHERE COALESCE(c.covered,0) >= %s OR h.literal_only
-                ORDER BY p.item_id,score DESC,p.id
-                ) SELECT * FROM scored ORDER BY score DESC,id LIMIT %s"""
+                    + CASE WHEN query.weight=0 THEN 0
+                    ELSE query.weight*ts_rank_cd(d.document,query.expanded) END AS loose
+                    OFFSET 0) r
+                WHERE (COALESCE(c.covered,0) >= %s OR h.literal_only)
+                    AND COALESCE(c.covered,0) >= (SELECT covered FROM floor)
+                ORDER BY h.hit_item,score DESC,h.hit
+                ), best AS (
+                SELECT * FROM scored ORDER BY score DESC,id LIMIT %s
+                ) SELECT {projection},best.covered,best.score
+                FROM best JOIN passages p ON p.id=best.id JOIN items i ON i.id=p.item_id
+                ORDER BY best.score DESC,best.id"""
 
 
 # How hybrid search fuses the keyword list: `plain` (every candidate at full RRF weight),
@@ -467,7 +569,10 @@ def _keyword_query(projection, where, text, terms, mode=None):
     the second part, a discount.
     """
     sql = KEYWORD.format(
-        projection=projection, where=where, config=lexical.CONFIG, literal=lexical.LITERAL
+        projection=projection,
+        where=where,
+        heading=HEADING.format(config=lexical.CONFIG),
+        literal=lexical.LITERAL,
     )
     weight = lexicon.EXPANSION_WEIGHT if terms["expanded"] else 0.0
     head = (
@@ -482,6 +587,39 @@ def _keyword_query(projection, where, text, terms, mode=None):
     return sql, head, lexical.min_should_match(len(terms["operands"]), mode)
 
 
+def _keyword_tail(minimum, candidates):
+    """KEYWORD parameters after the scope's: the floor's minimum and reach, the
+    minimum coverage and the row limit."""
+    return (minimum, candidates, minimum, candidates)
+
+
+# Recent query embeddings (query_vector_cache), keyed by model space and text.
+_QUERY_VECTORS = OrderedDict()
+_QUERY_VECTORS_LOCK = threading.Lock()
+
+
+def _embed_queries(settings, texts):
+    """embed() for query texts, reusing vectors of texts embedded before in this process.
+
+    The model space is pinned by digest, so the same text has the same vector."""
+    size = getattr(settings, "query_vector_cache", 0)
+    if not size:
+        return embed(settings, texts)
+    space = (settings.embedding_url, settings.embedding_model, settings.embedding_revision)
+    with _QUERY_VECTORS_LOCK:
+        known = {t: _QUERY_VECTORS[(space, t)] for t in texts if (space, t) in _QUERY_VECTORS}
+    missing = [t for t in dict.fromkeys(texts) if t not in known]
+    if missing:
+        known |= dict(zip(missing, embed(settings, missing), strict=True))
+    with _QUERY_VECTORS_LOCK:
+        for t in texts:
+            _QUERY_VECTORS[(space, t)] = known[t]
+            _QUERY_VECTORS.move_to_end((space, t))
+        while len(_QUERY_VECTORS) > size:
+            _QUERY_VECTORS.popitem(last=False)
+    return [list(known[t]) for t in texts]
+
+
 def _query_vectors(settings, text, expansion, arms, *, vector=None, expanded=None):
     """The query vector, then the expanded query's when the vector arm is expanded.
 
@@ -490,7 +628,7 @@ def _query_vectors(settings, text, expansion, arms, *, vector=None, expanded=Non
     texts = [text] if vector is None else []
     if "vector" in arms and expanded is None:
         texts.append(lexicon.expanded_text(expansion, text))
-    embedded = embed(settings, texts) if texts else []
+    embedded = _embed_queries(settings, texts) if texts else []
     vector = embedded.pop(0) if vector is None else vector
     if "vector" not in arms:
         return [vector]

@@ -2,9 +2,12 @@
 
 import hashlib
 import json
+import threading
 import uuid
 from contextlib import contextmanager
+from contextvars import ContextVar
 from importlib.resources import files
+from types import SimpleNamespace
 
 import psycopg
 from psycopg.rows import dict_row
@@ -44,13 +47,52 @@ def lock_item(con, item_id):
 class Database:
     def __init__(self, settings: ResearchSettings):
         self.settings = settings
+        # Set only inside session(): the connection connect() may borrow, its lock and
+        # whether the session is still open.
+        self._shared = ContextVar(f"research_session_{id(self)}", default=None)
 
     @contextmanager
     def connect(self):
+        """One transaction: committed on exit, rolled back on error.
+
+        Inside session() it borrows the session's connection when no other transaction
+        holds it. A nested or concurrent connect() (another thread, or a task that
+        copied this context) opens its own connection instead, so transactions never
+        nest or interleave on the shared one."""
+        shared = self._shared.get()
+        if shared is not None and shared.lock.acquire(blocking=False):
+            try:
+                if shared.open:
+                    with shared.connection.transaction():
+                        yield shared.connection
+                    return
+            finally:
+                shared.lock.release()
         with psycopg.connect(
             self.settings.database_url, row_factory=dict_row, connect_timeout=5
         ) as con:
             yield con
+
+    @contextmanager
+    def session(self):
+        """Let every connect() in this block borrow one connection, each still its own
+        transaction. A connection costs about a second on a starved host and one search
+        makes several queries. Nested sessions reuse the outer one."""
+        if self._shared.get() is not None:
+            yield
+            return
+        with psycopg.connect(
+            self.settings.database_url, row_factory=dict_row, connect_timeout=5, autocommit=True
+        ) as con:
+            shared = SimpleNamespace(connection=con, lock=threading.Lock(), open=True)
+            token = self._shared.set(shared)
+            try:
+                yield
+            finally:
+                self._shared.reset(token)
+                # Wait for a borrower in a copied context; later ones see it closed.
+                with shared.lock:
+                    shared.open = False
 
     def migrate(self):
         with self.connect() as con:

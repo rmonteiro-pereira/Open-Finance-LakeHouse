@@ -423,11 +423,15 @@ def test_keyword_query_orders_coverage_first():
     }
     sql, head, minimum = searching._keyword_query("p.id", "p.active", "PIB", terms)
     assert sql == searching.KEYWORD.format(
-        projection="p.id", where="p.active", config=lexical.CONFIG, literal=lexical.LITERAL
+        projection="p.id",
+        where="p.active",
+        heading=searching.HEADING.format(config=lexical.CONFIG),
+        literal=lexical.LITERAL,
     )
     assert head == ("s", "r", "m", ["a", "b", "c"], 0.0, "r", "PIB") and minimum == 1
-    assert sql.count("%s") == len(head) + 2
-    assert "DISTINCT ON (p.item_id)" in sql and sql.rstrip().endswith("LIMIT %s")
+    tail = searching._keyword_tail(minimum, 100)
+    assert sql.count("%s") == len(head) + len(tail) and tail == (1, 100, 1, 100)
+    assert "DISTINCT ON (h.hit_item)" in sql and "LIMIT %s" in sql
     assert searching._keyword_query("p.id", "p.active", "PIB", terms, "ceil60")[2] == 2
     expanded = terms | {"expanded": "x"}
     head = searching._keyword_query("p.id", "p.active", "PIB", expanded)[1]
