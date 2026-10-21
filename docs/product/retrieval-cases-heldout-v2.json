@@ -1,0 +1,296 @@
+{
+  "version": 1,
+  "split": "held_out",
+  "purpose": "Second held-out set for OFL research search, written before any result of the current tuning was seen. Cases are unjudged queries; relevance judgments are added later against the frozen corpus in the companion manifest. None paraphrases R01-R06 or H01-H16. Personas refer to docs/product/personas.json. Absent-topic cases expect no relevant document.",
+  "corpus_manifest": "retrieval-corpus-heldout-v2.json",
+  "cases": [
+    {
+      "id": "HV01",
+      "slice": "named-indicator",
+      "persona": "F04",
+      "phrasing": "institutional",
+      "jurisdiction": "BR",
+      "query": "IBC-Br de agosto e sinal para a atividade do terceiro trimestre",
+      "filters": {
+        "source": "news",
+        "date_from": "2026-10-16",
+        "date_to": "2026-10-16"
+      }
+    },
+    {
+      "id": "HV02",
+      "slice": "topic",
+      "persona": "F12",
+      "phrasing": "plain",
+      "jurisdiction": "BR",
+      "query": "como fica a cobrança de impostos sobre o consumo depois da reforma",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV03",
+      "slice": "topic",
+      "persona": "F05",
+      "phrasing": "institutional",
+      "jurisdiction": "BR",
+      "query": "liquidação do Banco Master e operação com o BRB",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV04",
+      "slice": "topic",
+      "persona": "F12",
+      "phrasing": "plain",
+      "jurisdiction": "BR",
+      "query": "dinheiro dos apostadores depois da proibição dos sites de aposta",
+      "filters": {
+        "source": "news",
+        "date_from": "2026-10-14",
+        "date_to": "2026-10-14"
+      }
+    },
+    {
+      "id": "HV05",
+      "slice": "topic",
+      "persona": "F04",
+      "phrasing": "institutional",
+      "jurisdiction": "BR",
+      "query": "custo fiscal da PEC da tarifa zero no transporte coletivo",
+      "filters": {
+        "source": "news",
+        "date_from": "2026-10-15",
+        "date_to": "2026-10-16"
+      }
+    },
+    {
+      "id": "HV06",
+      "slice": "topic",
+      "persona": "F06",
+      "phrasing": "institutional",
+      "jurisdiction": "BR",
+      "query": "subvenção ao diesel e preços de combustíveis praticados pelas distribuidoras",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV07",
+      "slice": "topic",
+      "persona": "F02",
+      "phrasing": "plain",
+      "jurisdiction": "BR",
+      "query": "empresas estrangeiras querendo minerar minerais raros em Minas Gerais e na Amazônia",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV08",
+      "slice": "topic",
+      "persona": "F12",
+      "phrasing": "plain",
+      "jurisdiction": "BR",
+      "query": "perdão das dívidas dos microempreendedores e novo limite de faturamento",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV09",
+      "slice": "company-event",
+      "persona": "F02",
+      "phrasing": "institutional",
+      "jurisdiction": "BR",
+      "query": "suspensão de rotas aéreas pela alta do querosene de aviação",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV10",
+      "slice": "topic",
+      "persona": "F12",
+      "phrasing": "plain",
+      "jurisdiction": "BR",
+      "query": "acabar com a jornada de seis dias de trabalho por semana",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV11",
+      "slice": "topic",
+      "persona": "F07",
+      "phrasing": "institutional",
+      "jurisdiction": "US",
+      "query": "risco de crédito da CoreWeave e endividamento da infraestrutura de IA",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV12",
+      "slice": "topic",
+      "persona": "F12",
+      "phrasing": "plain",
+      "jurisdiction": "US",
+      "query": "por que as ações de tecnologia americanas caíram nesta semana",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV13",
+      "slice": "topic",
+      "persona": "F04",
+      "phrasing": "institutional",
+      "jurisdiction": "US",
+      "query": "perspectivas do Partido Republicano nas eleições de meio de mandato",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV14",
+      "slice": "topic",
+      "persona": "F05",
+      "phrasing": "institutional",
+      "jurisdiction": "US",
+      "query": "suspensão das sanções americanas contra a Rússia",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV15",
+      "slice": "market",
+      "persona": "F12",
+      "phrasing": "plain",
+      "jurisdiction": "EA",
+      "query": "como fecharam as bolsas europeias",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV16",
+      "slice": "named-institution",
+      "persona": "F01",
+      "phrasing": "institutional",
+      "jurisdiction": "EA",
+      "query": "declarações de dirigentes do Banco Central Europeu",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV17",
+      "slice": "mixed-ungated",
+      "persona": "F02",
+      "phrasing": "plain",
+      "jurisdiction": "EA+CN",
+      "query": "carros chineses ganhando espaço no mercado europeu",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV18",
+      "slice": "ungated",
+      "persona": "F12",
+      "phrasing": "plain",
+      "jurisdiction": "JP",
+      "query": "por que a bolsa de Tóquio subiu tanto e os juros lá estão subindo",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV19",
+      "slice": "ungated",
+      "persona": "F01",
+      "phrasing": "institutional",
+      "jurisdiction": "CN",
+      "query": "superávit comercial chinês e exportações de setembro",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV20",
+      "slice": "ungated",
+      "persona": "F06",
+      "phrasing": "plain",
+      "jurisdiction": "CN",
+      "query": "a China voltou a comprar soja dos americanos",
+      "filters": {
+        "source": "news"
+      }
+    },
+    {
+      "id": "HV21",
+      "slice": "manager-letter",
+      "persona": "F08",
+      "phrasing": "institutional",
+      "jurisdiction": "BR",
+      "query": "spreads de crédito privado e emissões de debêntures",
+      "filters": {
+        "source": "manager_letter"
+      }
+    },
+    {
+      "id": "HV22",
+      "slice": "manager-letter",
+      "persona": "F03",
+      "phrasing": "plain",
+      "jurisdiction": "BR",
+      "query": "o que os gestores dizem sobre empresas que deram calote ou pediram recuperação judicial",
+      "filters": {
+        "source": "manager_letter"
+      }
+    },
+    {
+      "id": "HV23",
+      "slice": "manager-letter",
+      "persona": "F11",
+      "phrasing": "plain",
+      "jurisdiction": "BR",
+      "query": "quais ações mais ajudaram ou atrapalharam o resultado do fundo",
+      "filters": {
+        "source": "manager_letter"
+      }
+    },
+    {
+      "id": "HV24",
+      "slice": "manager-letter",
+      "persona": "F03",
+      "phrasing": "institutional",
+      "jurisdiction": "BR",
+      "query": "carta anual: revisão do exercício e perspectivas para o ano seguinte",
+      "filters": {
+        "source": "manager_letter"
+      }
+    },
+    {
+      "id": "HV25",
+      "slice": "absent-topic",
+      "persona": "F12",
+      "phrasing": "plain",
+      "query": "como cultivar orquídeas em vaso dentro de apartamento",
+      "filters": {},
+      "expected_empty": true
+    },
+    {
+      "id": "HV26",
+      "slice": "absent-topic",
+      "persona": "D06",
+      "phrasing": "institutional",
+      "query": "regulamento de torneios de xadrez por correspondência",
+      "filters": {},
+      "expected_empty": true
+    }
+  ]
+}
