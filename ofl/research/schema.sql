@@ -96,6 +96,28 @@ BEGIN
  END IF;
 END $ts$;
 ALTER TABLE passages ADD COLUMN IF NOT EXISTS search_version text;
+-- Item title vectors for keyword search, so a query does not rebuild one per matching
+-- passage. The trigger keeps them in step with items.title; every migration refreshes any
+-- that differ (a changed configuration or research_search_text), and search computes a
+-- missing one on the fly. The expression must stay equal to search.HEADING.
+CREATE TABLE IF NOT EXISTS item_headings (
+ item_id text PRIMARY KEY REFERENCES items(id) ON DELETE CASCADE, heading tsvector NOT NULL
+);
+CREATE OR REPLACE FUNCTION research_item_heading() RETURNS trigger LANGUAGE plpgsql AS $fn$
+BEGIN
+ INSERT INTO item_headings(item_id,heading)
+  VALUES (NEW.id,setweight(to_tsvector('portuguese_unaccent',
+   research_search_text(COALESCE(NEW.title,''))),'A'))
+  ON CONFLICT (item_id) DO UPDATE SET heading=EXCLUDED.heading;
+ RETURN NULL;
+END $fn$;
+CREATE OR REPLACE TRIGGER items_heading AFTER INSERT OR UPDATE OF title ON items
+ FOR EACH ROW EXECUTE FUNCTION research_item_heading();
+INSERT INTO item_headings(item_id,heading)
+ SELECT id,setweight(to_tsvector('portuguese_unaccent',research_search_text(COALESCE(title,''))),'A')
+ FROM items
+ ON CONFLICT (item_id) DO UPDATE SET heading=EXCLUDED.heading
+ WHERE item_headings.heading IS DISTINCT FROM EXCLUDED.heading;
 -- Different model versions coexist; vector dimensions validated by the application.
 CREATE TABLE IF NOT EXISTS embeddings (
  passage_id text NOT NULL REFERENCES passages(id), model text NOT NULL,

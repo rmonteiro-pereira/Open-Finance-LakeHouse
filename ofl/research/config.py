@@ -30,6 +30,11 @@ class ResearchSettings(BaseSettings):
     embedding_threads: int = Field(1, ge=1, le=32)  # request-level Ollama CPU budget
     embedding_dimensions: int = Field(1024, ge=1, le=2000)
     approximate_search: bool = False  # enable only after a filtered-recall pilot
+    # Search reuses a scope's index coverage for this long and refreshes it in the
+    # background; 0 scans on every search. The scan takes seconds on a CPU-starved host.
+    coverage_cache_seconds: int = Field(0, ge=0, le=86400)
+    # Query embeddings kept per process, keyed by model space and text; 0 keeps none.
+    query_vector_cache: int = Field(0, ge=0, le=10000)
     lease_seconds: int = Field(300, ge=30)
     library_bucket: str = "documents"
     snapshot_bucket: str = "ofl-public"
