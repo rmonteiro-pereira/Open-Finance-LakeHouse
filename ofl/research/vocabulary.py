@@ -7,11 +7,11 @@ concept, written in Portuguese or English, to such terms, with the reason it hol
 
 Expansion is query side only and never changes stored passages. With `on`:
 
-- keyword arm: each matched concept becomes a disjunction of the concept as written
-  and its expansions (`(inflação & brasil) | ipca | ...`), combined with the rest of the
-  query by AND. Rank is the original query's rank plus EXPANSION_WEIGHT times the rank
-  of the expanded query: an expansion-only match is discounted, not ranked below every
-  match of the typed words (several expansion occurrences can outscore one typed word);
+- keyword arm: each matched concept becomes one coverage operand, the concept as
+  written or any of its expansions (`(inflação & brasil) | ipca | ...`), next to the
+  operands of the rest of the query (ofl.research.lexical). Expansion matches add
+  EXPANSION_WEIGHT times their rank: a discount, not a guarantee that they rank below
+  matches of the typed words;
 - vector arm (when in ARMS): one more list in the reciprocal-rank fusion (k=60) from an
   embedding of the query followed by its expansions, so each passage gains at most 1/61.
 
@@ -415,19 +415,6 @@ def term(expansion):
     if not expansion.startswith('"'):
         return f'"{expansion}"', expansion
     return expansion, expansion.split('"')[1]
-
-
-def tsquery(rule):
-    """SQL expression and parameters of the expanded Portuguese tsquery, None if unused."""
-    if not rule["concepts"]:
-        return None
-    parse = "websearch_to_tsquery('portuguese',%s)"
-    parts, params = [parse], [rule["remainder"]]
-    for concept in rule["concepts"]:
-        terms = [concept["matched"], *(term(t)[0] for t in concept["expansions"])]
-        parts.append("(" + " || ".join([parse] * len(terms)) + ")")
-        params += terms
-    return " && ".join(parts), params
 
 
 def expanded_text(rule, query):
