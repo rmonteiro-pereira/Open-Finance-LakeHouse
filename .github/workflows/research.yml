@@ -19,6 +19,8 @@ jobs:
         options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-retries 20
     env:
       OFL_RESEARCH_TEST_DATABASE_URL: postgresql://postgres:integration-only@localhost:5432/research_test
+      # The runner's system Python is newer than the locked wheels (pyarrow) support.
+      UV_PYTHON: "3.12"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
