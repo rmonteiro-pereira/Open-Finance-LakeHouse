@@ -7,6 +7,7 @@ import uuid
 from contextlib import contextmanager
 from contextvars import ContextVar
 from importlib.resources import files
+from types import SimpleNamespace
 
 import psycopg
 from psycopg.rows import dict_row
@@ -46,7 +47,8 @@ def lock_item(con, item_id):
 class Database:
     def __init__(self, settings: ResearchSettings):
         self.settings = settings
-        # Set only inside session(): the connection connect() may borrow, with its lock.
+        # Set only inside session(): the connection connect() may borrow, its lock and
+        # whether the session is still open.
         self._shared = ContextVar(f"research_session_{id(self)}", default=None)
 
     @contextmanager
@@ -58,13 +60,14 @@ class Database:
         copied this context) opens its own connection instead, so transactions never
         nest or interleave on the shared one."""
         shared = self._shared.get()
-        if shared is not None and shared[1].acquire(blocking=False):
+        if shared is not None and shared.lock.acquire(blocking=False):
             try:
-                with shared[0].transaction():
-                    yield shared[0]
+                if shared.open:
+                    with shared.connection.transaction():
+                        yield shared.connection
+                    return
             finally:
-                shared[1].release()
-            return
+                shared.lock.release()
         with psycopg.connect(
             self.settings.database_url, row_factory=dict_row, connect_timeout=5
         ) as con:
@@ -78,18 +81,18 @@ class Database:
         if self._shared.get() is not None:
             yield
             return
-        lock = threading.Lock()
         with psycopg.connect(
             self.settings.database_url, row_factory=dict_row, connect_timeout=5, autocommit=True
         ) as con:
-            token = self._shared.set((con, lock))
+            shared = SimpleNamespace(connection=con, lock=threading.Lock(), open=True)
+            token = self._shared.set(shared)
             try:
                 yield
             finally:
                 self._shared.reset(token)
-                # Close only after a borrower that copied this context has finished.
-                with lock:
-                    pass
+                # Wait for a borrower in a copied context; later ones see it closed.
+                with shared.lock:
+                    shared.open = False
 
     def migrate(self):
         with self.connect() as con:

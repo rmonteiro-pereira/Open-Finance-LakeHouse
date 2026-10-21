@@ -1,18 +1,22 @@
 """The cheaper keyword plan returns exactly what the previous one did, and the
 per-process reuse (connection, coverage, query vectors) behaves as documented."""
 
+import contextvars
 import threading
 import time
 from types import SimpleNamespace
 
 import pytest
 
-from ofl.research import lexical
-from ofl.research import search as searching
-from ofl.research import vocabulary as lexicon
-from ofl.research.search import PROJECTION, scope_conditions
-from tests.test_research import research  # noqa: F401
-from tests.test_vocabulary import seed
+pytest.importorskip("psycopg")
+
+from ofl.research import lexical  # noqa: E402
+from ofl.research import search as searching  # noqa: E402
+from ofl.research import vocabulary as lexicon  # noqa: E402
+from ofl.research.archive import index_text, upsert_item  # noqa: E402
+from ofl.research.search import PROJECTION, scope_conditions  # noqa: E402
+from tests.test_research import research  # noqa: E402,F401
+from tests.test_vocabulary import seed  # noqa: E402
 
 # Keyword SQL before item_headings, the coverage floor and the deferred projection.
 PREVIOUS_KEYWORD = """WITH query AS (
@@ -68,8 +72,6 @@ QUERIES = (
 
 
 def seed_more(db):
-    from ofl.research.archive import index_text, upsert_item  # noqa: PLC0415 (needs psycopg)
-
     with db.connect() as con:
         for name, (title, body) in EXTRA.items():
             item = upsert_item(con, "news", {"source_id": name, "title": title}, name)
@@ -152,7 +154,11 @@ def test_session_lends_one_connection_with_one_transaction_per_call(research):  
             with db.connect() as inner:
                 assert inner is not outer
                 assert inner.execute("SELECT pg_backend_pid() AS p").fetchone()["p"] != first
+        inherited = contextvars.copy_context()
     assert db.rows("SELECT pg_backend_pid() AS pid")[0]["pid"] != first
+    # A context copied inside the session and used after it ends opens its own.
+    late = inherited.run(db.rows, "SELECT pg_backend_pid() AS pid")
+    assert late[0]["pid"] != first
 
 
 class Counting:
