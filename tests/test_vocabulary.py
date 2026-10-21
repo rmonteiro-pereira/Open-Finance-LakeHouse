@@ -43,7 +43,7 @@ def skipped(query):
 
 
 def test_lexicon_entries_are_unique_documented_and_parse():
-    assert VERSION == "vocab-v1"
+    assert VERSION == "vocab-v1.1"
     assert len(set(CONCEPTS)) == len(CONCEPTS) >= 25
     for name, pattern, expansions, home, rationale in LEXICON:
         assert re.fullmatch(r"[a-z]+(?:-[a-z]+)*", name)
@@ -222,7 +222,26 @@ def test_plan_expands_concepts_and_keeps_the_remainder():
         ),
         ("Bolsa Família", [], []),
         ("bolsa", [("stocks", "bolsa")], []),
-        ("juros básicos", [("policy-rate-br", "juros básicos")], []),
+        ("juros básicos", [("policy-rate-basic", "juros básicos")], []),
+        ("taxa básica de juros", [("policy-rate-basic", "taxa básica de juros")], []),
+        ("juros no Brasil", [("policy-rate-br", "juros no Brasil")], []),
+        # Brazil-default rates yield to any other named or mentioned jurisdiction.
+        (
+            "juros básicos nos EUA",
+            [],
+            [("policy-rate-basic", "juros básicos", "other_jurisdiction")],
+        ),
+        (
+            "juros básicos na zona do euro",
+            [],
+            [("policy-rate-basic", "juros básicos", "other_jurisdiction")],
+        ),
+        (
+            "juros básicos na China",
+            [],
+            [("policy-rate-basic", "juros básicos", "other_jurisdiction")],
+        ),
+        ("taxa básica do Fed", [], [("policy-rate-basic", "taxa básica", "other_jurisdiction")]),
         ("Brazilian inflation", [("inflation-br", "Brazilian inflation")], []),
         ("inflação Estados Unidos", [("inflation-us", "inflação Estados Unidos")], []),
     ],
@@ -275,13 +294,18 @@ def test_disclosure_lists_applied_and_skipped_expansions():
         "lexicon": VERSION,
         "applied": True,
         "arms": ["keyword", "vector"],
-        "concepts": rule["concepts"],
+        "recognized": rule["concepts"],
+        "expanded": ["gdp-br"],
         "skipped": rule["skipped"],
         "qualification": lexicon.QUALIFICATION,
     }
     assert rule["skipped"] and rule["concepts"]
     empty = disclosure(plan("on", "quarks"), ["keyword"])
-    assert empty["applied"] is False and empty["arms"] == []
+    assert empty["applied"] is False and empty["arms"] == [] and empty["expanded"] == []
+    # A recognized concept that no arm searched is not applied.
+    idle = disclosure(rule, [])
+    assert idle["applied"] is False and idle["arms"] == [] and idle["expanded"] == []
+    assert idle["recognized"] == rule["concepts"]
 
 
 def test_arms_follow_mode_and_request():
@@ -496,6 +520,9 @@ def test_vector_expansion_is_one_bounded_extra_fused_list(research, mode):
     plain = search(db, "inflação Brasil", **kwargs)
     assert all("vocabulary_vector" not in row["ranking"] for row in plain["results"])
     assert plain["vocabulary"]["arms"] == ([] if mode == "vector" else ["keyword"])
+    assert plain["vocabulary"]["applied"] is (mode != "vector")
+    assert plain["vocabulary"]["expanded"] == ([] if mode == "vector" else ["inflation-br"])
+    assert plain["vocabulary"]["recognized"][0]["concept"] == "inflation-br"
     result = search(
         db, "inflação Brasil", **kwargs, vocabulary_arms=arms, expanded_vector=[0, 1, 0]
     )
@@ -582,7 +609,8 @@ def test_api_validates_and_discloses_the_vocabulary(research):
         "/api/v1/search", params={"q": "inflação Brasil", "vocabulary": "on"}, headers=headers
     ).json()
     assert on["vocabulary"]["lexicon"] == VERSION and len(on["results"]) == 2
-    assert on["vocabulary"]["concepts"][0]["concept"] == "inflation-br"
+    assert on["vocabulary"]["recognized"][0]["concept"] == "inflation-br"
+    assert on["vocabulary"]["expanded"] == ["inflation-br"]
 
 
 def test_mcp_validates_and_forwards_the_vocabulary():
@@ -660,3 +688,127 @@ def test_collect_pools_vocabulary_variants_into_one_blinded_worksheet(research, 
     mixed = collect(db, specification, ["off", "exclude", "vocab-k"])
     assert mixed["jurisdiction"]["variants"] == ["off", "exclude"]
     assert mixed["vocabulary"]["variants"] == ["vocab-k"]
+
+
+def add(db, name, title, body, vector="[0,0,1]"):
+    from ofl.research.archive import index_text, upsert_item
+
+    with db.connect() as con:
+        item = upsert_item(con, "news", {"source_id": name, "title": title}, name)
+        index_text(
+            con, item_id=item, revision=name, text=f"{title}\n{body}", method="collector_news"
+        )
+        passage = con.execute(
+            "SELECT id FROM passages WHERE item_id=%s AND active", (item,)
+        ).fetchone()["id"]
+        con.execute(
+            "INSERT INTO embeddings VALUES (%s,%s,%s,%s::vector)",
+            (passage, db.settings.embedding_model, db.settings.embedding_revision, vector),
+        )
+    return item
+
+
+@pytest.mark.parametrize("rule", ["off", "exclude"])
+@pytest.mark.parametrize(
+    "query", ["juros básicos nos EUA", "juros básicos na zona do euro", "juros básicos na China"]
+)
+def test_brazil_default_rates_never_expand_for_other_jurisdictions(research, query, rule):
+    from ofl.research.search import search
+
+    db, _ = research
+    seed(db)
+    selic = add(db, "selic", "Copom mantém a Selic", "A Selic segue em 15%.")
+    add(db, "rates", "Juros básicos nos EUA, zona do euro e China", "Bancos centrais decidem.")
+    off = search(db, query, mode="keyword", limit=50, jurisdiction=rule)
+    on = search(db, query, mode="keyword", limit=50, jurisdiction=rule, vocabulary="on")
+    assert [r["id"] for r in on["results"]] == [r["id"] for r in off["results"]]
+    assert [r["score"] for r in on["results"]] == [r["score"] for r in off["results"]]
+    assert selic not in {r["item_id"] for r in on["results"]}
+    assert on["vocabulary"]["applied"] is False and on["vocabulary"]["recognized"] == []
+    assert [s["reason"] for s in on["vocabulary"]["skipped"]] == ["other_jurisdiction"]
+    # Control: unqualified, the Brazil default applies.
+    plain = search(db, "juros básicos", mode="keyword", limit=50, vocabulary="on")
+    assert selic in {r["item_id"] for r in plain["results"]}
+
+
+# Frozen from main before vocabulary support: off must keep this SQL and its ranking.
+MAIN_KEYWORD = """WITH query AS (
+                SELECT websearch_to_tsquery('portuguese',%s) AS pt,
+                    websearch_to_tsquery('simple',%s) AS literal
+                ) SELECT {projection},ts_rank_cd(p.search,
+                    CASE WHEN p.method='metadata' AND strpos(query.literal::text,'!')=0
+                    THEN query.pt || query.literal ELSE query.pt END) AS score
+                FROM passages p JOIN items i ON i.id=p.item_id CROSS JOIN query
+                WHERE {where} AND (p.search @@ query.pt OR
+                    (p.method='metadata' AND strpos(query.literal::text,'!')=0
+                    AND p.search @@ query.literal))
+                ORDER BY score DESC,p.id LIMIT %s"""
+MAIN_VECTOR = """SELECT {projection},1-({expression} <=> %s::vector) AS score
+            FROM passages p JOIN items i ON i.id=p.item_id JOIN embeddings e ON e.passage_id=p.id
+            WHERE {where} AND {semantic} AND e.model=%s AND e.revision=%s
+            ORDER BY {expression} <=> %s::vector,p.id LIMIT %s"""
+
+
+def test_off_matches_main_sql_parameters_and_ranking(research):
+    from ofl.research.search import PROJECTION, SEMANTIC_CONTENT, scope_conditions, search
+
+    db, _ = research
+    seed(db)
+    where, params = scope_conditions(source="news")
+    sql, head = searching._keyword_query(PROJECTION, where, "inflação", plan("off", "x"), [])
+    assert sql == MAIN_KEYWORD.format(projection=PROJECTION, where=where)
+    assert head == ("inflação", "inflação")
+    main_rows = db.rows(sql, ("inflação", "inflação", *params, 100))
+    result = search(db, "inflação", mode="keyword", source="news", limit=50)
+    seen, expected = set(), []
+    for row in main_rows:
+        if row["item_id"] not in seen:
+            seen.add(row["item_id"])
+            expected.append((row["id"], row["score"]))
+    assert [(r["id"], r["score"]) for r in result["results"]] == expected
+    assert len(expected) == 2
+    vector_sql = MAIN_VECTOR.format(
+        projection=PROJECTION, expression="e.embedding", where=where, semantic=SEMANTIC_CONTENT
+    )
+    literal = "[1.0,0.0,0.0]"
+    space = (db.settings.embedding_model, db.settings.embedding_revision)
+    main_vector = db.rows(vector_sql, (literal, *params, *space, literal, 100))
+    ours = searching._vector_rows(db, (PROJECTION, where, params), [1, 0, 0], 100)
+    assert [(r["id"], r["score"]) for r in ours] == [(r["id"], r["score"]) for r in main_vector]
+
+
+def test_failed_expanded_embedding_fails_only_rankings_that_need_it(research, monkeypatch):
+    from ofl.research import retrieval_review
+    from ofl.research.retrieval_review import collect
+
+    db, _ = research
+    seed(db)
+
+    def fake(settings, texts):
+        if "(" in texts[0]:
+            raise RuntimeError("expanded embedding refused")
+        return [[1, 0, 0]]
+
+    monkeypatch.setattr(retrieval_review, "embed", fake)
+    specification = {"version": 1, "cases": [{"id": "V", "query": "inflação Brasil"}]}
+    pool = collect(db, specification, ["off", "vocab-k", "vocab-kv"])
+    status = {key: r["status"] for key, r in pool["cases"][0]["rankings"].items()}
+    assert status == {
+        "keyword": "ok",
+        "vector": "ok",
+        "hybrid": "ok",
+        "keyword+vocab-k": "ok",
+        "vector+vocab-k": "ok",
+        "hybrid+vocab-k": "ok",
+        "keyword+vocab-kv": "ok",
+        "vector+vocab-kv": "error",
+        "hybrid+vocab-kv": "error",
+    }
+
+    def broken(settings, texts):
+        raise RuntimeError("model unavailable")
+
+    monkeypatch.setattr(retrieval_review, "embed", broken)
+    pool = collect(db, specification, ["off", "vocab-kv"])
+    status = {key: r["status"] for key, r in pool["cases"][0]["rankings"].items()}
+    assert {k for k, v in status.items() if v == "ok"} == {"keyword", "keyword+vocab-kv"}
