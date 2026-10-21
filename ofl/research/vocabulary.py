@@ -10,8 +10,8 @@ Expansion is query side only and never changes stored passages. With `on`:
 - keyword arm: each matched concept becomes a disjunction of the concept as written
   and its expansions (`(inflação & brasil) | ipca | ...`), combined with the rest of the
   query by AND. Rank is the original query's rank plus EXPANSION_WEIGHT times the rank
-  of the expanded query, so passages that match only an expansion rank below those
-  that also match the words the user typed;
+  of the expanded query: an expansion-only match is discounted, not ranked below every
+  match of the typed words (several expansion occurrences can outscore one typed word);
 - vector arm (when in ARMS): one more list in the reciprocal-rank fusion (k=60) from an
   embedding of the query followed by its expansions, so each passage gains at most 1/61.
 
@@ -27,7 +27,7 @@ import re
 
 from . import jurisdiction as places
 
-VERSION = "vocab-v1"
+VERSION = "vocab-v1.1"
 SETTINGS = ("off", "on")
 # Arms `on` expands. Evaluation variants pass their own arms (VARIANTS).
 ARMS = ("keyword",)
@@ -99,10 +99,18 @@ LEXICON = [
     ),
     (
         "policy-rate-br",
-        around(RATES, BR) + r"|juros basicos|taxa basica(?: de juros)?",
+        around(RATES, BR),
         ("Selic", "Copom"),
         None,
         "Brazil's policy rate is the Selic, set by the central bank's Copom.",
+    ),
+    (
+        "policy-rate-basic",
+        r"juros basicos|taxa basica(?: de juros)?",
+        ("Selic", "Copom"),
+        "BR",
+        "An unqualified basic rate (`juros básicos`) in this Brazilian corpus is the Selic; "
+        "it is not assumed when the query names another jurisdiction.",
     ),
     (
         "policy-rate-us",
@@ -429,23 +437,30 @@ def expanded_text(rule, query):
 
 
 def disclosure(rule, arms):
-    """Response disclosure for `on`; None for `off`."""
+    """Response disclosure for `on`; None for `off`.
+
+    `arms` are the arms that actually searched the expansions; `applied` and `expanded`
+    follow them, while `recognized` lists every matched concept with its terms.
+    """
     if rule["setting"] == "off":
         return None
+    ran = list(arms) if rule["concepts"] else []
     return {
         "setting": rule["setting"],
         "lexicon": rule["lexicon"],
-        "applied": bool(rule["concepts"]),
-        "arms": list(arms) if rule["concepts"] else [],
-        "concepts": rule["concepts"],
+        "applied": bool(ran),
+        "arms": ran,
+        "recognized": rule["concepts"],
+        "expanded": [concept["concept"] for concept in rule["concepts"]] if ran else [],
         "skipped": rule["skipped"],
         "qualification": QUALIFICATION,
     }
 
 
 QUALIFICATION = (
-    "Curated query expansion: each matched concept also searches the listed institutional "
-    "terms, ranked below matches of the words as written. Concepts in negated terms or "
+    "Curated query expansion: recognized concepts list their institutional terms; when "
+    "applied, the arms listed also search those terms, with expansion-only keyword matches "
+    "discounted against matches of the words as written. Concepts in negated terms or "
     "quoted phrases are never expanded; queries using OR are searched as written; "
     "Brazil-default entries are skipped when the query names another jurisdiction. "
     "Expansion is lexical, not topic classification."
