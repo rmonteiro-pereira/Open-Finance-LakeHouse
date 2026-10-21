@@ -104,6 +104,25 @@ def test_longest_then_earliest_match_wins_without_overlap():
     assert matches("inflação-Brasil") == []
 
 
+@pytest.mark.parametrize(
+    "first,second,query,expected",
+    [
+        # A longer later match beats a shorter earlier one it overlaps.
+        ("a b", "b c d", "a b c d", [(2, 7, 1)]),
+        # Touching matches both stay, in either order of selection.
+        ("ab", "cde", "abcde", [(0, 2, 0), (2, 5, 1)]),
+        ("abc", "de", "abcde", [(0, 3, 0), (3, 5, 1)]),
+    ],
+)
+def test_overlap_resolution(monkeypatch, first, second, query, expected):
+    patterns = [
+        ("first", re.compile(first), ("A",), None),
+        ("second", re.compile(second), ("B",), None),
+    ]
+    monkeypatch.setattr(lexicon, "PATTERNS", patterns)
+    assert matches(query) == expected
+
+
 def test_equal_spans_keep_the_earlier_lexicon_entry(monkeypatch):
     patterns = [
         ("first", re.compile("pib"), ("A",), None),
@@ -177,6 +196,22 @@ def test_plan_expands_concepts_and_keeps_the_remainder():
         ("PIB or juros", [], [("gdp-br", "PIB", "or_operator")]),
         ('PIB "a or b"', [("gdp-br", "PIB")], []),
         ("PIB orçamento", [("gdp-br", "PIB")], []),
+        # Quotes separate words: `or` touching a quote is still the operator.
+        ('PIB or"x"', [], [("gdp-br", "PIB", "or_operator")]),
+        ('"x"or PIB', [], [("gdp-br", "PIB", "or_operator")]),
+        ('"a"PIB', [("gdp-br", "PIB")], []),
+        ('PIB"a"', [("gdp-br", "PIB")], []),
+        ('"inflação" PIB', [("gdp-br", "PIB")], [("inflation", "inflação", "negated_or_quoted")]),
+        (
+            "inflação or PIB",
+            [],
+            [("inflation", "inflação", "or_operator"), ("gdp-br", "PIB", "or_operator")],
+        ),
+        (
+            "PIB da China e inflação",
+            [("inflation", "inflação")],
+            [("gdp-br", "PIB", "other_jurisdiction")],
+        ),
         ("PIB da China", [], [("gdp-br", "PIB", "other_jurisdiction")]),
         ("bolsa de Xangai", [], [("stocks", "bolsa", "other_jurisdiction")]),
         ("inflação na China", [("inflation", "inflação")], []),
@@ -267,6 +302,9 @@ def test_arms_follow_mode_and_request():
 def test_keyword_query_without_expansion_is_the_plain_query():
     sql, head = searching._keyword_query("p.id", "p.active", "PIB", plan("off", "PIB"), [])
     assert head == ("PIB", "PIB")
+    assert sql == searching.KEYWORD.format(
+        projection="p.id", where="p.active", expanded="", weighted="", matched=""
+    )
     assert "expanded" not in sql and sql.count("%s") == 3
     unarmed, _ = searching._keyword_query("p.id", "p.active", "PIB", plan("on", "PIB"), ["vector"])
     assert unarmed == sql
@@ -281,17 +319,26 @@ def test_keyword_query_adds_the_weighted_expanded_tsquery():
     assert "+%s*ts_rank_cd(p.search,query.expanded) AS score" in sql
     assert "p.search @@ query.pt OR p.search @@ query.expanded OR" in sql
     assert sql.count("%s") == len(head) + 1
+    assert sql == searching.KEYWORD.format(
+        projection="p.id",
+        where="p.active",
+        expanded=f",{expression} AS expanded",
+        weighted="+%s*ts_rank_cd(p.search,query.expanded)",
+        matched=" OR p.search @@ query.expanded",
+    )
 
 
 def test_query_vectors_embed_only_what_is_missing(monkeypatch):
     calls = []
 
-    def fake(settings, texts):
+    rule, settings = plan("on", "PIB"), SimpleNamespace()
+
+    def fake(given, texts):
+        assert given is settings
         calls.append(list(texts))
         return [[float(len(calls)), float(i)] for i in range(len(texts))]
 
     monkeypatch.setattr(searching, "embed", fake)
-    rule, settings = plan("on", "PIB"), SimpleNamespace()
     expanded = expanded_text(rule, "PIB")
     assert searching._query_vectors(settings, "PIB", rule, ["keyword"]) == [[1.0, 0.0]]
     assert calls == [["PIB"]]
@@ -303,6 +350,36 @@ def test_query_vectors_embed_only_what_is_missing(monkeypatch):
     assert both == [[9.0], [8.0]] and len(calls) == 3
     alone = searching._query_vectors(settings, "PIB", rule, ["keyword"], vector=[7.0])
     assert alone == [[7.0]] and len(calls) == 3
+
+
+@pytest.mark.parametrize("approximate", [False, True])
+def test_vector_rows_rank_by_distance_within_the_scope(approximate):
+    calls = []
+    settings = SimpleNamespace(
+        embedding_dimensions=3,
+        approximate_search=approximate,
+        embedding_model="m",
+        embedding_revision="r",
+    )
+
+    class Fake:
+        def rows(self, query, params=(), *, ann=False):
+            calls.append((query, params, ann))
+            return ["row"]
+
+    Fake.settings = settings
+    scope = ("p.id", "p.active AND i.source=%s", ["news"])
+    assert searching._vector_rows(Fake(), scope, [1, 0, 0], 7) == ["row"]
+    query, params, ann = calls[0]
+    literal = "[1.0,0.0,0.0]"
+    assert params == (literal, "news", "m", "r", literal, 7) and ann is approximate
+    expression = "e.embedding::vector(3)" if approximate else "e.embedding"
+    assert f"SELECT p.id,1-({expression} <=> %s::vector) AS score" in query
+    assert f"ORDER BY {expression} <=> %s::vector,p.id LIMIT %s" in query
+    assert "WHERE p.active AND i.source=%s AND " + searching.SEMANTIC_CONTENT in query
+    assert "e.model=%s AND e.revision=%s" in query
+    with pytest.raises(ValueError, match="3 finite dimensions"):
+        searching._vector_rows(Fake(), scope, [1, 0], 7)
 
 
 CORPUS = {

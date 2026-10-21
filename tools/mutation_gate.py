@@ -125,6 +125,20 @@ SCOPES = {
             "ofl.research.search.x__jurisdiction_scope",
             "ofl.research.search.x__scope_scan",
             "ofl.research.search.x__scope_counts",
+            # Curated vocabulary expansion and its search integration.
+            "ofl.research.vocabulary.x_check_setting",
+            "ofl.research.vocabulary.x_quoted_spans",
+            "ofl.research.vocabulary.x_matches",
+            "ofl.research.vocabulary.x__others",
+            "ofl.research.vocabulary.x_plan",
+            "ofl.research.vocabulary.x_term",
+            "ofl.research.vocabulary.x_tsquery",
+            "ofl.research.vocabulary.x_expanded_text",
+            "ofl.research.vocabulary.x_disclosure",
+            "ofl.research.search.x__arms",
+            "ofl.research.search.x__keyword_query",
+            "ofl.research.search.x__query_vectors",
+            "ofl.research.search.x__vector_rows",
         ],
     ),
 }
@@ -218,6 +232,10 @@ EQUIVALENT = {
     },
     "ofl.research.jurisdiction.x_find": {
         13: "same-length overlapping matches: end order equals start order",
+    },
+    "ofl.research.vocabulary.x_matches": {
+        15: "the tie-break key only orders equal-length matches, whose end order equals their "
+        "start order",
     },
     "ofl.research.jurisdiction.x_related_spans": {
         13: "a marker ends on a non-space character, so no word starts exactly there",
