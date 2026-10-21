@@ -272,6 +272,82 @@ over correct plus incorrect) and missed-tag rate, without passage text. Strata a
 equal-sized, not population-weighted. `--exclude-sample` (repeatable) keeps passages
 of earlier samples out of a new one.
 
+## Curated vocabulary expansion
+
+Readers name economic concepts in plain words (`inflação brasileira`, `juros básicos`,
+`bolsa`, `câmbio`, `desemprego`, `PIB`); sources name them by indicator or institution
+(`IPCA`, `Selic`, `Copom`, `Ibovespa`, `PTAX`, `PNAD`, `Caged`, `IBC-Br`). Search takes
+`vocabulary=off|on`, default `off`, on the API and MCP `search_archive`. It is an
+experimental opt-in and is not offered by the dashboard.
+
+The lexicon (`LEXICON` in `ofl/research/vocabulary.py`, version `vocab-v1.1`) has 32
+concepts in Portuguese and English with 106 expansions, each entry with the reason it
+holds. Jurisdiction-qualified concepts (`inflação no Brasil`, `Brazilian inflation`,
+`juros americanos`, `inflação na zona do euro`) expand to that jurisdiction's terms;
+unqualified inflation, monetary policy and cost of living expand to neutral wording only.
+Entries that assume Brazil for an unqualified concept (`bolsa`, `câmbio`, `desemprego`,
+`PIB`, `contas públicas`, `juros básicos`) are skipped when the query names or mentions any other
+jurisdiction (`PIB da China`). Ambiguous terms are left out or constrained: `CPI` also
+names a parliamentary inquiry in Portuguese, so it is not an expansion; `IPCA` excludes
+the bond name `Tesouro IPCA`; `Bolsa Família` is not an exchange.
+
+With `on`, the keyword arm searches each matched concept as a disjunction of the words as
+written and its expansions, joined by AND with the rest of the query (`inflação Brasil`
+becomes `(inflação & brasil) | ipca | ...`). The score is the plain query's rank plus 0.5
+times the expanded query's rank. This discounts a passage that matches only an
+expansion; it does not guarantee that such a passage ranks below every passage that
+matches the typed words (several expansion occurrences can outscore one typed word).
+0.5 is a design choice, not a tuned optimum. The
+vector arm is unchanged by default. Matching uses the canonical query form of
+`jurisdiction.py`, ignores accents and case and works on whole words; a hyphen joins
+words. Concepts inside a negated term or a quoted phrase are never expanded, and a query
+that uses `or` is searched as written. Stored passages and embeddings are untouched.
+
+The response carries `vocabulary`: setting, lexicon version, `applied` (whether any arm
+searched expansions) and `arms` (the arms that did, which depend on the mode: by default
+a vector search runs none), `recognized` (each matched concept with the matched words and
+its expansions), `expanded` (the recognized concepts whose expansions were searched; empty
+when no arm ran) and `skipped` (each skipped concept with the reason (`negated_or_quoted`,
+`or_operator`, `other_jurisdiction`)). With `off`, results and response are identical to
+the code without vocabulary support.
+
+An evaluation variant (`vocabulary_arms` including `vector`) also adds one list to the
+reciprocal-rank fusion: a vector search for the query followed by its expansions. It
+needs a second query embedding; a passage gains at most 1/61 from it.
+`tools/review_retrieval.py collect SPEC OUT --vocabulary vocab-k,vocab-kv` pools the
+keyword-only and keyword-plus-vector variants with the other rankings (keys
+`hybrid+vocab-k`, `hybrid+vocab-kv`); the worksheet stays without variants, and the pool
+records the lexicon version.
+
+The held-out numbers below were measured once, with lexicon `vocab-v1` at commit
+4a7cbf3. On the frozen held-out cases (16 cases, 359 pooled documents), the lexicon was
+fixed before the held-out pool was collected; it was curated from domain knowledge and the
+development cases only. P@10, with uncertain judgments counted as not relevant:
+
+| Variant | Keyword | Vector | Hybrid |
+|---|---|---|---|
+| off | 0.508 | 0.581 | 0.594 |
+| on (keyword arm) | 0.527 | 0.581 | 0.625 |
+| keyword and vector arms | 0.527 | 0.600 | 0.613 |
+
+- Keyword arm, hybrid search: four cases rise (`inflação brasileira` +0.1, `custo de vida
+  nos EUA` +0.2, `política monetária do Banco Central` +0.1, `inflação na China` +0.1),
+  none falls.
+- Keyword arm, keyword search: `inflação brasileira` rises from 0.1 to 0.8 and `inflação
+  na China` by 0.1; `custo de vida nos EUA` falls by 0.3 (the `inflação` expansion
+  brings market wraps that only mention US inflation data), and two cases fall by 0.1.
+- Adding the vector list lowers `Selic e juros americanos comparados` by 0.2 in vector
+  and hybrid search, so it is not the default arm set.
+
+Because one mode regresses a case by more than 0.1, `vocabulary` stays `off` by default
+and is offered only as an opt-in.
+
+`vocab-v1.1`, after that run, moves `juros básicos` and `taxa básica de juros` to a
+Brazil-default entry, so a query that also names another jurisdiction (`juros básicos nos
+EUA`) no longer gets Selic and Copom. Its query plan (concepts, expansions, skips and the
+remaining query) is identical to `vocab-v1` on all 16 held-out cases, so their rankings
+are unchanged; the held-out set was not run again.
+
 ## Public synthetic development exercise
 
 `ofl research evaluate-fixture > /private/synthetic-report.json` creates twenty
