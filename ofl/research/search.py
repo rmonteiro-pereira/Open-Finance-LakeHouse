@@ -256,6 +256,7 @@ def _coverage(settings, row):
 _COVERAGE = OrderedDict()
 _COVERAGE_LIMIT = 256
 _COVERAGE_REFRESHING = set()
+_COVERAGE_REFRESH_LIMIT = 2
 _COVERAGE_LOCK = threading.Lock()
 
 
@@ -282,11 +283,12 @@ def _refresh_coverage(db, key, where, params):
 
 
 def search_coverage(db, where, params):
-    """index_coverage of a search scope, reused for coverage_cache_seconds.
+    """index_coverage of a search scope, reused for coverage_cache_seconds (ttl).
 
-    Once older than that, the last value is still returned while one background thread
-    recomputes it, so a search waits for the scan only the first time a scope is seen
-    in this process. 0 (the default) scans on every search.
+    Up to ttl old, the cached value is returned. Between ttl and 2 x ttl it is still
+    returned while a background thread recomputes it (at most _COVERAGE_REFRESH_LIMIT
+    at a time). Older, missing, or after a failed refresh, the search scans. So a value
+    is never more than 2 x ttl old. 0 (the default) scans on every search.
     """
     ttl = getattr(db.settings, "coverage_cache_seconds", 0)
     if not ttl:
@@ -294,11 +296,17 @@ def search_coverage(db, where, params):
     key = _coverage_key(db, where, params)
     with _COVERAGE_LOCK:
         entry = _COVERAGE.get(key)
-        stale = entry is not None and time.monotonic() - entry[0] > ttl
-        refresh = stale and key not in _COVERAGE_REFRESHING
+        age = None if entry is None else time.monotonic() - entry[0]
+        usable = age is not None and age <= 2 * ttl
+        refresh = (
+            usable
+            and age > ttl
+            and key not in _COVERAGE_REFRESHING
+            and len(_COVERAGE_REFRESHING) < _COVERAGE_REFRESH_LIMIT
+        )
         if refresh:
             _COVERAGE_REFRESHING.add(key)
-    if entry is None:
+    if not usable:
         value = index_coverage(db, where=where, params=params)
         _store_coverage(key, value)
         return value

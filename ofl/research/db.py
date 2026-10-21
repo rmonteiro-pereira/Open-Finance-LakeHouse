@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import threading
 import uuid
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -45,16 +46,24 @@ def lock_item(con, item_id):
 class Database:
     def __init__(self, settings: ResearchSettings):
         self.settings = settings
-        # Set only inside session(): the connection connect() lends in this thread/task.
+        # Set only inside session(): the connection connect() may borrow, with its lock.
         self._shared = ContextVar(f"research_session_{id(self)}", default=None)
 
     @contextmanager
     def connect(self):
-        """One transaction: committed on exit, rolled back on error."""
+        """One transaction: committed on exit, rolled back on error.
+
+        Inside session() it borrows the session's connection when no other transaction
+        holds it. A nested or concurrent connect() (another thread, or a task that
+        copied this context) opens its own connection instead, so transactions never
+        nest or interleave on the shared one."""
         shared = self._shared.get()
-        if shared is not None:
-            with shared.transaction():
-                yield shared
+        if shared is not None and shared[1].acquire(blocking=False):
+            try:
+                with shared[0].transaction():
+                    yield shared[0]
+            finally:
+                shared[1].release()
             return
         with psycopg.connect(
             self.settings.database_url, row_factory=dict_row, connect_timeout=5
@@ -63,20 +72,24 @@ class Database:
 
     @contextmanager
     def session(self):
-        """Run every connect() in this block on one connection, each still its own
+        """Let every connect() in this block borrow one connection, each still its own
         transaction. A connection costs about a second on a starved host and one search
         makes several queries. Nested sessions reuse the outer one."""
         if self._shared.get() is not None:
             yield
             return
+        lock = threading.Lock()
         with psycopg.connect(
             self.settings.database_url, row_factory=dict_row, connect_timeout=5, autocommit=True
         ) as con:
-            token = self._shared.set(con)
+            token = self._shared.set((con, lock))
             try:
                 yield
             finally:
                 self._shared.reset(token)
+                # Close only after a borrower that copied this context has finished.
+                with lock:
+                    pass
 
     def migrate(self):
         with self.connect() as con:

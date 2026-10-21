@@ -10,7 +10,6 @@ import pytest
 from ofl.research import lexical
 from ofl.research import search as searching
 from ofl.research import vocabulary as lexicon
-from ofl.research.archive import index_text, upsert_item
 from ofl.research.search import PROJECTION, scope_conditions
 from tests.test_research import research  # noqa: F401
 from tests.test_vocabulary import seed
@@ -69,6 +68,8 @@ QUERIES = (
 
 
 def seed_more(db):
+    from ofl.research.archive import index_text, upsert_item  # noqa: PLC0415 (needs psycopg)
+
     with db.connect() as con:
         for name, (title, body) in EXTRA.items():
             item = upsert_item(con, "news", {"source_id": name, "title": title}, name)
@@ -146,6 +147,11 @@ def test_session_lends_one_connection_with_one_transaction_per_call(research):  
             db.rows("SELECT 1/0")
         with db.session():
             assert db.rows("SELECT pg_backend_pid() AS pid")[0]["pid"] == first
+        # A connect() while the shared connection is in a transaction gets its own.
+        with db.connect() as outer:
+            with db.connect() as inner:
+                assert inner is not outer
+                assert inner.execute("SELECT pg_backend_pid() AS p").fetchone()["p"] != first
     assert db.rows("SELECT pg_backend_pid() AS pid")[0]["pid"] != first
 
 
@@ -187,6 +193,28 @@ def test_search_coverage_reuses_and_refreshes_in_the_background(monkeypatch):
             break
         time.sleep(0.01)
     assert searching.search_coverage(cached, "w", ["a"]) == {"calls": 3}
+    # Past twice the lifetime the value is not served: the search scans.
+    searching._COVERAGE[key] = (time.monotonic() - 121, {"calls": 0})
+    assert searching.search_coverage(cached, "w", ["a"]) == {"calls": 4}
+
+
+def test_search_coverage_bounds_background_refreshes(monkeypatch):
+    release = threading.Event()
+
+    def slow(db, *, where=None, params=()):
+        release.wait(5)
+        return {"scope": params}
+
+    monkeypatch.setattr(searching, "index_coverage", slow)
+    db = Counting(60)
+    old = time.monotonic() - 61
+    for scope in ("a", "b", "c"):
+        searching._COVERAGE[searching._coverage_key(db, "w", [scope])] = (old, {"old": scope})
+    started = threading.active_count()
+    for scope in ("a", "b", "c"):
+        assert searching.search_coverage(db, "w", [scope]) == {"old": scope}
+    assert threading.active_count() - started <= searching._COVERAGE_REFRESH_LIMIT
+    release.set()
 
 
 def test_query_vectors_are_reused_only_when_enabled(monkeypatch):
