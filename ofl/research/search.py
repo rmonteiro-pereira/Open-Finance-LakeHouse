@@ -5,6 +5,7 @@ import math
 from functools import lru_cache
 
 from . import jurisdiction as places
+from . import lexical
 from . import vocabulary as lexicon
 from .db import digest
 
@@ -34,11 +35,13 @@ RRF_K = 60
 
 
 def fuse(rankings, k=RRF_K):
+    """Reciprocal-rank fusion; a row's `fusion_weight` (default 1) scales its share."""
     scores = {}
     records = {}
     for ranking in rankings:
         for rank, row in enumerate(ranking, 1):
-            scores[row["id"]] = scores.get(row["id"], 0) + 1 / (k + rank)
+            share = row.get("fusion_weight", 1) / (k + rank)
+            scores[row["id"]] = scores.get(row["id"], 0) + share
             records[row["id"]] = row
     return [
         {**records[key], "score": scores[key]}
@@ -288,8 +291,11 @@ def search(
     # than interpreting minus signs inside identifiers/quoted source text ourselves.
     candidates = max(100, limit * 5)
     if mode in {"keyword", "hybrid"}:
-        query, head = _keyword_query(projection, where, text, expansion, arms)
-        rankings.append(db.rows(query, (*head, *params, candidates)))
+        terms = _keyword_terms(db, text, expansion, arms)
+        query, head, minimum = _keyword_query(projection, where, text, terms)
+        rows = db.rows(query, (*head, *params, minimum, candidates))
+        count = len(terms["operands"])
+        rankings.append(_keyword_fusion(rows, count) if mode == "hybrid" else rows)
     if mode in {"vector", "hybrid"} and not coverage["configured"]:
         raise ValueError("semantic search requires a pinned embedding model")
     if mode in {"vector", "hybrid"} and not coverage["indexed_passages"]:
@@ -350,40 +356,130 @@ def _arms(expansion, mode, requested=None):
     return [arm for arm in ("keyword", "vector") if arm in arms and allowed[arm]]
 
 
+PARSE = f"""SELECT array_agg(websearch_to_tsquery('{lexical.CONFIG}',research_search_text(t))::text
+    ORDER BY n) AS parsed FROM unnest(%s::text[]) WITH ORDINALITY AS u(t,n)"""
+
+
+def _keyword_terms(db, text, expansion, arms):
+    """Parsed tsqueries of the keyword arm (lexical module docstring).
+
+    `ranked` is the typed query with its distinct positive top-level operands joined by OR
+    and its negations kept; `operands` are what coverage counts, each distinct operand
+    once (repeated words and words that stem alike are one). With keyword expansion, each
+    vocabulary concept is one operand (the words as written or any expansion), the rest
+    of the query supplies the others, and `expanded` matches any of them.
+    """
+    expanded = "keyword" in arms and bool(expansion["concepts"])
+    pieces = [text]
+    if expanded:
+        pieces.append(expansion["remainder"])
+        for concept in expansion["concepts"]:
+            pieces += [concept["matched"], *(lexicon.term(t)[0] for t in concept["expansions"])]
+    parsed = db.rows(PARSE, (pieces,))[0]["parsed"]
+    positives, negatives = lexical.split(lexical.operands(parsed[0]))
+    positives = lexical.distinct(positives)
+    ranked = lexical.disjunction(positives, negatives) or parsed[0]
+    terms = {
+        "strict": parsed[0],
+        "ranked": ranked,
+        "matched": ranked,
+        "operands": positives,
+        "expanded": None,
+    }
+    if not expanded:
+        return terms
+    rest, negated = lexical.split(lexical.operands(parsed[1]))
+    groups, at = [], 2
+    for concept in expansion["concepts"]:
+        size = 1 + len(concept["expansions"])
+        alternatives = lexical.distinct([a for a in parsed[at : at + size] if a])
+        at += size
+        if alternatives:
+            groups.append(" | ".join(f"( {a} )" for a in alternatives))
+    operands = lexical.distinct(rest + groups)
+    combined = lexical.disjunction(operands, negated)
+    return terms | {"operands": operands, "expanded": combined, "matched": combined or ranked}
+
+
 KEYWORD = """WITH query AS (
-                SELECT websearch_to_tsquery('portuguese',%s) AS pt,
-                    websearch_to_tsquery('simple',%s) AS literal{expanded}
-                ) SELECT {projection},ts_rank_cd(p.search,
-                    CASE WHEN p.method='metadata' AND strpos(query.literal::text,'!')=0
-                    THEN query.pt || query.literal ELSE query.pt END){weighted} AS score
+                SELECT %s::tsquery AS strict, %s::tsquery AS ranked, %s::tsquery AS matched,
+                    %s::text[]::tsquery[] AS operands, %s::float8 AS weight,
+                    %s::tsquery AS expanded,
+                    websearch_to_tsquery('{literal}',research_search_text(%s)) AS literal
+                ), hits AS (
+                SELECT p.id AS hit, p.item_id AS hit_item, p.search AS vector,
+                    setweight(to_tsvector('{config}',
+                        research_search_text(COALESCE(i.title,''))),'A') AS heading,
+                    NOT p.search @@ query.matched AS literal_only
                 FROM passages p JOIN items i ON i.id=p.item_id CROSS JOIN query
-                WHERE {where} AND (p.search @@ query.pt{matched} OR
+                WHERE {where} AND (p.search @@ query.matched OR
                     (p.method='metadata' AND strpos(query.literal::text,'!')=0
                     AND p.search @@ query.literal))
-                ORDER BY score DESC,p.id LIMIT %s"""
+                ), coverage AS (
+                SELECT h.hit_item, count(DISTINCT o.n) AS covered FROM hits h CROSS JOIN query
+                CROSS JOIN LATERAL unnest(query.operands) WITH ORDINALITY AS o(operand,n)
+                WHERE h.vector @@ o.operand OR h.heading @@ o.operand GROUP BY h.hit_item
+                ), scored AS (
+                SELECT DISTINCT ON (p.item_id) {projection},COALESCE(c.covered,0) AS covered,
+                    COALESCE(c.covered,0)+0.9*r.strict/(1+r.strict)+0.1*r.loose/(1+r.loose) AS score
+                FROM hits h JOIN passages p ON p.id=h.hit JOIN items i ON i.id=p.item_id
+                CROSS JOIN query LEFT JOIN coverage c ON c.hit_item=h.hit_item
+                CROSS JOIN LATERAL (SELECT strpos(query.literal::text,'!')=0
+                    AND p.method='metadata' AS literal_rank) m
+                CROSS JOIN LATERAL (SELECT ts_rank_cd(h.heading || h.vector, CASE WHEN m.literal_rank
+                    THEN query.strict || query.literal ELSE query.strict END) AS strict,
+                    ts_rank_cd(h.heading || h.vector, CASE WHEN m.literal_rank
+                    THEN query.ranked || query.literal ELSE query.ranked END)
+                    + query.weight*ts_rank_cd(h.heading || h.vector,query.expanded) AS loose) r
+                WHERE COALESCE(c.covered,0) >= %s OR h.literal_only
+                ORDER BY p.item_id,score DESC,p.id
+                ) SELECT * FROM scored ORDER BY score DESC,id LIMIT %s"""
 
 
-def _keyword_query(projection, where, text, expansion, arms):
-    """Keyword SQL and its leading parameters (before the scope's and the limit).
+# How hybrid search fuses the keyword list: `plain` (every candidate at full RRF weight),
+# `weighted` (each candidate's share times its coverage fraction) or `floor` (only
+# candidates within one operand of the best coverage). Chosen on the development cases.
+FUSION = "plain"
+FUSIONS = ("plain", "weighted", "floor")
 
-    Without keyword expansion it is the plain query. With it, a passage also matches the
-    expanded tsquery and scores EXPANSION_WEIGHT times its rank on top of the plain rank.
+
+def _keyword_fusion(rows, count, mode=None):
+    """The keyword list as hybrid search fuses it (FUSION)."""
+    mode = FUSION if mode is None else mode
+    if mode not in FUSIONS:
+        raise ValueError("keyword fusion must be plain, weighted or floor")
+    if mode == "plain" or not count or not rows:
+        return rows
+    if mode == "weighted":
+        return [{**row, "fusion_weight": row["covered"] / count} for row in rows]
+    best = max(row["covered"] for row in rows)
+    return [row for row in rows if row["covered"] >= best - 1]
+
+
+def _keyword_query(projection, where, text, terms, mode=None):
+    """Keyword SQL, its leading parameters (before the scope's) and the minimum coverage.
+
+    One passage per document, its best: candidates are documents, not passages. Score:
+    item coverage (an integer) plus a part below 1, so coverage orders first. Within a
+    coverage, the rank of the typed query with all its terms weighs 0.9 and the rank of
+    any of its operands 0.1, both as rank/(1+rank); a passage that holds every term keeps
+    its earlier order. Expansion-only matches add EXPANSION_WEIGHT times their rank to
+    the second part, a discount.
     """
-    expanded = lexicon.tsquery(expansion) if "keyword" in arms else None
-    if expanded is None:
-        sql = KEYWORD.format(
-            projection=projection, where=where, expanded="", weighted="", matched=""
-        )
-        return sql, (text, text)
-    expression, values = expanded
     sql = KEYWORD.format(
-        projection=projection,
-        where=where,
-        expanded=f",{expression} AS expanded",
-        weighted="+%s*ts_rank_cd(p.search,query.expanded)",
-        matched=" OR p.search @@ query.expanded",
+        projection=projection, where=where, config=lexical.CONFIG, literal=lexical.LITERAL
     )
-    return sql, (text, text, *values, lexicon.EXPANSION_WEIGHT)
+    weight = lexicon.EXPANSION_WEIGHT if terms["expanded"] else 0.0
+    head = (
+        terms["strict"],
+        terms["ranked"],
+        terms["matched"],
+        terms["operands"],
+        weight,
+        terms["expanded"] or terms["ranked"],
+        text,
+    )
+    return sql, head, lexical.min_should_match(len(terms["operands"]), mode)
 
 
 def _query_vectors(settings, text, expansion, arms, *, vector=None, expanded=None):
@@ -476,7 +572,9 @@ def _contributions(labels, rankings):
             contributions.setdefault(row["id"], {})[label] = {
                 "rank": position,
                 "raw_score": float(row["score"]),
-                "rrf_contribution": 1 / (RRF_K + position) if len(rankings) > 1 else None,
+                "rrf_contribution": row.get("fusion_weight", 1) / (RRF_K + position)
+                if len(rankings) > 1
+                else None,
             }
     return contributions
 

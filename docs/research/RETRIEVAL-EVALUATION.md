@@ -272,6 +272,107 @@ over correct plus incorrect) and missed-tag rate, without passage text. Strata a
 equal-sized, not population-weighted. `--exclude-sample` (repeatable) keeps passages
 of earlier samples out of a new one.
 
+## Keyword matching: accents, locale and term coverage
+
+Passage vectors and keyword queries use the text search configurations
+`portuguese_unaccent` (unaccent, then the Portuguese stemmer) for bodies and
+`simple_unaccent` (unaccent, no stemming) for catalog metadata, created by the migration
+together with the `unaccent` extension. Both sides read text through
+`research_search_text()`, which turns typographic quotes into `"` and dashes, ellipses,
+bullets and single typographic quotes into spaces. `inflacao`, `INFLAÇÃO` and `inflação`
+match the same passages, and so do `politica monetaria` and `política monetária`.
+
+Vectors no longer depend on the database locale. Under an LC_CTYPE of C, PostgreSQL's
+parser kept accented capitals unfolded (`É`) and glued typographic punctuation to words
+(`“ministro”`), so those words never matched a query; with unaccent before the stemmer and
+the punctuation mapped first, a C-locale and a UTF-8 database produce identical vectors
+and queries (covered by a test that creates a C-locale database).
+
+Keyword search reads the current form only, so `ofl research migrate` rewrites every
+older vector before it exits (without re-embedding) and exits non-zero while any passage
+is still stale. The API deploys with the Recreate strategy and runs the migration as its
+init container: old and new code never serve together, the API starts only after the
+migration succeeds, and a failed migration is retried. The rebuild can also run on its
+own:
+
+```sh
+ofl research rebuild-search --dry-run      # pending count only
+ofl research rebuild-search --limit 1000   # committed batches; resumable
+```
+
+A passage is pending when `passages.search_version` differs from the target version
+(`lexical-v1`; NULL means a vector built before it). Each batch commits, waits at most 5 s
+for a lock and skips rows a concurrent writer holds; skipped rows stay pending, are
+reported as `remaining` and make the migration fail until a retry rewrites them. New and
+re-indexed passages are written in the current form.
+
+On a local PostgreSQL 17 copy of the archive, `ofl research migrate` rewrote all 21,655
+passages (active and superseded) in 6.7 s, in its default batches of 1,000. Passage sizes in
+that copy: median 102 words (10th percentile 30, 90th and 99th 350, the chunker's window),
+median 639 characters (90th percentile 2,218, 99th 2,888, maximum 7,677), 23.1 million
+characters in total. The duration on the VPS will be measured at deployment.
+
+Rollback: code that predates `lexical-v1` parses queries with accents and would miss
+accented words and negations on rebuilt vectors. Pause passage writers (the workers that
+ingest, re-index or rechunk) for the whole rollback, rewrite the vectors back, and only
+then roll back the image. `rebuild-search` exits non-zero while any passage is left
+behind (a row a writer held), so run it until it succeeds:
+
+```sh
+ofl research rebuild-search --target legacy --dry-run
+ofl research rebuild-search --target legacy
+```
+
+The keyword arm matches passages holding any positive top-level operand of the query (a
+word, a quoted phrase or a vocabulary concept) and none of its negated operands; quoted
+phrases and `-term` keep their meaning. Ranking is by coverage first: the number of
+distinct operands found anywhere in the document (any of its passages in the searched
+scope, or its title), so a document whose terms are spread over several passages is not
+lost. Within a coverage, passages keep the order of the earlier all-terms ranking
+(`ts_rank_cd` of the query with every term, title at weight A, 0.9 of the second part of
+the score), then the rank of any operand (0.1). The score is coverage plus a part below 1.
+Each document contributes its best passage before the candidate limit, so one long
+document with many matching passages cannot fill the candidate list. Repeated words, and
+words that stem to the same lexeme, count once. `lexical.MIN_SHOULD_MATCH` sets the minimum
+coverage: `none` (any one operand, the default) or `ceil60` (ceil(0.6 n) of n >= 3).
+Catalog identifiers still match literally.
+
+Hybrid search fuses the keyword list as `search.FUSION` sets: `plain` (every candidate at
+full reciprocal-rank weight, the default), `weighted` (each candidate's share times its
+coverage fraction) or `floor` (only candidates within one operand of the best coverage).
+
+On the development cases (R01-R06, H01-H16; 20 with relevant documents), compared with the
+earlier all-terms keyword arm on the same corpus copy. The 86 documents the new arm brought
+into a top ten were judged blind with the same protocol as the earlier pools (two judges on
+all tiers, a third on public tiers only, consensus, then an adjudicator), so no top-ten slot
+is unjudged:
+
+| P@10, positive cases | Keyword | Vector | Hybrid |
+|---|---|---|---|
+| All-terms arm | 0.485 | 0.625 | 0.640 |
+| Coverage arm | 0.585 | 0.625 | 0.655 |
+
+- Hybrid with `weighted` fusion gives 0.660 and with `floor` 0.665: one or two documents over
+  20 cases, so `plain` stays the default.
+- Hybrid rises on eight cases, among them `riscos contrapontos cenário econômico` (0.8 to 1.0)
+  and `eleições no Brasil e mercado financeiro` (0.8 to 1.0). It falls by 0.3 on `juros
+  americanos e impacto nos ativos brasileiros` (manager letters that cover most of the terms
+  replace others), by 0.2 on `IPCA acumulado em 12 meses` and by 0.1 on `inflação Brasil`
+  and `Selic e juros americanos comparados`.
+- Keyword search rises on eight cases (`riscos contrapontos cenário econômico` from 0.0 to 0.8,
+  `Selic e juros americanos comparados` from 0.0 to 0.5) and falls by 0.1 on two.
+- The two settings of `MIN_SHOULD_MATCH` give the same keyword top ten on every case; `ceil60`
+  leaves 40 judged-relevant documents unmatched by the keyword arm, `none` leaves none (the
+  all-terms arm missed 110 of 284). `none` is the default.
+- The keyword query is slower: over the 22 development queries (five timed runs each, after
+  one warm-up), PostgreSQL execution time was median 121 ms and 95th percentile 261 ms, against
+  0.9 ms and 7.2 ms for the all-terms query on the same machine. The time grows with the
+  number of passages matching any term (up to 4,633 for one query); embedding the query is
+  not included.
+
+These are development cases: they were used to design the change and are not a held-out
+measurement.
+
 ## Curated vocabulary expansion
 
 Readers name economic concepts in plain words (`inflação brasileira`, `juros básicos`,
@@ -291,14 +392,16 @@ jurisdiction (`PIB da China`). Ambiguous terms are left out or constrained: `CPI
 names a parliamentary inquiry in Portuguese, so it is not an expansion; `IPCA` excludes
 the bond name `Tesouro IPCA`; `Bolsa Família` is not an exchange.
 
-With `on`, the keyword arm searches each matched concept as a disjunction of the words as
-written and its expansions, joined by AND with the rest of the query (`inflação Brasil`
-becomes `(inflação & brasil) | ipca | ...`). The score is the plain query's rank plus 0.5
-times the expanded query's rank. This discounts a passage that matches only an
-expansion; it does not guarantee that such a passage ranks below every passage that
-matches the typed words (several expansion occurrences can outscore one typed word).
-0.5 is a design choice, not a tuned optimum. The
-vector arm is unchanged by default. Matching uses the canonical query form of
+With `on`, each matched concept becomes one coverage operand of the keyword arm: the words
+as written or any of its expansions (`inflação Brasil` becomes the operand
+`(inflação & brasil) | ipca | ...`), next to the operands of the rest of the query. As
+without expansion, a passage matches when it holds any operand and no negated one, and
+documents rank by coverage first (distinct operands found in the document), then by the
+rank of the typed query with all its terms and the rank of any operand. A passage that
+matches only through an expansion adds 0.5 times the expansion's rank to that second
+part: a discount, not a guarantee that it ranks below every passage matching the typed
+words. 0.5 is a design choice, not a tuned optimum. The vector arm is unchanged by
+default. Matching uses the canonical query form of
 `jurisdiction.py`, ignores accents and case and works on whole words; a hyphen joins
 words. Concepts inside a negated term or a quoted phrase are never expanded, and a query
 that uses `or` is searched as written. Stored passages and embeddings are untouched.

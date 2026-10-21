@@ -9,6 +9,7 @@ import pytest
 
 pytest.importorskip("psycopg")
 
+from ofl.research import lexical
 from ofl.research import search as searching
 from ofl.research import vocabulary as lexicon
 from ofl.research.vocabulary import (
@@ -22,7 +23,6 @@ from ofl.research.vocabulary import (
     plan,
     quoted_spans,
     term,
-    tsquery,
 )
 
 from tests.test_research import research  # noqa: E402,F401
@@ -265,22 +265,6 @@ def test_term_quotes_plain_expansions_and_keeps_websearch_syntax():
     assert term('"IPCA" -"Tesouro IPCA"') == ('"IPCA" -"Tesouro IPCA"', "IPCA")
 
 
-def test_tsquery_is_the_remainder_and_each_concept_disjunction():
-    assert tsquery(plan("on", "quarks")) is None
-    rule = {
-        "concepts": [
-            {"matched": "inflação", "expansions": ["A b", '"C" -"D"']},
-            {"matched": "PIB", "expansions": ["E"]},
-        ],
-        "remainder": "em 2026",
-    }
-    parse = "websearch_to_tsquery('portuguese',%s)"
-    assert tsquery(rule) == (
-        f"{parse} && ({parse} || {parse} || {parse}) && ({parse} || {parse})",
-        ["em 2026", "inflação", '"A b"', '"C" -"D"', "PIB", '"E"'],
-    )
-
-
 def test_expanded_text_appends_the_named_phrases():
     rule = {"concepts": [{"expansions": ["A", '"B" -"C"']}, {"expansions": ["D"]}]}
     assert expanded_text(rule, "inflação  Brasil") == "inflação Brasil (A, B, D)"
@@ -323,33 +307,131 @@ def test_arms_follow_mode_and_request():
         searching._arms(on, "hybrid", ["keyword", "jurisdiction"])
 
 
-def test_keyword_query_without_expansion_is_the_plain_query():
-    sql, head = searching._keyword_query("p.id", "p.active", "PIB", plan("off", "PIB"), [])
-    assert head == ("PIB", "PIB")
-    assert sql == searching.KEYWORD.format(
-        projection="p.id", where="p.active", expanded="", weighted="", matched=""
-    )
-    assert "expanded" not in sql and sql.count("%s") == 3
-    unarmed, _ = searching._keyword_query("p.id", "p.active", "PIB", plan("on", "PIB"), ["vector"])
-    assert unarmed == sql
+class Parser:
+    """Stands in for PostgreSQL's websearch parse: each piece's text, tagged."""
+
+    settings = None
+
+    def __init__(self):
+        self.calls = []
+
+    def rows(self, query, params=()):
+        self.calls.append((query, params))
+        return [{"parsed": [f"'{piece}'" if piece else "" for piece in params[0]]}]
 
 
-def test_keyword_query_adds_the_weighted_expanded_tsquery():
-    rule = plan("on", "PIB")
-    sql, head = searching._keyword_query("p.id", "p.active", "PIB", rule, ["keyword"])
-    expression, values = tsquery(rule)
-    assert head == ("PIB", "PIB", *values, lexicon.EXPANSION_WEIGHT)
-    assert f",{expression} AS expanded" in sql
-    assert "+%s*ts_rank_cd(p.search,query.expanded) AS score" in sql
-    assert "p.search @@ query.pt OR p.search @@ query.expanded OR" in sql
-    assert sql.count("%s") == len(head) + 1
+def test_keyword_terms_without_expansion_are_the_typed_operands():
+    fake = Parser()
+    terms = searching._keyword_terms(fake, "PIB", plan("off", "PIB"), [])
+    assert terms == {
+        "strict": "'PIB'",
+        "ranked": "(( 'PIB' ))",
+        "matched": "(( 'PIB' ))",
+        "operands": ["'PIB'"],
+        "expanded": None,
+    }
+    assert fake.calls == [(searching.PARSE, (["PIB"],))]
+    unarmed = searching._keyword_terms(Parser(), "PIB", plan("on", "PIB"), ["vector"])
+    assert unarmed == terms
+
+
+class Repeated(Parser):
+    """`selic Selic juros jurídico`: repeated and same-stem words."""
+
+    def rows(self, query, params=()):
+        return [{"parsed": ["'selic' & 'selic' & 'jur' & !'eua' & 'jur'"]}]
+
+
+def test_keyword_terms_count_each_distinct_operand_once():
+    terms = searching._keyword_terms(Repeated(), "selic Selic juros -EUA juro", {}, [])
+    assert terms["operands"] == ["'selic'", "'jur'"]
+    assert terms["ranked"] == "(( 'selic' ) | ( 'jur' )) & !'eua'"
+    assert terms["strict"] == "'selic' & 'selic' & 'jur' & !'eua' & 'jur'"
+    assert lexical.min_should_match(len(terms["operands"]), "ceil60") == 1
+
+
+def test_keyword_terms_without_positive_operands_keep_the_parsed_query():
+    class Negated(Parser):
+        def rows(self, query, params=()):
+            return [{"parsed": ["!'eua'"]}]
+
+    terms = searching._keyword_terms(Negated(), "-EUA", plan("off", "-EUA"), [])
+    assert terms == {
+        "strict": "!'eua'",
+        "ranked": "!'eua'",
+        "matched": "!'eua'",
+        "operands": [],
+        "expanded": None,
+    }
+
+
+def test_keyword_terms_make_each_concept_one_operand():
+    fake = Parser()
+    rule = {
+        "concepts": [
+            {"matched": "inflação", "expansions": ["A b", '"C" -"D"']},
+            {"matched": "PIB", "expansions": ["E"]},
+        ],
+        "remainder": "em 2026",
+    }
+    terms = searching._keyword_terms(fake, "inflação PIB em 2026", rule, ["keyword"])
+    pieces = ["inflação PIB em 2026", "em 2026", "inflação", '"A b"', '"C" -"D"', "PIB", '"E"']
+    assert fake.calls == [(searching.PARSE, (pieces,))]
+    groups = ["( 'inflação' ) | ( '\"A b\"' ) | ( '\"C\" -\"D\"' )", "( 'PIB' ) | ( '\"E\"' )"]
+    assert terms["operands"] == ["'em 2026'", *groups]
+    assert terms["expanded"] == lexical.disjunction(["'em 2026'", *groups], [])
+    assert terms["matched"] == terms["expanded"]
+    assert terms["strict"] == "'inflação PIB em 2026'"
+    assert terms["ranked"] == "(( 'inflação PIB em 2026' ))"
+
+
+def test_concept_groups_drop_repeated_alternatives_and_groups():
+    class Twice(Parser):
+        def rows(self, query, params=()):
+            return [{"parsed": ["'a'", "", "'a'", "'b'", "'a'", "'a'", "'b'", "'a'"]}]
+
+    rule = {
+        "concepts": [
+            {"matched": "a", "expansions": ["b", "c"]},
+            {"matched": "a", "expansions": ["b", "c"]},
+        ],
+        "remainder": "",
+    }
+    terms = searching._keyword_terms(Twice(), "a a", rule, ["keyword"])
+    assert terms["operands"] == ["( 'a' ) | ( 'b' )"]
+    assert terms["matched"] == "(( ( 'a' ) | ( 'b' ) ))"
+
+
+def test_keyword_terms_skip_empty_alternatives_and_fall_back_without_operands():
+    class Empty(Parser):
+        def rows(self, query, params=()):
+            return [{"parsed": ["", "", "", ""]}]
+
+    rule = {"concepts": [{"matched": "de", "expansions": ["a"]}], "remainder": "o"}
+    terms = searching._keyword_terms(Empty(), "de o", rule, ["keyword"])
+    assert terms["operands"] == [] and terms["expanded"] is None
+    assert terms["matched"] == terms["ranked"] == ""
+
+
+def test_keyword_query_orders_coverage_first():
+    terms = {
+        "strict": "s",
+        "ranked": "r",
+        "matched": "m",
+        "operands": ["a", "b", "c"],
+        "expanded": None,
+    }
+    sql, head, minimum = searching._keyword_query("p.id", "p.active", "PIB", terms)
     assert sql == searching.KEYWORD.format(
-        projection="p.id",
-        where="p.active",
-        expanded=f",{expression} AS expanded",
-        weighted="+%s*ts_rank_cd(p.search,query.expanded)",
-        matched=" OR p.search @@ query.expanded",
+        projection="p.id", where="p.active", config=lexical.CONFIG, literal=lexical.LITERAL
     )
+    assert head == ("s", "r", "m", ["a", "b", "c"], 0.0, "r", "PIB") and minimum == 1
+    assert sql.count("%s") == len(head) + 2
+    assert "DISTINCT ON (p.item_id)" in sql and sql.rstrip().endswith("LIMIT %s")
+    assert searching._keyword_query("p.id", "p.active", "PIB", terms, "ceil60")[2] == 2
+    expanded = terms | {"expanded": "x"}
+    head = searching._keyword_query("p.id", "p.active", "PIB", expanded)[1]
+    assert head[4:6] == (lexicon.EXPANSION_WEIGHT, "x")
 
 
 def test_query_vectors_embed_only_what_is_missing(monkeypatch):
@@ -467,34 +549,22 @@ def test_off_is_identical_and_undisclosed(research, mode):
         search(db, "inflação", mode=mode, vector=[1, 0, 0], vocabulary="boost")
 
 
-def test_keyword_expansion_ranks_expansion_only_matches_below_original_terms(research):
+def test_keyword_expansion_adds_expansion_only_matches_at_a_discount(research):
     from ofl.research.search import search
 
     db, _ = research
     ids = seed(db)
     off = search(db, "inflação Brasil", mode="keyword")
-    assert names(off, ids) == ["plain"]
+    assert "index" not in names(off, ids) and names(off, ids)[0] == "plain"
     on = search(db, "inflação Brasil", mode="keyword", vocabulary="on")
-    # The `Tesouro IPCA` bond is excluded from the IPCA expansion; the US item has no
-    # Brazilian term or index.
-    assert names(on, ids) == ["plain", "index"]
-    rule = plan("on", "inflação Brasil")
-    expression, values = tsquery(rule)
-    ranks = {
-        row["item_id"]: row
-        for row in db.rows(
-            f"""SELECT p.item_id,ts_rank_cd(p.search,{expression}) AS expanded,
-            ts_rank_cd(p.search,websearch_to_tsquery('portuguese',%s)) AS plain
-            FROM passages p WHERE p.active""",
-            (*values, "inflação Brasil"),
-        )
-    }
-    for name, row in zip(names(on, ids), on["results"], strict=True):
-        rank = ranks[ids[name]]
-        assert row["score"] == pytest.approx(rank["plain"] + 0.5 * rank["expanded"])
-    assert ranks[ids["index"]]["plain"] == 0 < ranks[ids["index"]]["expanded"]
-    assert on["vocabulary"] == disclosure(rule, ["keyword"])
-    assert on["results"][0]["score"] > off["results"][0]["score"]
+    # The `Tesouro IPCA` bond is excluded from the IPCA expansion.
+    assert names(on, ids)[0] == "plain" and "index" in names(on, ids)
+    assert "bond" not in names(on, ids)
+    score = {name: row["score"] for name, row in zip(names(on, ids), on["results"], strict=True)}
+    # One concept operand: every match covers it; the typed words rank first.
+    assert all(1 <= value < 2 for value in score.values())
+    assert score["plain"] > score["index"]
+    assert on["vocabulary"] == disclosure(plan("on", "inflação Brasil"), ["keyword"])
 
 
 def test_negated_concepts_are_never_expanded_in_search(research):
@@ -676,8 +746,8 @@ def test_collect_pools_vocabulary_variants_into_one_blinded_worksheet(research, 
         ["quarks"],
     ]
     rankings = pool["cases"][0]["rankings"]
-    assert rankings["keyword"]["item_ids"] == [ids["plain"]]
-    assert rankings["keyword+vocab-k"]["item_ids"] == [ids["plain"], ids["index"]]
+    assert ids["index"] not in rankings["keyword"]["item_ids"]
+    assert ids["index"] in rankings["keyword+vocab-k"]["item_ids"]
     assert rankings["hybrid+vocab-kv"]["vocabulary"]["arms"] == ["keyword", "vector"]
     assert rankings["hybrid+vocab-k"]["vocabulary"]["arms"] == ["keyword"]
     assert "vocabulary" not in rankings["hybrid"]
@@ -749,24 +819,23 @@ MAIN_VECTOR = """SELECT {projection},1-({expression} <=> %s::vector) AS score
             ORDER BY {expression} <=> %s::vector,p.id LIMIT %s"""
 
 
-def test_off_matches_main_sql_parameters_and_ranking(research):
+def test_off_keeps_every_all_terms_match_and_main_vector_ranking(research):
     from ofl.research.search import PROJECTION, SEMANTIC_CONTENT, scope_conditions, search
 
     db, _ = research
     seed(db)
     where, params = scope_conditions(source="news")
-    sql, head = searching._keyword_query(PROJECTION, where, "inflação", plan("off", "x"), [])
-    assert sql == MAIN_KEYWORD.format(projection=PROJECTION, where=where)
-    assert head == ("inflação", "inflação")
-    main_rows = db.rows(sql, ("inflação", "inflação", *params, 100))
-    result = search(db, "inflação", mode="keyword", source="news", limit=50)
-    seen, expected = set(), []
-    for row in main_rows:
-        if row["item_id"] not in seen:
-            seen.add(row["item_id"])
-            expected.append((row["id"], row["score"]))
-    assert [(r["id"], r["score"]) for r in result["results"]] == expected
-    assert len(expected) == 2
+    for query in ("inflação", "inflação Brasil", "inflação -EUA", '"inflação americana"'):
+        everything = db.rows(
+            f"""SELECT DISTINCT p.item_id FROM passages p JOIN items i ON i.id=p.item_id
+            WHERE {where} AND p.search @@ websearch_to_tsquery(%s,research_search_text(%s))""",
+            (*params, lexical.CONFIG, query),
+        )
+        result = search(db, query, mode="keyword", source="news", limit=50)
+        found = [r["item_id"] for r in result["results"]]
+        assert {r["item_id"] for r in everything} <= set(found)
+        # Matches holding every term come first: they cover every operand.
+        assert set(found[: len(everything)]) == {r["item_id"] for r in everything}
     vector_sql = MAIN_VECTOR.format(
         projection=PROJECTION, expression="e.embedding", where=where, semantic=SEMANTIC_CONTENT
     )

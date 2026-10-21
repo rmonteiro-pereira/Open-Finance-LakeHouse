@@ -63,6 +63,17 @@ class Database:
                     "migration could not lock a research table within 5 s; another session "
                     "holds it (e.g. a running worker). Nothing was changed; retry when idle."
                 ) from error
+        # Keyword search reads the current lexical form only: every passage vector is
+        # rewritten before the API starts. Batches commit, so a retry resumes.
+        from . import lexical
+
+        rebuilt = lexical.rebuild(self)
+        if rebuilt["remaining"]:
+            raise RuntimeError(
+                f"{rebuilt['remaining']} passage vectors are not in {lexical.VERSION} yet "
+                "(rows held by another session); retry the migration."
+            )
+        return rebuilt
 
     def rows(self, query, params=(), *, ann=False):
         with self.connect() as con:

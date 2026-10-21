@@ -10,7 +10,7 @@ from pathlib import Path, PurePosixPath
 
 from psycopg.types.json import Jsonb
 
-from . import chunking, jurisdiction
+from . import chunking, jurisdiction, lexical
 from .db import digest, lock_item
 
 VERSION = "archive-v1"
@@ -49,12 +49,11 @@ def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None
     for ordinal in sorted(range(len(passages)), key=identities.__getitem__):
         identity, passage = identities[ordinal], passages[ordinal]
         con.execute(
-            """INSERT INTO passages(id,item_id,asset_id,page,ordinal,text,revision,method,evidence,search,
-            jurisdiction,jurisdiction_evidence,jurisdiction_tagger)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,
-            setweight(to_tsvector('simple',%s),'A') || setweight(to_tsvector('portuguese',%s),'B'),
-            %s,%s,%s)
-            ON CONFLICT(id) DO UPDATE SET active=true,jurisdiction=excluded.jurisdiction,
+            f"""INSERT INTO passages(id,item_id,asset_id,page,ordinal,text,revision,method,evidence,search,
+            search_version,jurisdiction,jurisdiction_evidence,jurisdiction_tagger)
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,{lexical.DOCUMENT},%s,%s,%s,%s)
+            ON CONFLICT(id) DO UPDATE SET active=true,search=excluded.search,
+            search_version=excluded.search_version,jurisdiction=excluded.jurisdiction,
             jurisdiction_evidence=excluded.jurisdiction_evidence,
             jurisdiction_tagger=excluded.jurisdiction_tagger""",
             (
@@ -67,8 +66,8 @@ def index_text(con, *, item_id, revision, text, method, asset_id=None, page=None
                 revision,
                 method,
                 Jsonb(evidence or {}),
-                passage if method == "metadata" else "",
-                passage,
+                *lexical.document_params(passage, method),
+                lexical.VERSION,
                 *jurisdiction.columns(passage, title, **regions[ordinal]),
             ),
         )

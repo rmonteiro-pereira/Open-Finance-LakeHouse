@@ -70,6 +70,32 @@ CREATE INDEX IF NOT EXISTS passages_item ON passages(item_id) WHERE active;
 ALTER TABLE passages ADD COLUMN IF NOT EXISTS jurisdiction text[];
 ALTER TABLE passages ADD COLUMN IF NOT EXISTS jurisdiction_evidence jsonb;
 ALTER TABLE passages ADD COLUMN IF NOT EXISTS jurisdiction_tagger text;
+-- Accent-insensitive, locale-independent lexical search (ofl/research/lexical.py). The
+-- vectors are rebuilt by `ofl research rebuild-search`; search_version marks rebuilt rows.
+CREATE EXTENSION IF NOT EXISTS unaccent;
+CREATE OR REPLACE FUNCTION research_search_text(value text) RETURNS text
+ LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT
+ AS $fn$ SELECT translate(value, '“”„‟«»‘’‚‛‹›—–‐‑‒―…•·', '""""""               ') $fn$;
+DO $ts$ DECLARE dictionary text;
+BEGIN
+ -- The unaccent dictionary lives in the extension's schema, wherever it was installed.
+ SELECT quote_ident(n.nspname) || '.unaccent' INTO dictionary FROM pg_ts_dict d
+  JOIN pg_namespace n ON n.oid=d.dictnamespace JOIN pg_extension e ON e.extnamespace=n.oid
+  WHERE d.dictname='unaccent' AND e.extname='unaccent';
+ IF NOT EXISTS (SELECT 1 FROM pg_ts_config c JOIN pg_namespace n ON n.oid=c.cfgnamespace
+   WHERE c.cfgname='portuguese_unaccent' AND n.nspname=current_schema()) THEN
+  CREATE TEXT SEARCH CONFIGURATION portuguese_unaccent (COPY = pg_catalog.portuguese);
+  EXECUTE format('ALTER TEXT SEARCH CONFIGURATION portuguese_unaccent
+   ALTER MAPPING FOR hword, hword_part, word WITH %s, portuguese_stem', dictionary);
+ END IF;
+ IF NOT EXISTS (SELECT 1 FROM pg_ts_config c JOIN pg_namespace n ON n.oid=c.cfgnamespace
+   WHERE c.cfgname='simple_unaccent' AND n.nspname=current_schema()) THEN
+  CREATE TEXT SEARCH CONFIGURATION simple_unaccent (COPY = pg_catalog.simple);
+  EXECUTE format('ALTER TEXT SEARCH CONFIGURATION simple_unaccent
+   ALTER MAPPING FOR hword, hword_part, word WITH %s, simple', dictionary);
+ END IF;
+END $ts$;
+ALTER TABLE passages ADD COLUMN IF NOT EXISTS search_version text;
 -- Different model versions coexist; vector dimensions validated by the application.
 CREATE TABLE IF NOT EXISTS embeddings (
  passage_id text NOT NULL REFERENCES passages(id), model text NOT NULL,
