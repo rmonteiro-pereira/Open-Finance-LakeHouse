@@ -132,11 +132,18 @@ SCOPES = {
             "ofl.research.vocabulary.x__others",
             "ofl.research.vocabulary.x_plan",
             "ofl.research.vocabulary.x_term",
-            "ofl.research.vocabulary.x_tsquery",
             "ofl.research.vocabulary.x_expanded_text",
             "ofl.research.vocabulary.x_disclosure",
             "ofl.research.search.x__arms",
+            "ofl.research.search.x__keyword_terms",
             "ofl.research.search.x__keyword_query",
+            "ofl.research.search.x__keyword_fusion",
+            # Accent-insensitive OR+coverage keyword arm.
+            "ofl.research.lexical.x_document_params",
+            "ofl.research.lexical.x_operands",
+            "ofl.research.lexical.x_split",
+            "ofl.research.lexical.x_disjunction",
+            "ofl.research.lexical.x_min_should_match",
             "ofl.research.search.x__query_vectors",
             "ofl.research.search.x__vector_rows",
         ],
@@ -232,6 +239,10 @@ EQUIVALENT = {
     },
     "ofl.research.jurisdiction.x_find": {
         13: "same-length overlapping matches: end order equals start order",
+    },
+    "ofl.research.lexical.x_operands": {
+        29: "outside quoted lexemes a tsquery's text holds only operators, parentheses, "
+        "spaces and <N> distances, never an 'X'",
     },
     "ofl.research.vocabulary.x_matches": {
         15: "the tie-break key only orders equal-length matches, whose end order equals their "
