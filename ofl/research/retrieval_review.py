@@ -129,12 +129,15 @@ def _search_options(variant, expanded):
     return {"jurisdiction": variant}
 
 
+def _expands_vector(variant):
+    """Whether a pooled variant adds the expanded query's vector list."""
+    return "vector" in lexicon.VARIANTS.get(variant, ())
+
+
 def _expanded_vector(db, query, variants):
     """The expanded query's vector when a pooled variant expands the vector arm."""
     rule = lexicon.plan("on", query)
-    if not rule["concepts"] or not any(
-        "vector" in lexicon.VARIANTS.get(variant, ()) for variant in variants
-    ):
+    if not rule["concepts"] or not any(_expands_vector(variant) for variant in variants):
         return None
     return embed(db.settings, [lexicon.expanded_text(rule, query)])[0]
 
@@ -147,18 +150,24 @@ def _collect(db, prepared, variants=("off",)):
     results = []
     for case, filters in prepared:
         # Embed once per query, never once per ranking mode. Failure remains visible.
-        vector, expanded, embedding_failed = None, None, False
+        # The expanded query's embedding fails only the rankings that need it.
+        vector, expanded, embedding_failed, expansion_failed = None, None, False, False
         try:
             vector = embed(db.settings, [case["query"]])[0]
-            expanded = _expanded_vector(db, case["query"], vocabularies)
         except Exception:
             embedding_failed = True
+        try:
+            expanded = _expanded_vector(db, case["query"], vocabularies)
+        except Exception:
+            expansion_failed = True
         candidates, rankings = {}, {}
         for variant, mode in ((v, m) for v in variants for m in MODES):
             key = ranking_key(mode, variant)
             try:
                 if mode != "keyword" and embedding_failed:
                     raise ValueError("query embedding unavailable")
+                if mode != "keyword" and expansion_failed and _expands_vector(variant):
+                    raise ValueError("expanded query embedding unavailable")
                 found = search(
                     db,
                     case["query"],
