@@ -73,6 +73,7 @@ def collect_manager(
             "url": candidate.url,
             "title": candidate.title,
             "published": candidate.published,
+            "listing_year": candidate.listing_year,
             "status": status,
             "seen_at": datetime.now(UTC).isoformat(timespec="seconds"),
             **extra,
@@ -82,14 +83,29 @@ def collect_manager(
         try:
             candidates = list(list_candidates(collector, client))
         except (requests.RequestException, RobotsDisallowed, ValueError) as exc:
-            log.warning("letters_listing_failed", manager=manager.id, kind=collector.kind, error=repr(exc)[:200])
+            log.warning(
+                "letters_listing_failed",
+                manager=manager.id,
+                kind=collector.kind,
+                error=repr(exc)[:200],
+            )
             counts["listing_failed"] = counts.get("listing_failed", 0) + 1
             continue
-        log.info("letters_listed", manager=manager.id, kind=collector.kind, candidates=len(candidates))
+        log.info(
+            "letters_listed", manager=manager.id, kind=collector.kind, candidates=len(candidates)
+        )
 
         for candidate in candidates:
-            if manifest.get(candidate.url, {}).get("status") in FINAL:
+            seen = manifest.get(candidate.url, {})
+            if seen.get("status") in FINAL:
                 counts["already_seen"] = counts.get("already_seen", 0) + 1
+                # Letters stored before listing years were read get theirs without a new
+                # download; the research sync then adds the year to their titles. A page
+                # that stops showing years keeps the year already recorded.
+                known_year = seen.get("listing_year")
+                if not dry_run and candidate.listing_year not in (None, known_year):
+                    seen["listing_year"] = candidate.listing_year
+                    counts["listing_year_updated"] = counts.get("listing_year_updated", 0) + 1
                 continue
             keep, reason = is_letter(
                 candidate.url, candidate.title, listing_is_letters=candidate.listing_is_letters

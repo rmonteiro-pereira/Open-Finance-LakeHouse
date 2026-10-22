@@ -27,14 +27,36 @@ pipeline, whose completion is separate from registration.
 
 A letter whose listing link text is a generic button ("Mais informações", "Leia aqui",
 "PDF") is titled from its file name instead (`ofl/documents/collectors.py`,
-`link_title`). The letters sync derives the title from the manifest row each time, and
-the derived title is part of the letter's sync signature. Letters stored with a generic
-title are therefore synced again, and only those: the item title, its heading vector
+`link_title`). A title that names a month without its year ("Jun", "Junho", "Carta
+Mensal Julho") gets the year from the first of these sources that states it
+(`ofl/documents/periods.py`):
+
+1. the file name ("Carta_do_Gestor-Junho_2023.pdf", "Carta Mensal 2025_04.pdf");
+2. the year heading the link sat under on the listing page, which the collector records
+   as `listing_year` in the manifest, only on pages sectioned by year;
+3. the upload date, when it falls in the month the title names;
+4. the start of the letter's first extracted page ("Junho/2023"), once the original has
+   been processed.
+
+Each source must agree with the month the title names; a source that gives two years,
+or a year after the current one, gives nothing. When no source states the year the
+title stays as it is: a year is never guessed. "Jun" becomes "Junho 2023", "Carta
+Mensal Julho" becomes "Carta Mensal Julho 2025", and a title with no month ("COVID")
+dated by its file name becomes "COVID - Março 2020". The same month and year fill the
+letter's date (month precision) when the manifest has none.
+
+The letters sync derives the title and date from the manifest row each time, and both
+are part of the letter's sync signature. Letters whose title or date changes are
+therefore synced again, and only those: the item title, its heading vector
 (`item_headings`, kept by a trigger) and its metadata passage are rewritten, and the
-original is not processed again. Body passages keep a hash of the title for jurisdiction
-tags, so run the jurisdiction backfill afterwards:
+original is not processed again. A new letter dated only by its first page gets its
+year on the first sync after its original is processed. Letters collected before
+listing years were recorded get them from the next `ofl letters collect`, which
+updates the manifest without downloading the letters again. Body passages keep a hash
+of the title for jurisdiction tags, so run the jurisdiction backfill afterwards:
 
 ```sh
+ofl letters collect --manager SOURCE_ID
 ofl research sync --kind letters --collection SOURCE_ID --sync-limit 20
 ofl research tag-jurisdiction --limit 1000
 ```

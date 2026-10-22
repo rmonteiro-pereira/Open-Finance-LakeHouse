@@ -417,8 +417,13 @@ looks like a letter, and stores each PDF once (keyed by content hash) with a man
 manager, so a second run only fetches what is new. `ofl letters coverage` reports what the
 archive holds. A letter's title is the link text on the listing page, except when that
 text is a generic button ("Mais informações", "Leia aqui", "PDF"): then the PDF's file name
-becomes the title. The research catalog applies the same rule when it syncs letters, so
-letters stored with a generic title are retitled by the next
+becomes the title. On a listing page that groups letters under year headings ("2026",
+"2025"), the collector also records the year each link sits under; tabbed pages, where
+the headings do not section the links, give no year. The research catalog applies these
+rules when it syncs letters: generic titles are replaced, and a title that names a month
+without its year ("Jun", "Carta Mensal Julho") gets the year from the file name, the
+listing page, the upload date or the letter's first page, in that order. No year is
+guessed when none of them states it. Letters stored before are retitled by the next
 `ofl research sync --kind letters` (see `docs/research/WORKBENCH.md`). The collector
 identifies itself, obeys `robots.txt` and waits between
 requests; sites behind bot challenges are not collected. The files go to a private bucket
