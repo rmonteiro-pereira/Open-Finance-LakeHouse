@@ -29,6 +29,8 @@ OPAQUE_URL = "https://example.org/_files/ugd/0a1b2c_3d4e5f60718293a4b5c6d7e8f901
         ("https://example.org/CartaMensal_202301.pdf", Period(2023, 1)),
         ("https://example.org/CartaDezembro2019.pdf", Period(2019, 12)),
         ("https://example.org/Carta-outubro-22-1.pdf", None),
+        # The number before the year is the letter's sequence number, not its month.
+        ("https://example.org/Carta-Gestora-10-2013.pdf", None),
         ("https://example.org/Carta-Junho-de-2023.pdf", Period(2023, 6)),
         ("https://example.org/Carta-Junho_2021-e-Dezembro_2021.pdf", None),
         ("https://example.org/Carta-Junho-2023-revisada-2024.pdf", None),
@@ -97,6 +99,9 @@ def test_bare_month_is_a_month_word_alone():
         ("Carta Mensal " + "texto " * 60 + "comparado com junho de 2023", 6, None),
         # A year after the latest one is a reading error, and nothing else is trusted.
         ("Fevereiro 2071 Fevereiro de 2021", 2, None),
+        # A header date in numbers counts the same way.
+        ("Carta 06/2024 Comparado com maio de 2024", 6, 2024),
+        ("07/2024 Comparado com junho de 2023, o fundo", 6, None),
     ],
 )
 def test_first_page_year_reads_the_header_date_only(text, month, year):
@@ -148,6 +153,7 @@ def test_file_name_year_after_the_latest_year_is_not_used():
         ("https://example.org/Carta_202307.pdf", Period(2024, 6)),
         ("https://example.org/Carta_2023_07.pdf", Period(2024, 6)),
         ("https://example.org/Carta_20230715.pdf", Period(2024, 6)),
+        ("https://example.org/Carta-07-2023.pdf", Period(2024, 6)),
     ],
 )
 def test_year_alone_in_the_file_name_comes_before_the_listing_year(url, period):
@@ -161,6 +167,7 @@ def test_year_alone_in_the_file_name_comes_before_the_listing_year(url, period):
         "https://example.org/Carta_202307.pdf",
         "https://example.org/Carta-Julho-2023.pdf",
         "https://example.org/Carta_20230715.pdf",
+        "https://example.org/Carta-07-2023.pdf",
     ],
 )
 def test_file_name_with_another_month_dates_nothing_alone(url):

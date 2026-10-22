@@ -53,6 +53,11 @@ _SHORT_NAMES = {name: number for number, name in enumerate(_ABBREVIATIONS, 1)}
 _WORD = re.compile(r"[^\W\d_]+", re.UNICODE)
 _YEAR = r"(?:19|20)\d\d"
 _TITLE_YEAR = re.compile(rf"(?<!\d)({_YEAR})(0[1-9]|1[0-2])?(?!\d)")
+# Month before year ("07-2023") is read only to spot a contradiction: in file names the
+# number before a year is often a letter's sequence number ("Carta-Studio-10-2013").
+_MONTH_FIRST_PERIOD = re.compile(
+    rf"(?<![0-9A-Za-z])(0?[1-9]|1[0-2])[-_ ./]({_YEAR})(?![0-9A-Za-z])"
+)
 _NUMERIC_PERIOD = re.compile(rf"(?<![0-9A-Za-z])({_YEAR})[-_ .]?(0[1-9]|1[0-2])(?![0-9A-Za-z])")
 # A year alone, a year and month ("202301") or a full date ("20240115").
 _DATE_TOKEN = re.compile(rf"({_YEAR})(?:(0[1-9]|1[0-2])(?:[0-3]\d)?)?")
@@ -190,6 +195,7 @@ def _named_months(url: str, tokens: list[str]) -> set[int]:
             months.add(int(date.group(2)))
     name = unquote(urlparse(url).path.rsplit("/", 1)[-1])
     months.update(int(match.group(2)) for match in _NUMERIC_PERIOD.finditer(name))
+    months.update(int(match.group(1)) for match in _MONTH_FIRST_PERIOD.finditer(name))
     return months
 
 
@@ -240,17 +246,29 @@ def date_period(published: str) -> Period | None:
     return Period(int(match.group(1)), int(match.group(2))) if match else None
 
 
+def _header_date(header: str) -> tuple[int | None, int] | None:
+    """The first month and year a header states, in words ("Junho/2023") or in numbers
+    ("06/2023"), as (month, year)."""
+    in_words = _TEXT_PERIOD.search(header)
+    in_numbers = _MONTH_FIRST_PERIOD.search(header)
+    if in_numbers and (in_words is None or in_numbers.start() < in_words.start()):
+        return int(in_numbers.group(1)), int(in_numbers.group(2))
+    if in_words is None:
+        return None
+    month = _month_of_word(in_words.group(1), allow_short=True, allow_marco=True)
+    return month, int(in_words.group(2))
+
+
 def first_page_year(text: str, month: int, *, latest_year: int) -> int | None:
     """The year a letter's first page gives its month in its header ("Junho/2023").
 
     Only the first month and year in the header counts. When it names another month,
     or a year after latest_year, the page gives nothing: a later mention of the title's
     month is usually a comparison with an earlier period."""
-    header = _TEXT_PERIOD.search(text[:HEADER_CHARACTERS])
-    if header is None:
+    header_date = _header_date(text[:HEADER_CHARACTERS])
+    if header_date is None:
         return None
-    named = _month_of_word(header.group(1), allow_short=True, allow_marco=True)
-    year = int(header.group(2))
+    named, year = header_date
     if named != month or not plausible_year(year, latest_year):
         return None
     return year
