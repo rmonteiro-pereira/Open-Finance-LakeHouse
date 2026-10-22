@@ -423,7 +423,10 @@ the headings do not section the links, give no year. The research catalog applie
 rules when it syncs letters: generic titles are replaced, and a title that names a month
 without its year ("Jun", "Carta Mensal Julho") gets the year from the file name, the
 listing page, the upload date or the letter's first page, in that order. No year is
-guessed when none of them states it. Letters stored before are retitled by the next
+guessed when none of them states it. When a manager's letters name more than one fund,
+each title starts with its fund ("Alfa FIA - Dezembro 2024"), taken from the link text,
+the file name, the manifest or the letter's first page, and never guessed. Letters stored
+before are retitled by the next
 `ofl research sync --kind letters` (see `docs/research/WORKBENCH.md`). The collector
 identifies itself, obeys `robots.txt` and waits between
 requests; sites behind bot challenges are not collected. The files go to a private bucket

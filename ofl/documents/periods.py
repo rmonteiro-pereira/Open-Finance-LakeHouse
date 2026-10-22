@@ -99,7 +99,8 @@ class Period:
         return f"{MONTH_NAMES[self.month - 1]} {self.year}"
 
 
-def _fold(text: str) -> str:
+def fold(text: str) -> str:
+    """The text without accents, in lower case, for comparing words."""
     decomposed = unicodedata.normalize("NFKD", text)
     return decomposed.encode("ascii", "ignore").decode().casefold()
 
@@ -108,7 +109,7 @@ def _month_of_word(word: str, *, allow_short: bool, allow_marco: bool) -> int | 
     lowered = word.casefold()
     if lowered in _FULL_NAMES:
         return _FULL_NAMES[lowered]
-    folded = _fold(word)
+    folded = fold(word)
     if folded == "marco":
         return 3 if allow_marco else None
     if folded in _FULL_NAMES:
@@ -116,6 +117,11 @@ def _month_of_word(word: str, *, allow_short: bool, allow_marco: bool) -> int | 
     if allow_short and folded in _SHORT_NAMES:
         return _SHORT_NAMES[folded]
     return None
+
+
+def is_month_word(word: str) -> bool:
+    """True for a month name or its abbreviation, with or without accents ("Dez", "Marco")."""
+    return _month_of_word(word, allow_short=True, allow_marco=True) is not None
 
 
 def _single(values: set[int]) -> int | None:
