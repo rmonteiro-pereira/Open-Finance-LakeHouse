@@ -4,14 +4,24 @@ import io
 import json
 import re
 from calendar import monthrange
+from dataclasses import dataclass
 from datetime import date, datetime
 from urllib.parse import urlsplit
 
 from psycopg.types.json import Jsonb
 
 from ofl.documents.collectors import link_title
+from ofl.documents.funds import (
+    FundSources,
+    letter_fund,
+    needs_first_page_for_fund,
+    publishes_several_funds,
+    titled_with_fund,
+)
 from ofl.documents.periods import (
+    HEADER_CHARACTERS,
     LetterSources,
+    Period,
     dated_title,
     letter_period,
     needs_first_page,
@@ -272,17 +282,20 @@ def _letter_sources(row, url, first_page=None):
 
 
 def _first_pages(db, letters):
-    """The first extracted page of each letter's current original, keyed by item and checksum.
+    """The header of each letter's current original, keyed by item and checksum.
 
-    letters holds (item_id, sha256) pairs; only those originals are read."""
+    letters holds (item_id, sha256) pairs; only those originals are read. Periods and
+    funds are read from the header alone, so only its first characters are returned,
+    plus one that tells whether the page goes on past the header."""
     if not letters:
         return {}
     rows = db.rows(
-        """SELECT p.item_id, a.sha256, string_agg(p.text, ' ' ORDER BY p.method, p.ordinal) AS text
+        """SELECT p.item_id, a.sha256,
+        left(string_agg(p.text, ' ' ORDER BY p.method, p.ordinal), %s) AS text
         FROM passages p JOIN assets a ON a.id=p.asset_id AND a.active
         WHERE p.item_id=ANY(%s) AND p.active AND p.page=1 AND p.method<>'metadata'
         GROUP BY p.item_id, a.sha256""",
-        ([item_id for item_id, _ in letters],),
+        (HEADER_CHARACTERS + 1, [item_id for item_id, _ in letters]),
     )
     return {(row["item_id"], row["sha256"]): row["text"] for row in rows}
 
@@ -310,50 +323,116 @@ def _manifest_letters(db, source, collection):
     return letters
 
 
+@dataclass
+class _StoredLetter:
+    """One stored letter on its way to a sync candidate."""
+
+    manager: str
+    url: str
+    row: dict
+    link_text: str
+    period: Period | None = None
+    first_page: str | None = None
+    # Whether the first page was looked up, since an unprocessed original has none.
+    first_page_loaded: bool = False
+
+    @property
+    def item_id(self):
+        return item_identity("manager_letter", digest([self.manager, self.url]))
+
+    def fund_sources(self):
+        return FundSources(
+            link_text=self.link_text,
+            url=self.url,
+            manifest_fund=str(self.row.get("fund") or ""),
+            first_page=self.first_page,
+        )
+
+
+def _load_first_pages(db, letters):
+    """Look up the first extracted page of each given letter not looked up yet."""
+    waiting = [letter for letter in letters if not letter.first_page_loaded]
+    pages = _first_pages(db, [(letter.item_id, letter.row["sha256"]) for letter in waiting])
+    for letter in waiting:
+        letter.first_page = pages.get((letter.item_id, letter.row["sha256"]))
+        letter.first_page_loaded = True
+
+
+def _dated_letters(db, source, collection, *, latest_year):
+    """Every stored letter, with page-chrome titles replaced and its period derived."""
+    letters = []
+    for manager, url, row in _manifest_letters(db, source, collection):
+        link_text = str(row.get("title") or "")
+        titled = {**row, "title": link_title(link_text, url)}
+        letters.append(_StoredLetter(manager, url, titled, link_text))
+    # The first page is read only for letters no other source dates, and only once the
+    # original has been processed; a new letter gets its year on a later sync.
+    undated = [
+        letter
+        for letter in letters
+        if needs_first_page(_letter_sources(letter.row, letter.url), latest_year=latest_year)
+    ]
+    _load_first_pages(db, undated)
+    for letter in letters:
+        sources = _letter_sources(letter.row, letter.url, letter.first_page)
+        letter.period = letter_period(sources, latest_year=latest_year)
+        letter.row["title"] = dated_title(letter.row["title"], letter.period)
+    return letters
+
+
+def _add_fund_names(db, letters):
+    """Put the fund's name in the titles of collections that publish for several funds.
+
+    The first page is read only for letters that no other source names a fund for."""
+    unnamed = [
+        letter
+        for letter in letters
+        if needs_first_page_for_fund(letter.fund_sources(), letter.manager)
+    ]
+    _load_first_pages(db, unnamed)
+    by_manager = {}
+    for letter in letters:
+        by_manager.setdefault(letter.manager, []).append(letter)
+    for manager, own in by_manager.items():
+        funds = [letter_fund(letter.fund_sources(), manager) for letter in own]
+        if not publishes_several_funds(funds):
+            continue
+        for letter, fund in zip(own, funds, strict=True):
+            letter.row["title"] = titled_with_fund(letter.row["title"], fund)
+
+
 def _letter_candidates(db, source, collection, *, latest_year):
     """One sync candidate per stored letter, with its derived title and period.
 
-    Manifests written before page-chrome link texts were replaced still hold them, and
-    many titles name a month without its year; both are derived here on every sync (see
-    ofl/documents/periods.py). Besides the manifest, the result depends on the letter's
-    first extracted page and on latest_year, so a letter can be retitled after its
-    original is processed or when a new year begins. The derived title and period are
-    part of the signature, so only letters they change are synced again."""
-    letters = []
-    for manager, url, row in _manifest_letters(db, source, collection):
-        letters.append(
-            (manager, url, {**row, "title": link_title(str(row.get("title") or ""), url)})
-        )
-    # The first page is read only for letters no other source dates, and only once the
-    # original has been processed; a new letter gets its year on a later sync.
-    waiting = {}
-    for manager, url, row in letters:
-        if needs_first_page(_letter_sources(row, url), latest_year=latest_year):
-            item_id = item_identity("manager_letter", digest([manager, url]))
-            waiting[(manager, url)] = (item_id, row["sha256"])
-    pages = _first_pages(db, list(waiting.values()))
-    candidates = []
-    for manager, url, row in letters:
-        first_page = pages.get(waiting.get((manager, url)))
-        sources = _letter_sources(row, url, first_page)
-        period = letter_period(sources, latest_year=latest_year)
-        candidates.append(_letter_candidate(manager, url, row, period))
-    return candidates
+    Manifests written before page-chrome link texts were replaced still hold them, many
+    titles name a month without its year, and a manager with several funds gives their
+    letters for the same month the same title. Titles are therefore derived on every sync
+    (see ofl/documents/periods.py and ofl/documents/funds.py). Besides the manifest, the
+    result depends on the letter's first extracted page, on the other letters of its
+    collection and on latest_year, so a letter can be retitled after its original is
+    processed, when its manager starts publishing for a second fund, or when a new year
+    begins. The derived title and period are part of the signature, so only letters they
+    change are synced again."""
+    letters = _dated_letters(db, source, collection, latest_year=latest_year)
+    _add_fund_names(db, letters)
+    return [
+        _letter_candidate(letter.manager, letter.url, letter.row, letter.period)
+        for letter in letters
+    ]
 
 
 def _letter_candidate(manager, url, row, period):
-    dated = {**row, "title": dated_title(row["title"], period)}
     # Collection activity does not change the semantic revision of a letter. The period
     # joins the signature only when there is one, so letters without one keep the
     # signature they had before periods were derived.
-    stable = {k: dated.get(k) for k in ("title", "published", "url", "sha256")}
+    stable = {k: row.get(k) for k in ("title", "published", "url", "sha256")}
     if period:
         stable["period"] = period.iso
     return {
         "key": f"letters/{manager}/{digest(url)}",
         "signature": digest(stable),
         "manager": manager,
-        "row": dated,
+        "row": row,
         "period": period.iso if period else "",
     }
 

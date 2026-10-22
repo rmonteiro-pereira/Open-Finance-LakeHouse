@@ -1,7 +1,18 @@
-"""The month and year a letter covers, read from its title, file name, listing and text."""
+"""The month, year and fund a letter covers, read from its title, file name, listing and
+text."""
 
 import pytest
 
+from ofl.documents.funds import (
+    Fund,
+    FundSources,
+    file_name_fund,
+    letter_fund,
+    needs_first_page_for_fund,
+    publishes_several_funds,
+    stated_fund,
+    titled_with_fund,
+)
 from ofl.documents.periods import (
     HEADER_CHARACTERS,
     LetterSources,
@@ -271,3 +282,199 @@ def test_dated_title(title, period, dated):
 
 def test_period_gives_an_iso_month_for_the_catalog_date():
     assert Period(2023, 6).iso == "2023-06"
+
+
+@pytest.mark.parametrize(
+    ("url", "fund"),
+    [
+        ("https://example.org/a/7G_Alfa_FIA-Carta_do_Gestor-Dezembro_2024.pdf", "Alfa FIA"),
+        (
+            "https://example.org/a/7G_Beta_Hedge_FIM-Carta_do_Gestor-Maio_2019.pdf",
+            "Beta Hedge FIM",
+        ),
+        (
+            "https://example.org/a/7G_Beta_Hedge_FIM+7G_XY_FIA-Carta_do_Gestor-Junho_2020.pdf",
+            "Beta Hedge FIM + XY FIA",
+        ),
+        (
+            "https://example.org/a/7G%20Gama%20FIF%20A%C3%A7%C3%B5es%20-%20Carta%20-%202025.pdf",
+            "Gama FIF Ações",
+        ),
+        ("https://example.org/a/Carta-Alfa-Prev-FIC-FIM-Dez-2024.pdf", "Alfa Prev FIC FIM"),
+        # The manager's name alone is kept when the fund has no name of its own.
+        ("https://example.org/a/7G_FIA-Carta-Junho_2024.pdf", "7G FIA"),
+        ("https://example.org/a/Carta_do_Gestor-Dezembro_2024.pdf", None),
+        # Lower-case "fim" is the Portuguese word for "end", not a fund-type code.
+        ("https://example.org/a/carta-de-fim-de-ano-2024.pdf", None),
+        ("https://example.org/a/Carta-FIM-2024.pdf", None),
+        (OPAQUE_URL, None),
+    ],
+)
+def test_file_name_fund(url, fund):
+    assert file_name_fund(url, "7g") == fund
+
+
+@pytest.mark.parametrize(
+    ("text", "fund"),
+    [
+        ("CARTA DO GESTOR 7G BETA HEDGE FIA DEZEMBRO 2024", "Beta Hedge FIA"),
+        ("Prezados Cotistas, Alfa Macro FIA Junho 2024", "Alfa Macro FIA"),
+        # A name inside running text has no known start or end.
+        ("Prezados cotistas do Alfa Macro FIA, em junho", None),
+        ("DESEJAMOS UM BOM FIM DE ANO", None),
+        ("Alfa Fundo de Fundos FIA", None),
+        # At most six words before the code and two qualifiers after it.
+        ("Alfa Beta Gama Delta Zeta Teta FIA", "Alfa Beta Gama Delta Zeta Teta FIA"),
+        ("Iota Alfa Beta Gama Delta Zeta Teta FIA", None),
+        ("Alfa FIC FIM CP IE", "Alfa FIC FIM CP IE"),
+        ("Alfa FIC FIM CP IE Prev", None),
+        # A bare code names some fund without saying which.
+        ("Alfa FIA + FII", None),
+        ("Carta FII Junho 2024", None),
+        ("Carta FIDC NP Junho 2024", None),
+        ("Alfa FIA + FIDC NP", None),
+        # Outside file names a lone FIM may be the word "fim"; another code settles it.
+        ("DESEJAMOS BOM FIM", None),
+        ("Desejamos Bom FIM", None),
+        ("7G FII Alfa Malls", "FII Alfa Malls"),
+        ("ALFA MACRO FIC FIM JUNHO 2024", "Alfa Macro FIC FIM"),
+        # A heading that names a fund and its former name names two funds.
+        ("7G GAMA FIA (antigo 7G ALFA FIA)", None),
+        ("Alfa Macro FII | Beta Ações FIA", None),
+        ("No fim do ano os juros caíram", None),
+        ("Dez", None),
+        # A number after the code is a share class or reference, not part of the name.
+        ("Value Q FIC FIA026", "Value Q FIC FIA"),
+        ("Desempenho Gestora Value FIA", "Value FIA"),
+        ("Relatório Gerencial FII Alfa Malls", "FII Alfa Malls"),
+        # After a name, a capitalised word that is not a qualifier starts the text.
+        ("ALFA FIA PREZADOS COTISTAS", "Alfa FIA"),
+        ("Alfa Master FIDC NP Carta", "Alfa Master FIDC NP"),
+        ("Value Q FIC FIA Junho", "Value Q FIC FIA"),
+        # Two codes apart are two funds, so the text names no single fund.
+        ("Alfa FIA Beta FII", None),
+        # Sentence words around a code are not a name.
+        ("ATÉ O FIA DO ANO", None),
+        # A name longer than the limit has no reliable end, so funds that differ only in
+        # their last words are not read as one.
+        ("FII Alfa Renda Urbana Corporativa Sul Norte Leste", None),
+        ("FII Alfa Renda Logística", "FII Alfa Renda Logística"),
+    ],
+)
+def test_stated_fund_needs_exactly_one_named_fund(text, fund):
+    assert stated_fund(text, "7g") == fund
+
+
+def test_a_lone_fim_counts_as_the_code_in_a_file_name_only():
+    url = "https://example.org/a/Alfa_Macro_FIM-Carta-Junho_2024.pdf"
+    assert file_name_fund(url, "gestora") == "Alfa Macro FIM"
+    assert stated_fund("Alfa Macro FIM - Junho 2024", "gestora") is None
+
+
+@pytest.mark.parametrize("text", ["Alfa Macro FIM - Junho 2024", "Desejamos Bom FIM"])
+def test_a_text_that_may_name_a_fund_with_fim_stops_the_search(text):
+    # The text may name the letter's fund, so no later source may name another one.
+    later_sources = FundSources(
+        link_text=text,
+        url="https://example.org/a/Beta_FIA-Carta-Junho_2024.pdf",
+        first_page="Gama FIA Carta",
+    )
+    assert letter_fund(later_sources, "gestora") is None
+    assert not needs_first_page_for_fund(later_sources, "gestora")
+    as_manifest = FundSources(
+        link_text="Jun", url=OPAQUE_URL, manifest_fund=text, first_page="Gama FIA Carta"
+    )
+    assert letter_fund(as_manifest, "gestora") is None
+    assert not needs_first_page_for_fund(as_manifest, "gestora")
+
+
+def test_only_the_managers_whole_name_is_dropped_from_a_fund_name():
+    assert stated_fund("Alfa Capital Beta FIA", "alfa-capital") == "Beta FIA"
+    assert stated_fund("Capital Beta FIA", "alfa-capital") == "Capital Beta FIA"
+
+
+def test_letter_fund_takes_the_first_source_that_names_one():
+    named_by_file = "https://example.org/a/Beta_Renda_FIA-Carta-Junho_2024.pdf"
+    every_source = FundSources(
+        link_text="Alfa Macro FIA - Junho",
+        url=named_by_file,
+        manifest_fund="Gama FIA",
+        first_page="Delta Ações FIA Carta Mensal",
+    )
+    assert letter_fund(every_source, "gestora") == Fund("Alfa Macro FIA", "link_text")
+    header = "Delta Ações FIA Carta Mensal"
+    by_file = FundSources(
+        link_text="Jun", url=named_by_file, manifest_fund="Gama FIA", first_page=header
+    )
+    assert letter_fund(by_file, "gestora") == Fund("Beta Renda FIA", "file_name")
+    by_manifest = FundSources(
+        link_text="Jun", url=OPAQUE_URL, manifest_fund="Gama FIA", first_page=header
+    )
+    assert letter_fund(by_manifest, "gestora") == Fund("Gama FIA", "manifest")
+    # The manifest follows the same rules: no fund-type code, no fund.
+    without_code = FundSources(link_text="Jun", url=OPAQUE_URL, manifest_fund="Gama")
+    assert letter_fund(without_code, "gestora") is None
+    by_header = FundSources(link_text="Jun", url=OPAQUE_URL, first_page="Delta Ações FIA Carta")
+    assert letter_fund(by_header, "gestora") == Fund("Delta Ações FIA", "first_page")
+    assert letter_fund(FundSources(link_text="Jun", url=OPAQUE_URL), "gestora") is None
+
+
+@pytest.mark.parametrize(
+    "link_text",
+    ["Alfa FIA Beta FII", "Alfa FIA + FII", "ATÉ O FIM DO ANO", "Carta Mensal - Junho"],
+)
+def test_a_link_text_naming_no_single_fund_falls_through_to_the_file_name(link_text):
+    sources = FundSources(
+        link_text=link_text,
+        url="https://example.org/a/Gama_FIA-Carta-Junho_2024.pdf",
+    )
+    assert letter_fund(sources, "gestora") == Fund("Gama FIA", "file_name")
+
+
+def test_first_page_names_the_fund_only_in_its_header():
+    body_mention = "Carta Mensal Junho 2024 " + "x" * HEADER_CHARACTERS + " | Alfa Macro FIA"
+    sources = FundSources(link_text="Jun", url=OPAQUE_URL, first_page=body_mention)
+    assert letter_fund(sources, "gestora") is None
+
+
+def test_a_name_cut_by_the_header_limit_is_not_used():
+    name = "FII Alfa Renda Logística"
+    # The header ends inside the name, after "FII Alfa Renda Log".
+    padding = "x" * (HEADER_CHARACTERS - len(" | FII Alfa Renda Log"))
+    page = padding + " | " + name + " Junho 2024"
+    assert page[:HEADER_CHARACTERS].endswith(" | FII Alfa Renda Log")
+    sources = FundSources(link_text="Jun", url=OPAQUE_URL, first_page=page)
+    assert letter_fund(sources, "gestora") is None
+    whole = FundSources(link_text="Jun", url=OPAQUE_URL, first_page="Carta | " + name)
+    assert letter_fund(whole, "gestora") == Fund(name, "first_page")
+
+
+def test_several_funds_means_two_different_names():
+    alfa = Fund("Alfa FIA", "file_name")
+    alfa_header = Fund("ALFA FIA", "first_page")
+    beta = Fund("Beta Hedge FIM", "file_name")
+    assert publishes_several_funds([alfa, None, beta])
+    assert not publishes_several_funds([alfa, alfa_header, None])
+    assert not publishes_several_funds([None, None])
+
+
+@pytest.mark.parametrize(
+    ("title", "fund", "titled"),
+    [
+        ("Dezembro 2024", Fund("Alfa FIA", "file_name"), "Alfa FIA - Dezembro 2024"),
+        (
+            "Carta Alfa FIA Junho 2024",
+            Fund("Alfa FIA", "file_name"),
+            "Carta Alfa FIA Junho 2024",
+        ),
+        # The name is compared word by word, so punctuation in the title does not matter.
+        (
+            "Alfa Master FIDC-NP - Junho",
+            Fund("Alfa Master FIDC NP", "link_text"),
+            "Alfa Master FIDC-NP - Junho",
+        ),
+        ("Dezembro 2024", None, "Dezembro 2024"),
+    ],
+)
+def test_titled_with_fund(title, fund, titled):
+    assert titled_with_fund(title, fund) == titled

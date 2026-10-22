@@ -4,14 +4,16 @@ import hashlib
 import io
 import json
 from datetime import date
+from types import SimpleNamespace
 
 import pytest
 
 pytest.importorskip("psycopg")
 
-from ofl.research.archive import index_text
+from ofl.documents.periods import HEADER_CHARACTERS
+from ofl.research.archive import index_text, item_identity
 from ofl.research.db import digest
-from ofl.research.library import date_interval, sync_library
+from ofl.research.library import _letter_candidates, date_interval, sync_library
 from ofl.research.macro import catalog, export_series, series_query, sync_macro
 from ofl.research.search import search
 from tests.test_research import research  # noqa: F401
@@ -352,6 +354,183 @@ def test_bare_month_letter_takes_its_year_from_its_first_page_once_processed(res
     # Retitling rewrites the catalog entry only; the original is not processed again.
     assert len(db.rows("SELECT id FROM jobs WHERE kind='process_asset'")) == 1
     assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
+
+
+def fund_letters_manifest(letters, manager="test-manager"):
+    """A manager's manifest of several letters and their originals, from (pdf, url, title)."""
+    blobs = {}
+    records = []
+    for pdf, url, title in letters:
+        sha = hashlib.sha256(pdf).hexdigest()
+        record = letter_manifest(pdf, url=url, title=title)
+        records.append(record["letters/manifest/test-manager.jsonl"].decode())
+        blobs[f"letters/files/{manager}/{sha}.pdf"] = pdf
+    blobs[f"letters/manifest/{manager}.jsonl"] = "\n".join(records).encode()
+    return blobs
+
+
+def _letter_titles(db):
+    return sorted(row["title"] for row in db.rows("SELECT title FROM items"))
+
+
+def test_letters_of_two_funds_for_the_same_month_get_the_fund_in_their_titles(research):
+    db, store = research
+    alfa = (
+        b"%PDF-1.7\nsynthetic letter for the first fund\n",
+        "https://example.org/files/Gestora_Alfa_Macro_FIM-Carta-Dezembro_2024.pdf",
+        "Dez",
+    )
+    beta = (
+        b"%PDF-1.7\nsynthetic letter for the second fund\n",
+        "https://example.org/files/Gestora_Beta_Acoes_FIA-Carta-Dezembro_2024.pdf",
+        "Dez",
+    )
+    # Another manager's letter, named after its only fund, must keep its title.
+    single_fund = fund_letters_manifest(
+        [
+            (
+                b"%PDF-1.7\nsynthetic letter of a single-fund manager\n",
+                "https://example.org/files/Gama_Renda_FIA-Carta-Dezembro_2024.pdf",
+                "Dez",
+            )
+        ],
+        manager="other-manager",
+    )
+    first_fund_only = LibraryFixture({**fund_letters_manifest([alfa]), **single_fund})
+    result = sync_library(db, store, "letters", source=first_fund_only)
+    assert (result["items"], result["unchanged"]) == (2, 0)
+    # One fund is no reason to change a title.
+    assert _letter_titles(db) == ["Dezembro 2024", "Dezembro 2024"]
+
+    both_funds = LibraryFixture({**fund_letters_manifest([alfa, beta]), **single_fund})
+    # The letter already synced is retitled once its collection covers a second fund.
+    result = sync_library(db, store, "letters", source=both_funds)
+    assert (result["items"], result["unchanged"]) == (2, 1)
+    assert _letter_titles(db) == [
+        "Alfa Macro FIM - Dezembro 2024",
+        "Beta Acoes FIA - Dezembro 2024",
+        "Dezembro 2024",
+    ]
+    result = sync_library(db, store, "letters", source=both_funds)
+    assert (result["items"], result["unchanged"]) == (0, 3)
+
+
+class FirstPageReads:
+    """A database stand-in that records which letters' first pages are read."""
+
+    settings = SimpleNamespace(bridge_metadata_bytes=1_000_000, bridge_object_limit=1000)
+
+    def __init__(self):
+        self.read_items = []
+
+    def rows(self, query, params=()):
+        self.read_items.extend(params[-1])
+        return []
+
+
+def test_first_page_is_read_only_for_letters_no_other_source_names_a_fund_for():
+    named = (
+        b"%PDF-1.7\nsynthetic letter named by its file name\n",
+        "https://example.org/files/Alfa_Macro_FIM-Carta-Dezembro_2024.pdf",
+        "Dezembro 2024",
+    )
+    unnamed = (
+        b"%PDF-1.7\nsynthetic letter with an opaque file name\n",
+        "https://example.org/_files/ugd/0a1b2c_opaque.pdf",
+        "Dezembro 2024",
+    )
+    # Neither the title nor the file name dates this one, so its first page could give
+    # both its year and its fund; it is still looked up only once.
+    undated = (
+        b"%PDF-1.7\nsynthetic letter titled by month only\n",
+        "https://example.org/_files/ugd/0a1b2c_undated.pdf",
+        "Junho",
+    )
+    db = FirstPageReads()
+    source = LibraryFixture(fund_letters_manifest([named, unnamed, undated]))
+    _letter_candidates(db, source, None, latest_year=2026)
+    expected = [
+        item_identity("manager_letter", digest(["test-manager", letter[1]]))
+        for letter in (undated, unnamed)
+    ]
+    assert sorted(db.read_items) == sorted(expected)
+
+
+def test_letters_sharing_a_title_take_the_fund_from_their_first_page(research):
+    db, store = research
+    opaque = "https://example.org/_files/ugd/0a1b2c_{}.pdf"
+    letters = [
+        (b"%PDF-1.7\nsynthetic first letter\n", opaque.format("first"), "Junho 2024"),
+        (b"%PDF-1.7\nsynthetic second letter\n", opaque.format("second"), "Junho 2024"),
+    ]
+    source = LibraryFixture(fund_letters_manifest(letters))
+    assert sync_library(db, store, "letters", source=source)["items"] == len(letters)
+    # Until the originals are processed nothing names the fund, so the titles stay.
+    assert _letter_titles(db) == ["Junho 2024", "Junho 2024"]
+
+    headers = {
+        opaque.format("first"): "CARTA MENSAL ALFA MACRO FIA JUNHO 2024 Em maio",
+        opaque.format("second"): "Carta Mensal Beta Ações FIA Junho 2024 Em maio",
+    }
+    assets = db.rows(
+        """SELECT a.id, a.item_id, i.metadata->>'url' AS url
+        FROM assets a JOIN items i ON i.id=a.item_id"""
+    )
+    for asset in assets:
+        with db.connect() as con:
+            index_text(
+                con,
+                item_id=asset["item_id"],
+                asset_id=asset["id"],
+                revision="synthetic-page",
+                text=headers[asset["url"]],
+                method="text",
+                page=1,
+            )
+    assert sync_library(db, store, "letters", source=source)["items"] == len(letters)
+    assert _letter_titles(db) == ["Alfa Macro FIA - Junho 2024", "Beta Ações FIA - Junho 2024"]
+    # Retitling rewrites the catalog entries only; the originals are not processed again.
+    assert len(db.rows("SELECT id FROM jobs WHERE kind='process_asset'")) == len(letters)
+    assert sync_library(db, store, "letters", source=source)["unchanged"] == len(letters)
+
+
+def test_a_fund_name_cut_by_the_header_limit_is_not_used(research):
+    db, store = research
+    named = (
+        b"%PDF-1.7\nsynthetic letter named by its file name\n",
+        "https://example.org/files/Alfa_Macro_FIA-Carta-Junho_2024.pdf",
+        "Junho 2024",
+    )
+    opaque = (
+        b"%PDF-1.7\nsynthetic letter named only past its header\n",
+        "https://example.org/_files/ugd/0a1b2c_cut.pdf",
+        "Junho 2024",
+    )
+    letters = [named, opaque]
+    source = LibraryFixture(fund_letters_manifest(letters))
+    assert sync_library(db, store, "letters", source=source)["items"] == len(letters)
+
+    # The header limit falls inside the fund's name, after "FII Beta Renda Log".
+    padding = "x" * (HEADER_CHARACTERS - len(" | FII Beta Renda Log"))
+    page = padding + " | FII Beta Renda Logística Junho 2024"
+    asset = db.rows(
+        """SELECT a.id, a.item_id FROM assets a JOIN items i ON i.id=a.item_id
+        WHERE i.metadata->>'url'=%s""",
+        (opaque[1],),
+    )[0]
+    with db.connect() as con:
+        index_text(
+            con,
+            item_id=asset["item_id"],
+            asset_id=asset["id"],
+            revision="synthetic-page",
+            text=page,
+            method="text",
+            page=1,
+        )
+    # Only one fund is named reliably, so neither title changes.
+    assert sync_library(db, store, "letters", source=source)["unchanged"] == len(letters)
+    assert _letter_titles(db) == ["Junho 2024", "Junho 2024"]
 
 
 def test_macro_snapshot_validates_actual_coverage_and_export(research):

@@ -48,8 +48,37 @@ Mensal Julho" becomes "Carta Mensal Julho 2025", and a title with no month ("COV
 dated by its file name becomes "COVID - Março 2020". The letter's date is its upload
 date when the manifest has one; otherwise the derived month dates it (month precision).
 
-The letters sync derives the title and date from the manifest row each time, and both
-are part of the letter's sync signature. Letters whose title or date changes are
+A manager that runs several funds often labels each fund's letter with the month alone,
+so two letters share a title ("Dezembro 2024"). When the letters of one collection name
+more than one fund, each letter's title starts with its fund ("Alfa FIA - Dezembro
+2024"), unless the title already names it (`ofl/documents/funds.py`). The fund comes from
+the first of these sources that names one:
+
+1. the link text on the listing page ("Carta Alfa Macro FIA - Junho");
+2. the file name ("7G_Alfa_FIA-Carta_do_Gestor-Dezembro_2024.pdf" gives "Alfa FIA");
+3. a `fund` field in the manifest row, for a collector that knows it (none records it
+   yet);
+4. the header of the letter's first extracted page (its first 300 characters), read only
+   for letters no other source names a fund for, once the original has been processed.
+
+Every source follows the same rules, the manifest field included. A fund name must carry
+a fund-type code in capitals (FIA, FIM, FIC, FIF, FII, FIDC, ...) and at least one other
+word; after the code only qualifiers such as "Ações", "NP" or "Master" belong to it. The
+name must be set apart by a separator, a document word ("Carta"), a month or a number:
+a name inside running text ("um bom FIM de ano") or longer than six words before its code
+gives nothing. A code with qualifiers only ("FIM CP") does not say which fund it is, and
+outside a file name a lone "FIM" may be the word "fim" ("bom FIM de ano"), so neither
+counts; next to another code ("FIC FIM") it does. A link text or manifest value that
+would name a fund only if its lone "FIM" were the code ends the search: the letter gets
+no fund, rather than one from a later source that may be a different fund.
+The manager's whole name is dropped from its front ("7G Alfa FIA" becomes "Alfa FIA"). A
+source that names two different funds gives nothing, except two names joined with "+"
+("Beta Hedge FIM + XY FIA"), which is one letter for both funds. A letter no source names
+a fund for keeps its title, so two letters can still share one; a fund is never guessed.
+
+The letters sync derives the title and date from the manifest row each time (and, for
+the fund, from the other letters of the same collection), and both are part of the
+letter's sync signature. Letters whose title or date changes are
 therefore synced again, and only those: the item title, its heading vector
 (`item_headings`, kept by a trigger) and its metadata passage are rewritten, and the
 original is not processed again. Besides the manifest, the derivation reads the
