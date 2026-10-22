@@ -10,12 +10,12 @@ import yaml
 from pydantic import BaseModel, Field
 
 
-
 def sources_dir() -> Path:
     """Folder holding the source lists.
 
-    In a checkout it is ``sources/`` at the repo root. In the image the package is
-    installed into site-packages while the lists stay in ``/app/sources``, which is where
+    In a checkout, and in the research image (which installs the project editable from
+    ``/app``), it is ``sources/`` next to the package. The batch images install the
+    package into site-packages while the lists stay in ``/app/sources``, which is where
     ``OFL_REGISTRY`` points; so that variable's folder wins when it is set.
     """
     registry = os.getenv("OFL_REGISTRY")
