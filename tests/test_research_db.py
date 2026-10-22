@@ -1,13 +1,15 @@
 """Opening research database connections while PostgreSQL restarts."""
 
-import psycopg
 import pytest
 from pydantic import ValidationError
 from structlog.testing import capture_logs
 
-from ofl.research import db as research_db
-from ofl.research.config import ResearchSettings
-from ofl.research.db import Database
+# The core test lane installs no database driver; the research lane runs these.
+psycopg = pytest.importorskip("psycopg")
+
+from ofl.research import db as research_db  # noqa: E402
+from ofl.research.config import ResearchSettings  # noqa: E402
+from ofl.research.db import Database  # noqa: E402
 
 SECRET_URL = "postgresql://research:not-a-real-password@db.example:5432/research"
 
