@@ -31,7 +31,9 @@ A letter whose listing link text is a generic button ("Mais informações", "Lei
 Mensal Julho") gets the year from the first of these sources that states it
 (`ofl/documents/periods.py`):
 
-1. the file name ("Carta_do_Gestor-Junho_2023.pdf", "Carta Mensal 2025_04.pdf");
+1. the file name: a month and year ("Carta_do_Gestor-Junho_2023.pdf", "Carta Mensal
+   2025_04.pdf"), or a year alone ("Carta-1Semestre_2021.pdf") for the title's month;
+   a file name that mentions another month or another year gives nothing;
 2. the year heading the link sat under on the listing page, which the collector records
    as `listing_year` in the manifest, only on pages sectioned by year;
 3. the upload date, when it falls in the month the title names;

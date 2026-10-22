@@ -177,13 +177,28 @@ def _stated_years(tokens: list[str]) -> set[int]:
 
 
 def _named_months(tokens: list[str]) -> set[int]:
-    """Every month a file name spells out in full, with or without a year next to it."""
+    """Every month a file name names, in full or abbreviated, with or without a year."""
     months = set()
     for token in tokens:
-        month = _month_of_word(token, allow_short=False, allow_marco=True)
+        month = _month_of_word(token, allow_short=True, allow_marco=True)
         if month:
             months.add(month)
     return months
+
+
+def _file_name_tokens(url: str) -> list[str]:
+    name = unquote(urlparse(url).path.rsplit("/", 1)[-1])
+    stem = name.rsplit(".", 1)[0] if "." in name else name
+    return _FILE_NAME_TOKEN.findall(_CAMEL_CASE_BOUNDARY.sub(" ", stem))
+
+
+def file_name_year(url: str, month: int) -> int | None:
+    """The one year a file name states, when it names no month other than the given one:
+    "Carta-1Semestre_2021.pdf" gives 2021 for a letter titled "Jun"."""
+    tokens = _file_name_tokens(url)
+    if not _named_months(tokens) <= {month}:
+        return None
+    return _single(_stated_years(tokens))
 
 
 def file_name_period(url: str) -> Period | None:
@@ -197,7 +212,7 @@ def file_name_period(url: str) -> Period | None:
     periods = {
         Period(int(match.group(1)), int(match.group(2))) for match in _NUMERIC_PERIOD.finditer(stem)
     }
-    tokens = _FILE_NAME_TOKEN.findall(_CAMEL_CASE_BOUNDARY.sub(" ", stem))
+    tokens = _file_name_tokens(url)
     for index, token in enumerate(tokens):
         month = _month_of_word(token, allow_short=True, allow_marco=True)
         if month:
@@ -253,6 +268,9 @@ def _agrees(period: Period | None, month: int | None, year: int | None) -> bool:
 
 def _year_only_period(sources: LetterSources, month: int, *, latest_year: int) -> Period | None:
     """The period from sources that give only a year for the month the title names."""
+    named_year = file_name_year(sources.url, month)
+    if named_year and plausible_year(named_year, latest_year):
+        return Period(named_year, month)
     listing_year = sources.listing_year
     if listing_year and plausible_year(listing_year, latest_year):
         return Period(listing_year, month)
@@ -268,8 +286,9 @@ def _year_only_period(sources: LetterSources, month: int, *, latest_year: int) -
 def letter_period(sources: LetterSources, *, latest_year: int) -> Period | None:
     """The month a letter covers, from the first source that states it.
 
-    The order is the title itself, the file name, the listing page's year heading, the
-    upload date and the first page. A title that names several months or several years
+    The order is the title itself, the file name (a month and year, or a year alone for
+    the month the title names), the listing page's year heading, the upload date and the
+    first page. A title that names several months or several years
     gives nothing. A source must agree with the month and year the title names, and a
     year after latest_year is a typing or reading error. The listing year, upload date
     and first page only give a year, so they are used only when the title names the month
