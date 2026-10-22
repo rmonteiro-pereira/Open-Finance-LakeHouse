@@ -3,6 +3,7 @@
 import hashlib
 import json
 import threading
+import time
 import uuid
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -13,7 +14,13 @@ import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 
+from ofl.platform.logging import get_logger
+
 from .config import ResearchSettings
+
+log = get_logger(__name__)
+# The longest wait between two connection attempts.
+MAX_CONNECT_WAIT_SECONDS = 60.0
 
 
 def uid() -> str:
@@ -45,8 +52,9 @@ def lock_item(con, item_id):
 
 
 class Database:
-    def __init__(self, settings: ResearchSettings):
+    def __init__(self, settings: ResearchSettings, *, sleep=time.sleep):
         self.settings = settings
+        self._sleep = sleep
         # Set only inside session(): the connection connect() may borrow, its lock and
         # whether the session is still open.
         self._shared = ContextVar(f"research_session_{id(self)}", default=None)
@@ -68,10 +76,36 @@ class Database:
                     return
             finally:
                 shared.lock.release()
-        with psycopg.connect(
-            self.settings.database_url, row_factory=dict_row, connect_timeout=5
-        ) as con:
+        with self._open() as con:
             yield con
+
+    def _open(self, **options):
+        """A new connection, retried while the server cannot be reached.
+
+        Only opening the connection is retried. Nothing has been sent yet, so a retry
+        cannot repeat a write; an error inside a transaction is never retried here."""
+        attempts = self.settings.connect_attempts
+        wait = self.settings.connect_retry_seconds
+        for attempt in range(1, attempts):
+            try:
+                return self._connect_once(options)
+            except psycopg.OperationalError as error:
+                # The error type only: nothing from the connection string belongs in a log.
+                log.warning(
+                    "research_db_connect_retry",
+                    attempt=attempt,
+                    attempts=attempts,
+                    wait_seconds=wait,
+                    error=type(error).__name__,
+                )
+                self._sleep(wait)
+                wait = min(wait * 2, MAX_CONNECT_WAIT_SECONDS)
+        return self._connect_once(options)
+
+    def _connect_once(self, options):
+        return psycopg.connect(
+            self.settings.database_url, row_factory=dict_row, connect_timeout=5, **options
+        )
 
     @contextmanager
     def session(self):
@@ -81,9 +115,7 @@ class Database:
         if self._shared.get() is not None:
             yield
             return
-        with psycopg.connect(
-            self.settings.database_url, row_factory=dict_row, connect_timeout=5, autocommit=True
-        ) as con:
+        with self._open(autocommit=True) as con:
             shared = SimpleNamespace(connection=con, lock=threading.Lock(), open=True)
             token = self._shared.set(shared)
             try:

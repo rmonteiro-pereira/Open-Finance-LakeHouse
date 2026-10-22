@@ -36,6 +36,12 @@ class ResearchSettings(BaseSettings):
     # Query embeddings kept per process, keyed by model space and text; 0 keeps none.
     query_vector_cache: int = Field(0, ge=0, le=10000)
     lease_seconds: int = Field(300, ge=30)
+    # Opening a database connection is retried while the server is unreachable, so a
+    # PostgreSQL restart (about 90 s from pod start to ready on the VPS) does not fail a
+    # sync or a worker. Waits double from connect_retry_seconds, up to one minute each:
+    # the defaults wait 5+10+20+40+60 s, about two minutes and a quarter in all.
+    connect_attempts: int = Field(6, ge=1, le=20)
+    connect_retry_seconds: float = Field(5.0, ge=0, le=60)
     library_bucket: str = "documents"
     snapshot_bucket: str = "ofl-public"
     bridge_object_limit: int = Field(10000, ge=1, le=100000)
