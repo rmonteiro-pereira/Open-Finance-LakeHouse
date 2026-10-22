@@ -255,6 +255,28 @@ def test_letter_with_generic_link_text_is_retitled_from_its_file_name(research):
     assert sync_library(db, store, "letters", source=chrome)["unchanged"] == 1
 
 
+def test_letter_synced_with_a_generic_title_is_retitled_by_the_next_sync(research):
+    db, store = research
+    pdf = b"%PDF-1.7\nsynthetic letter stored before titles were derived\n"
+    url = "https://example.org/files/CartaMensal_202301.pdf"
+    source = LibraryFixture(letter_manifest(pdf, url=url, title="PDF"))
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    # Put the catalog back in the state a sync that copied the link text left it in.
+    stored = {"title": "PDF", "published": "", "url": url}
+    stored["sha256"] = hashlib.sha256(pdf).hexdigest()
+    with db.connect() as con:
+        con.execute("UPDATE items SET title='PDF'")
+        con.execute("UPDATE library_entries SET signature=%s", (digest(stored),))
+
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    assert [row["title"] for row in db.rows("SELECT title FROM items")] == ["Carta Mensal 202301"]
+    headings = db.rows(
+        "SELECT heading @@ to_tsquery('portuguese_unaccent','202301') AS period FROM item_headings"
+    )
+    assert headings == [{"period": True}]
+    assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
+
+
 def test_macro_snapshot_validates_actual_coverage_and_export(research):
     db, store = research
     source = snapshot()
