@@ -46,6 +46,10 @@ migration job, API and worker, with ports bound to loopback.
 OCR requires `pdftoppm`, `tesseract`, Portuguese/English language data, and the
 `research-ocr` extra. `docker/Dockerfile.research` contains those dependencies and
 installs from `uv.lock`. A failed OCR job preserves its original and completed pages.
+The image also carries the source lists `sources/letters.yml` and `sources/news.yml`, so
+`ofl letters collect` and `ofl news collect` run in the research pods without setting
+`OFL_REGISTRY`; `tests/test_research_image.py` fails when the documents lane reads a list
+the Dockerfile does not copy.
 
 ## Storage and identity
 
