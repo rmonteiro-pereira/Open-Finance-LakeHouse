@@ -58,6 +58,8 @@ _TITLE_YEAR = re.compile(rf"(?<!\d)({_YEAR})(0[1-9]|1[0-2])?(?!\d)")
 _MONTH_FIRST_PERIOD = re.compile(
     rf"(?<![0-9A-Za-z])(0?[1-9]|1[0-2])[-_ ./]({_YEAR})(?![0-9A-Za-z])"
 )
+# A year-first date in running text ("2024-07", "2024/07/15").
+_YEAR_FIRST_DATE = re.compile(rf"(?<!\d)({_YEAR})[-/.](0[1-9]|1[0-2])(?!\d)")
 _NUMERIC_PERIOD = re.compile(rf"(?<![0-9A-Za-z])({_YEAR})[-_ .]?(0[1-9]|1[0-2])(?![0-9A-Za-z])")
 # A year alone, a year and month ("202301") or a full date ("20240115").
 _DATE_TOKEN = re.compile(rf"({_YEAR})(?:(0[1-9]|1[0-2])(?:[0-3]\d)?)?")
@@ -248,15 +250,22 @@ def date_period(published: str) -> Period | None:
 
 def _header_date(header: str) -> tuple[int | None, int] | None:
     """The first month and year a header states, in words ("Junho/2023") or in numbers
-    ("06/2023"), as (month, year)."""
+    ("06/2023", "2023-06"), as (month, year)."""
+    found = []
     in_words = _TEXT_PERIOD.search(header)
-    in_numbers = _MONTH_FIRST_PERIOD.search(header)
-    if in_numbers and (in_words is None or in_numbers.start() < in_words.start()):
-        return int(in_numbers.group(1)), int(in_numbers.group(2))
-    if in_words is None:
+    if in_words:
+        month = _month_of_word(in_words.group(1), allow_short=True, allow_marco=True)
+        found.append((in_words.start(), month, int(in_words.group(2))))
+    month_first = _MONTH_FIRST_PERIOD.search(header)
+    if month_first:
+        found.append((month_first.start(), int(month_first.group(1)), int(month_first.group(2))))
+    year_first = _YEAR_FIRST_DATE.search(header)
+    if year_first:
+        found.append((year_first.start(), int(year_first.group(2)), int(year_first.group(1))))
+    if not found:
         return None
-    month = _month_of_word(in_words.group(1), allow_short=True, allow_marco=True)
-    return month, int(in_words.group(2))
+    _, month, year = min(found, key=lambda date: date[0])
+    return month, year
 
 
 def first_page_year(text: str, month: int, *, latest_year: int) -> int | None:

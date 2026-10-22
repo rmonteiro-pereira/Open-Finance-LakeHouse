@@ -102,6 +102,8 @@ def test_bare_month_is_a_month_word_alone():
         # A header date in numbers counts the same way.
         ("Carta 06/2024 Comparado com maio de 2024", 6, 2024),
         ("07/2024 Comparado com junho de 2023, o fundo", 6, None),
+        ("Carta 2024-07 Comparado com junho de 2023", 6, None),
+        ("Carta 2024-06 Comparado com junho de 2023", 6, 2024),
     ],
 )
 def test_first_page_year_reads_the_header_date_only(text, month, year):
