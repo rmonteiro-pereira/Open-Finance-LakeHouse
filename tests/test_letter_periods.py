@@ -32,6 +32,9 @@ OPAQUE_URL = "https://example.org/_files/ugd/0a1b2c_3d4e5f60718293a4b5c6d7e8f901
         ("https://example.org/Carta-Junho-de-2023.pdf", Period(2023, 6)),
         ("https://example.org/Carta-Junho_2021-e-Dezembro_2021.pdf", None),
         ("https://example.org/Carta-Junho-2023-revisada-2024.pdf", None),
+        ("https://example.org/Carta-Junho-2023-revisada-20240115.pdf", None),
+        ("https://example.org/Carta-Junho-2023-Julho.pdf", None),
+        ("https://example.org/Carta-Junho-2023-revisada-20230715.pdf", Period(2023, 6)),
         ("https://example.org/Carta%20Mensal%20Julho.pdf", None),
         ("https://example.org/Relatorio_20230303_final.pdf", None),
         (OPAQUE_URL, None),
@@ -125,6 +128,15 @@ def test_file_name_that_contradicts_the_title_month_is_not_used():
 
 def test_file_name_year_after_the_latest_year_is_not_used():
     sources = LetterSources(title="Abr", url="https://example.org/Carta-Abril_2062.pdf")
+    assert letter_period(sources, latest_year=LATEST) is None
+
+
+def test_title_with_an_implausible_year_is_left_as_it_is():
+    sources = LetterSources(
+        title="Junho 2062",
+        url="https://example.org/Carta-Junho_2023.pdf",
+        first_page="Junho 2023",
+    )
     assert letter_period(sources, latest_year=LATEST) is None
 
 

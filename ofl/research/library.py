@@ -258,7 +258,7 @@ def index_news(con, db, store, row, object_key, *, policies=None):
     return True
 
 
-def _letter_sources(row, url, latest_year, first_page=None):
+def _letter_sources(row, url, first_page=None):
     listing_year = row.get("listing_year")
     if not isinstance(listing_year, int) or isinstance(listing_year, bool):
         listing_year = None
@@ -328,14 +328,14 @@ def _letter_candidates(db, source, collection, *, latest_year):
     # original has been processed; a new letter gets its year on a later sync.
     waiting = {}
     for manager, url, row in letters:
-        if needs_first_page(_letter_sources(row, url, latest_year), latest_year=latest_year):
+        if needs_first_page(_letter_sources(row, url), latest_year=latest_year):
             item_id = item_identity("manager_letter", digest([manager, url]))
             waiting[(manager, url)] = (item_id, row["sha256"])
     pages = _first_pages(db, list(waiting.values()))
     candidates = []
     for manager, url, row in letters:
         first_page = pages.get(waiting.get((manager, url)))
-        sources = _letter_sources(row, url, latest_year, first_page)
+        sources = _letter_sources(row, url, first_page)
         period = letter_period(sources, latest_year=latest_year)
         candidates.append(_letter_candidate(manager, url, row, period))
     return candidates

@@ -54,6 +54,8 @@ _WORD = re.compile(r"[^\W\d_]+", re.UNICODE)
 _YEAR = r"(?:19|20)\d\d"
 _TITLE_YEAR = re.compile(rf"(?<!\d)({_YEAR})(0[1-9]|1[0-2])?(?!\d)")
 _NUMERIC_PERIOD = re.compile(rf"(?<![0-9A-Za-z])({_YEAR})[-_ .]?(0[1-9]|1[0-2])(?![0-9A-Za-z])")
+# A year alone, a year and month ("202301") or a full date ("20240115").
+_DATE_TOKEN = re.compile(rf"({_YEAR})(?:(?:0[1-9]|1[0-2])(?:[0-3]\d)?)?")
 _FILE_NAME_TOKEN = re.compile(r"[^\W\d_]+|\d+", re.UNICODE)
 _CAMEL_CASE_BOUNDARY = re.compile(r"(?<=[a-z])(?=[A-Z])")
 _MONTH_TEXT = "|".join(
@@ -164,12 +166,32 @@ def _month_years(tokens: list[str], index: int) -> set[int]:
     return {int(token) for token in before + after if re.fullmatch(_YEAR, token)}
 
 
+def _stated_years(tokens: list[str]) -> set[int]:
+    """Every year a file name states, also inside dates such as "20240115" or "202301"."""
+    years = set()
+    for token in tokens:
+        match = _DATE_TOKEN.fullmatch(token)
+        if match:
+            years.add(int(match.group(1)))
+    return years
+
+
+def _named_months(tokens: list[str]) -> set[int]:
+    """Every month a file name spells out in full, with or without a year next to it."""
+    months = set()
+    for token in tokens:
+        month = _month_of_word(token, allow_short=False, allow_marco=True)
+        if month:
+            months.add(month)
+    return months
+
+
 def file_name_period(url: str) -> Period | None:
     """The month a document's file name names: "Carta_Abril_2020.pdf", "Carta_2025_04.pdf",
     "Carta-Junho-de-2023.pdf".
 
-    A month word counts only next to a four-digit year. A name with several different
-    months, or with another year anywhere in it, gives nothing."""
+    A month word counts only next to a four-digit year. A name that mentions another
+    month or states another year anywhere, even inside a date, gives nothing."""
     name = unquote(urlparse(url).path.rsplit("/", 1)[-1])
     stem = name.rsplit(".", 1)[0] if "." in name else name
     periods = {
@@ -183,8 +205,11 @@ def file_name_period(url: str) -> Period | None:
     if len(periods) != 1:
         return None
     period = next(iter(periods))
-    stated_years = {int(token) for token in tokens if re.fullmatch(_YEAR, token)}
-    return period if stated_years <= {period.year} else None
+    if not _stated_years(tokens) <= {period.year}:
+        return None
+    if not _named_months(tokens) <= {period.month}:
+        return None
+    return period
 
 
 def date_period(published: str) -> Period | None:
@@ -255,6 +280,8 @@ def letter_period(sources: LetterSources, *, latest_year: int) -> Period | None:
         return None
     month = _single(months)
     year = _single(years)
+    if year is not None and not plausible_year(year, latest_year):
+        return None
     if month and year:
         return Period(year, month)
     from_file_name = file_name_period(sources.url)

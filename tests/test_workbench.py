@@ -296,6 +296,25 @@ def test_bare_month_letter_takes_its_year_and_date_from_the_file_name(research):
     assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
 
 
+def test_dated_title_synced_before_periods_were_derived_gets_its_date(research):
+    db, store = research
+    pdf = b"%PDF-1.7\nsynthetic letter titled with month and year\n"
+    url = "https://example.org/_files/ugd/0a1b2c_3d4e5f60718293a4b5c6d7e8f9012345.pdf"
+    source = LibraryFixture(letter_manifest(pdf, url=url, title="Junho 2023"))
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    # Put the catalog back in the state a sync that did not derive periods left it in:
+    # same title, no date, and a signature without the period.
+    stored = {"title": "Junho 2023", "published": "", "url": url}
+    stored["sha256"] = hashlib.sha256(pdf).hexdigest()
+    with db.connect() as con:
+        con.execute("UPDATE items SET date_start=NULL, date_end=NULL, date_precision='unknown'")
+        con.execute("UPDATE library_entries SET signature=%s", (digest(stored),))
+
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    assert _letter_titles_and_dates(db) == [("Junho 2023", date(2023, 6, 1), "month")]
+    assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
+
+
 def test_bare_month_letter_takes_its_year_from_the_listing_page(research):
     db, store = research
     pdf = b"%PDF-1.7\nsynthetic letter listed under a year heading\n"
