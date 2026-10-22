@@ -69,9 +69,10 @@ _TEXT_PERIOD = re.compile(
     rf"(?<![^\W\d_])({_MONTH_TEXT})\.?\s*(?:de\s+|/\s*|-\s*)?({_YEAR})(?!\d)",
     re.IGNORECASE,
 )
-# Only the start of the first page is read: a letter names its own month in its header,
-# and the rest of the page discusses other months.
-FIRST_PAGE_CHARACTERS = 4000
+# A letter states its own month in its header, before any month it discusses. In the
+# letters collected so far the header date sits within the first 60 characters of the
+# first page; 300 leaves room for a longer letterhead without reaching the body.
+HEADER_CHARACTERS = 300
 EARLIEST_YEAR = 1900
 
 
@@ -240,17 +241,19 @@ def date_period(published: str) -> Period | None:
 
 
 def first_page_year(text: str, month: int, *, latest_year: int) -> int | None:
-    """The year the start of a letter's first page gives its month ("Junho/2023").
+    """The year a letter's first page gives its month in its header ("Junho/2023").
 
-    Years after latest_year are reading errors and are ignored. Two different years for
-    the same month give nothing."""
-    years = set()
-    for match in _TEXT_PERIOD.finditer(text[:FIRST_PAGE_CHARACTERS]):
-        named = _month_of_word(match.group(1), allow_short=True, allow_marco=True)
-        year = int(match.group(2))
-        if named == month and plausible_year(year, latest_year):
-            years.add(year)
-    return _single(years)
+    Only the first month and year in the header counts. When it names another month,
+    or a year after latest_year, the page gives nothing: a later mention of the title's
+    month is usually a comparison with an earlier period."""
+    header = _TEXT_PERIOD.search(text[:HEADER_CHARACTERS])
+    if header is None:
+        return None
+    named = _month_of_word(header.group(1), allow_short=True, allow_marco=True)
+    year = int(header.group(2))
+    if named != month or not plausible_year(year, latest_year):
+        return None
+    return year
 
 
 @dataclass(frozen=True)

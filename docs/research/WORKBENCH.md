@@ -37,8 +37,9 @@ Mensal Julho") gets the year from the first of these sources that states it
 2. the year heading the link sat under on the listing page, which the collector records
    as `listing_year` in the manifest, only on pages sectioned by year;
 3. the upload date, when it falls in the month the title names;
-4. the start of the letter's first extracted page ("Junho/2023"), once the original has
-   been processed.
+4. the header date of the letter's first extracted page ("Junho/2023"), once the
+   original has been processed: the first month and year in its first 300 characters,
+   which must be the title's month (a later mention is usually a comparison).
 
 Each source must agree with the month the title names; a source that gives two years,
 or a year after the current one, gives nothing. When no source states the year the

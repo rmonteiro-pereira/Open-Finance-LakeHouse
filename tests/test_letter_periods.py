@@ -3,7 +3,7 @@
 import pytest
 
 from ofl.documents.periods import (
-    FIRST_PAGE_CHARACTERS,
+    HEADER_CHARACTERS,
     LetterSources,
     Period,
     dated_title,
@@ -91,17 +91,20 @@ def test_bare_month_is_a_month_word_alone():
         ("Gestora Exemplo | Carta Mensal | Junho/2023 | Em maio de 2023 os juros", 6, 2023),
         ("Gestora Exemplo | Carta Mensal | Junho/2023 | Em maio de 2023 os juros", 7, None),
         ("Carta jun. 2024", 6, 2024),
-        # A year after the latest one is a reading error, not a second year.
-        ("Fevereiro 2071 Fevereiro de 2021", 2, 2021),
-        ("Junho 2023 versus junho de 2022", 6, None),
+        # The header names another month; the title's month appears only as a comparison.
+        ("Carta Mensal Julho 2024 Comparado com junho de 2023, o fundo", 6, None),
+        # No header date: a month in the body is not the letter's own.
+        ("Carta Mensal " + "texto " * 60 + "comparado com junho de 2023", 6, None),
+        # A year after the latest one is a reading error, and nothing else is trusted.
+        ("Fevereiro 2071 Fevereiro de 2021", 2, None),
     ],
 )
-def test_first_page_year_takes_the_one_year_given_to_the_title_month(text, month, year):
+def test_first_page_year_reads_the_header_date_only(text, month, year):
     assert first_page_year(text, month, latest_year=LATEST) == year
 
 
-def test_first_page_year_reads_only_the_start_of_the_page():
-    text = "x" * FIRST_PAGE_CHARACTERS + " Junho 2023"
+def test_first_page_year_reads_only_the_header():
+    text = "x" * HEADER_CHARACTERS + " Junho 2023"
     assert first_page_year(text, 6, latest_year=LATEST) is None
 
 
