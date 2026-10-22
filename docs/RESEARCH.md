@@ -15,6 +15,18 @@ pgvector**. Do not use Airflow's database. `ofl research migrate` creates the
 extension and schema, so run that command with a migration role; use an application
 role for the API/worker afterwards.
 
+Every command, worker and the API retries **opening** a database connection while the
+server cannot be reached, so a PostgreSQL restart does not fail a sync, a scheduled
+job or a worker. Only opening is retried: nothing has been sent yet, so a retry cannot
+repeat a write, and an error inside a transaction fails as before.
+`OFL_RESEARCH_CONNECT_ATTEMPTS` (default 6) bounds the attempts and
+`OFL_RESEARCH_CONNECT_RETRY_SECONDS` (default 5) is the first wait, which doubles
+up to one minute. The defaults wait 5+10+20+40+60 s, about 2 min 15 s, plus up to
+5 s per attempt for the connect timeout. That covers a PostgreSQL pod restart on the
+VPS, about 90 s from start to ready, with room to spare. While the database is
+down, API requests wait the same way; set `OFL_RESEARCH_CONNECT_ATTEMPTS=1` on the
+API to fail them at once instead.
+
 ```sh
 uv run ofl research migrate
 uv run ofl b3 import /path/to/COTAHIST_A2024.ZIP
@@ -162,6 +174,8 @@ Configure these settings privately:
 | `OFL_RESEARCH_ORIGIN` | Exact browser origin; required for mutations |
 | `OFL_RESEARCH_DATABASE_URL` | Dedicated application database |
 | `OFL_RESEARCH_ROOT` | Persistent working volume shared by API/worker |
+| `OFL_RESEARCH_CONNECT_ATTEMPTS` | Attempts to open a database connection (default 6; 1 turns retrying off) |
+| `OFL_RESEARCH_CONNECT_RETRY_SECONDS` | First wait between attempts, doubling up to 60 s (default 5) |
 
 The private Next.js server must be reachable **only through a trusted gateway**
 that supplies/overwrites `Tailscale-User-Login`. The proxy strips client API identity
