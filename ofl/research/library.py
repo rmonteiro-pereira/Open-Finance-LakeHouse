@@ -9,6 +9,8 @@ from urllib.parse import urlsplit
 
 from psycopg.types.json import Jsonb
 
+from ofl.documents.collectors import link_title
+
 from .archive import index_text, upsert_item
 from .db import digest, lock_item
 
@@ -295,6 +297,11 @@ def sync_library(
                 if not SHA.fullmatch(sha):
                     raise ValueError("stored letter requires a valid checksum")
                 url = source_url(row.get("url"))
+                # Manifests written before page-chrome link texts were replaced still hold
+                # them. Deriving the title here fixes those letters on the next sync. The
+                # derived title is part of the signature, so only letters whose title
+                # changes are synced again.
+                row = {**row, "title": link_title(str(row.get("title") or ""), url)}
                 # Collection activity does not change the semantic revision of a letter.
                 stable = {k: row.get(k) for k in ("title", "published", "url", "sha256")}
                 candidates.append(

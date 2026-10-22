@@ -9,6 +9,7 @@ import pytest
 
 pytest.importorskip("psycopg")
 
+from ofl.research.db import digest
 from ofl.research.library import date_interval, sync_library
 from ofl.research.macro import catalog, export_series, series_query, sync_macro
 from ofl.research.search import search
@@ -205,6 +206,53 @@ def test_letter_original_is_verified_and_date_is_not_invented(research):
     assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
     assert len(db.rows("SELECT id FROM jobs WHERE kind='process_asset'")) == 1
     assert store.path(db.rows("SELECT object_key FROM assets")[0]["object_key"]).read_bytes() == pdf
+
+
+def letter_manifest(pdf, *, url, title):
+    """A one-letter manifest and its original, as the letters collector stores them."""
+    sha = hashlib.sha256(pdf).hexdigest()
+    record = {
+        "url": url,
+        "title": title,
+        "published": "",
+        "status": "stored",
+        "sha256": sha,
+        "seen_at": "2026-01-06T12:00:00Z",
+    }
+    return {
+        "letters/manifest/test-manager.jsonl": json.dumps(record).encode(),
+        f"letters/files/test-manager/{sha}.pdf": pdf,
+    }
+
+
+def test_letter_with_generic_link_text_is_retitled_from_its_file_name(research):
+    db, store = research
+    pdf = b"%PDF-1.7\nsynthetic letter for title derivation\n"
+    url = "https://example.org/files/Carta%20Mensal%20Julho.pdf"
+    described = LibraryFixture(letter_manifest(pdf, url=url, title="Carta de gestão"))
+    assert sync_library(db, store, "letters", source=described)["items"] == 1
+    # A descriptive title keeps the signature it had before titles were derived, so
+    # letters that are already correct are not synced again.
+    stable = {"title": "Carta de gestão", "published": "", "url": url}
+    stable["sha256"] = hashlib.sha256(pdf).hexdigest()
+    assert db.rows("SELECT signature FROM library_entries")[0]["signature"] == digest(stable)
+
+    # The same letter, as an older manifest recorded it with the page's button text.
+    chrome = LibraryFixture(letter_manifest(pdf, url=url, title="Mais informações"))
+    assert sync_library(db, store, "letters", source=chrome)["items"] == 1
+    assert [row["title"] for row in db.rows("SELECT title FROM items")] == ["Carta Mensal Julho"]
+    headings = db.rows(
+        """SELECT h.heading @@ to_tsquery('portuguese_unaccent','julho') AS julho,
+        h.heading @@ to_tsquery('portuguese_unaccent','informacoes') AS chrome
+        FROM item_headings h"""
+    )
+    assert headings == [{"julho": True, "chrome": False}]
+    metadata = db.rows("SELECT text FROM passages WHERE method='metadata' AND active")
+    assert len(metadata) == 1
+    assert metadata[0]["text"].startswith("Carta Mensal Julho ")
+    assert "informações" not in metadata[0]["text"]
+    assert len(db.rows("SELECT id FROM jobs WHERE kind='process_asset'")) == 1
+    assert sync_library(db, store, "letters", source=chrome)["unchanged"] == 1
 
 
 def test_macro_snapshot_validates_actual_coverage_and_export(research):
