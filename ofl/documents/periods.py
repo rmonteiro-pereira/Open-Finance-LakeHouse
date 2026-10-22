@@ -55,7 +55,7 @@ _YEAR = r"(?:19|20)\d\d"
 _TITLE_YEAR = re.compile(rf"(?<!\d)({_YEAR})(0[1-9]|1[0-2])?(?!\d)")
 _NUMERIC_PERIOD = re.compile(rf"(?<![0-9A-Za-z])({_YEAR})[-_ .]?(0[1-9]|1[0-2])(?![0-9A-Za-z])")
 # A year alone, a year and month ("202301") or a full date ("20240115").
-_DATE_TOKEN = re.compile(rf"({_YEAR})(?:(?:0[1-9]|1[0-2])(?:[0-3]\d)?)?")
+_DATE_TOKEN = re.compile(rf"({_YEAR})(?:(0[1-9]|1[0-2])(?:[0-3]\d)?)?")
 _FILE_NAME_TOKEN = re.compile(r"[^\W\d_]+|\d+", re.UNICODE)
 _CAMEL_CASE_BOUNDARY = re.compile(r"(?<=[a-z])(?=[A-Z])")
 _MONTH_TEXT = "|".join(
@@ -176,13 +176,19 @@ def _stated_years(tokens: list[str]) -> set[int]:
     return years
 
 
-def _named_months(tokens: list[str]) -> set[int]:
-    """Every month a file name names, in full or abbreviated, with or without a year."""
+def _named_months(url: str, tokens: list[str]) -> set[int]:
+    """Every month a file name names: in words, in full or abbreviated, or in numbers
+    ("2025_04", "202304", "20230415")."""
     months = set()
     for token in tokens:
         month = _month_of_word(token, allow_short=True, allow_marco=True)
         if month:
             months.add(month)
+        date = _DATE_TOKEN.fullmatch(token)
+        if date and date.group(2):
+            months.add(int(date.group(2)))
+    name = unquote(urlparse(url).path.rsplit("/", 1)[-1])
+    months.update(int(match.group(2)) for match in _NUMERIC_PERIOD.finditer(name))
     return months
 
 
@@ -196,7 +202,7 @@ def file_name_year(url: str, month: int) -> int | None:
     """The one year a file name states, when it names no month other than the given one:
     "Carta-1Semestre_2021.pdf" gives 2021 for a letter titled "Jun"."""
     tokens = _file_name_tokens(url)
-    if not _named_months(tokens) <= {month}:
+    if not _named_months(url, tokens) <= {month}:
         return None
     return _single(_stated_years(tokens))
 
@@ -222,7 +228,7 @@ def file_name_period(url: str) -> Period | None:
     period = next(iter(periods))
     if not _stated_years(tokens) <= {period.year}:
         return None
-    if not _named_months(tokens) <= {period.month}:
+    if not _named_months(url, tokens) <= {period.month}:
         return None
     return period
 

@@ -35,7 +35,8 @@ OPAQUE_URL = "https://example.org/_files/ugd/0a1b2c_3d4e5f60718293a4b5c6d7e8f901
         ("https://example.org/Carta-Junho-2023-revisada-20240115.pdf", None),
         ("https://example.org/Carta-Junho-2023-Julho.pdf", None),
         ("https://example.org/Carta-Junho-2023-Jul.pdf", None),
-        ("https://example.org/Carta-Junho-2023-revisada-20230715.pdf", Period(2023, 6)),
+        ("https://example.org/Carta-Junho-2023-revisada-20230715.pdf", None),
+        ("https://example.org/Carta-Junho-2023-revisada-20230630.pdf", Period(2023, 6)),
         ("https://example.org/Carta%20Mensal%20Julho.pdf", None),
         ("https://example.org/Relatorio_20230303_final.pdf", None),
         (OPAQUE_URL, None),
@@ -141,11 +142,26 @@ def test_file_name_year_after_the_latest_year_is_not_used():
         ("https://example.org/Carta-Julho-2023.pdf", Period(2024, 6)),
         ("https://example.org/Carta-2022-e-2023.pdf", Period(2024, 6)),
         ("https://example.org/Carta-2062.pdf", Period(2024, 6)),
+        ("https://example.org/Carta_202307.pdf", Period(2024, 6)),
+        ("https://example.org/Carta_2023_07.pdf", Period(2024, 6)),
+        ("https://example.org/Carta_20230715.pdf", Period(2024, 6)),
     ],
 )
 def test_year_alone_in_the_file_name_comes_before_the_listing_year(url, period):
     sources = LetterSources(title="Jun", url=url, listing_year=2024)
     assert letter_period(sources, latest_year=LATEST) == period
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://example.org/Carta_202307.pdf",
+        "https://example.org/Carta-Julho-2023.pdf",
+        "https://example.org/Carta_20230715.pdf",
+    ],
+)
+def test_file_name_with_another_month_dates_nothing_alone(url):
+    assert letter_period(LetterSources(title="Jun", url=url), latest_year=LATEST) is None
 
 
 def test_title_with_an_implausible_year_is_left_as_it_is():
