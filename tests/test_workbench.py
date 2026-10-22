@@ -9,6 +9,7 @@ import pytest
 
 pytest.importorskip("psycopg")
 
+from ofl.research.archive import index_text
 from ofl.research.db import digest
 from ofl.research.library import date_interval, sync_library
 from ofl.research.macro import catalog, export_series, series_query, sync_macro
@@ -208,7 +209,7 @@ def test_letter_original_is_verified_and_date_is_not_invented(research):
     assert store.path(db.rows("SELECT object_key FROM assets")[0]["object_key"]).read_bytes() == pdf
 
 
-def letter_manifest(pdf, *, url, title):
+def letter_manifest(pdf, *, url, title, **fields):
     """A one-letter manifest and its original, as the letters collector stores them."""
     sha = hashlib.sha256(pdf).hexdigest()
     record = {
@@ -218,6 +219,7 @@ def letter_manifest(pdf, *, url, title):
         "status": "stored",
         "sha256": sha,
         "seen_at": "2026-01-06T12:00:00Z",
+        **fields,
     }
     return {
         "letters/manifest/test-manager.jsonl": json.dumps(record).encode(),
@@ -274,6 +276,81 @@ def test_letter_synced_with_a_generic_title_is_retitled_by_the_next_sync(researc
         "SELECT heading @@ to_tsquery('portuguese_unaccent','202301') AS period FROM item_headings"
     )
     assert headings == [{"period": True}]
+    assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
+
+
+def _letter_titles_and_dates(db):
+    return [
+        (row["title"], row["date_start"], row["date_precision"])
+        for row in db.rows("SELECT title, date_start, date_precision FROM items")
+    ]
+
+
+def test_bare_month_letter_takes_its_year_and_date_from_the_file_name(research):
+    db, store = research
+    pdf = b"%PDF-1.7\nsynthetic letter named by month only\n"
+    url = "https://example.org/files/Fundo_X-Carta_do_Gestor-Junho_2023.pdf"
+    source = LibraryFixture(letter_manifest(pdf, url=url, title="Jun"))
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    assert _letter_titles_and_dates(db) == [("Junho 2023", date(2023, 6, 1), "month")]
+    assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
+
+
+def test_dated_title_synced_before_periods_were_derived_gets_its_date(research):
+    db, store = research
+    pdf = b"%PDF-1.7\nsynthetic letter titled with month and year\n"
+    url = "https://example.org/_files/ugd/0a1b2c_3d4e5f60718293a4b5c6d7e8f9012345.pdf"
+    source = LibraryFixture(letter_manifest(pdf, url=url, title="Junho 2023"))
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    # Put the catalog back in the state a sync that did not derive periods left it in:
+    # same title, no date, and a signature without the period.
+    stored = {"title": "Junho 2023", "published": "", "url": url}
+    stored["sha256"] = hashlib.sha256(pdf).hexdigest()
+    with db.connect() as con:
+        con.execute("UPDATE items SET date_start=NULL, date_end=NULL, date_precision='unknown'")
+        con.execute("UPDATE library_entries SET signature=%s", (digest(stored),))
+
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    assert _letter_titles_and_dates(db) == [("Junho 2023", date(2023, 6, 1), "month")]
+    assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
+
+
+def test_bare_month_letter_takes_its_year_from_the_listing_page(research):
+    db, store = research
+    pdf = b"%PDF-1.7\nsynthetic letter listed under a year heading\n"
+    url = "https://example.org/files/Carta%20Mensal%20Agosto.pdf"
+    source = LibraryFixture(
+        letter_manifest(pdf, url=url, title="Carta Mensal Agosto", listing_year=2025)
+    )
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    assert _letter_titles_and_dates(db) == [("Carta Mensal Agosto 2025", date(2025, 8, 1), "month")]
+
+
+def test_bare_month_letter_takes_its_year_from_its_first_page_once_processed(research):
+    db, store = research
+    pdf = b"%PDF-1.7\nsynthetic letter with an opaque file name\n"
+    url = "https://example.org/_files/ugd/0a1b2c_3d4e5f60718293a4b5c6d7e8f9012345.pdf"
+    source = LibraryFixture(letter_manifest(pdf, url=url, title="Junho"))
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    # Before the original is processed no source states the year, so none is added.
+    assert _letter_titles_and_dates(db) == [("Junho", None, "unknown")]
+    assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
+
+    asset = db.rows("SELECT id, item_id FROM assets")[0]
+    with db.connect() as con:
+        index_text(
+            con,
+            item_id=asset["item_id"],
+            asset_id=asset["id"],
+            revision="synthetic-page",
+            text="Gestora Exemplo Carta Mensal Junho/2023 Em maio os juros caíram",
+            method="text",
+            page=1,
+        )
+    assert sync_library(db, store, "letters", source=source)["items"] == 1
+    assert _letter_titles_and_dates(db) == [("Junho 2023", date(2023, 6, 1), "month")]
+    # Retitling rewrites the catalog entry only; the original is not processed again.
+    assert len(db.rows("SELECT id FROM jobs WHERE kind='process_asset'")) == 1
     assert sync_library(db, store, "letters", source=source)["unchanged"] == 1
 
 

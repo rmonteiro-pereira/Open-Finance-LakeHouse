@@ -10,8 +10,14 @@ from urllib.parse import urlsplit
 from psycopg.types.json import Jsonb
 
 from ofl.documents.collectors import link_title
+from ofl.documents.periods import (
+    LetterSources,
+    dated_title,
+    letter_period,
+    needs_first_page,
+)
 
-from .archive import index_text, upsert_item
+from .archive import index_text, item_identity, upsert_item
 from .db import digest, lock_item
 
 COLLECTION = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
@@ -252,6 +258,106 @@ def index_news(con, db, store, row, object_key, *, policies=None):
     return True
 
 
+def _letter_sources(row, url, first_page=None):
+    listing_year = row.get("listing_year")
+    if not isinstance(listing_year, int) or isinstance(listing_year, bool):
+        listing_year = None
+    return LetterSources(
+        title=str(row.get("title") or ""),
+        url=url,
+        listing_year=listing_year,
+        published=str(row.get("published") or ""),
+        first_page=first_page,
+    )
+
+
+def _first_pages(db, letters):
+    """The first extracted page of each letter's current original, keyed by item and checksum.
+
+    letters holds (item_id, sha256) pairs; only those originals are read."""
+    if not letters:
+        return {}
+    rows = db.rows(
+        """SELECT p.item_id, a.sha256, string_agg(p.text, ' ' ORDER BY p.method, p.ordinal) AS text
+        FROM passages p JOIN assets a ON a.id=p.asset_id AND a.active
+        WHERE p.item_id=ANY(%s) AND p.active AND p.page=1 AND p.method<>'metadata'
+        GROUP BY p.item_id, a.sha256""",
+        ([item_id for item_id, _ in letters],),
+    )
+    return {(row["item_id"], row["sha256"]): row["text"] for row in rows}
+
+
+def _manifest_letters(db, source, collection):
+    """Every stored letter in the selected manifests, as (manager, url, row)."""
+    letters = []
+    manifests = source.objects("letters/manifest/" + (collection + ".jsonl" if collection else ""))
+    for obj in manifests:
+        manager = obj["key"].removeprefix("letters/manifest/").removesuffix(".jsonl")
+        if not COLLECTION.fullmatch(manager) or (collection and manager != collection):
+            continue
+        raw = source.read(obj["key"], db.settings.bridge_metadata_bytes)
+        for line in raw.decode().splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if row.get("status") != "stored":
+                continue
+            if not SHA.fullmatch(str(row.get("sha256", ""))):
+                raise ValueError("stored letter requires a valid checksum")
+            letters.append((manager, source_url(row.get("url")), row))
+            if len(letters) > db.settings.bridge_object_limit:
+                raise ValueError("letter scope exceeds object limit; select a manager")
+    return letters
+
+
+def _letter_candidates(db, source, collection, *, latest_year):
+    """One sync candidate per stored letter, with its derived title and period.
+
+    Manifests written before page-chrome link texts were replaced still hold them, and
+    many titles name a month without its year; both are derived here on every sync (see
+    ofl/documents/periods.py). Besides the manifest, the result depends on the letter's
+    first extracted page and on latest_year, so a letter can be retitled after its
+    original is processed or when a new year begins. The derived title and period are
+    part of the signature, so only letters they change are synced again."""
+    letters = []
+    for manager, url, row in _manifest_letters(db, source, collection):
+        letters.append(
+            (manager, url, {**row, "title": link_title(str(row.get("title") or ""), url)})
+        )
+    # The first page is read only for letters no other source dates, and only once the
+    # original has been processed; a new letter gets its year on a later sync.
+    waiting = {}
+    for manager, url, row in letters:
+        if needs_first_page(_letter_sources(row, url), latest_year=latest_year):
+            item_id = item_identity("manager_letter", digest([manager, url]))
+            waiting[(manager, url)] = (item_id, row["sha256"])
+    pages = _first_pages(db, list(waiting.values()))
+    candidates = []
+    for manager, url, row in letters:
+        first_page = pages.get(waiting.get((manager, url)))
+        sources = _letter_sources(row, url, first_page)
+        period = letter_period(sources, latest_year=latest_year)
+        candidates.append(_letter_candidate(manager, url, row, period))
+    return candidates
+
+
+def _letter_candidate(manager, url, row, period):
+    dated = {**row, "title": dated_title(row["title"], period)}
+    # Collection activity does not change the semantic revision of a letter. The period
+    # joins the signature only when there is one, so letters without one keep the
+    # signature they had before periods were derived.
+    stable = {k: dated.get(k) for k in ("title", "published", "url", "sha256")}
+    if period:
+        stable["period"] = period.iso
+    return {
+        "key": f"letters/{manager}/{digest(url)}",
+        "signature": digest(stable),
+        "manager": manager,
+        "row": dated,
+        "period": period.iso if period else "",
+    }
+
+
 def _save_entry(con, kind, key, signature, detail):
     con.execute(
         """INSERT INTO library_entries(kind,source_key,signature,detail) VALUES (%s,%s,%s,%s)
@@ -277,43 +383,7 @@ def sync_library(
         prefix = "news/items/" + (collection + "/" if collection else "")
         candidates = source.objects(prefix)
     else:
-        manifests = source.objects(
-            "letters/manifest/" + (collection + ".jsonl" if collection else "")
-        )
-        candidates = []
-        for obj in manifests:
-            manager = obj["key"].removeprefix("letters/manifest/").removesuffix(".jsonl")
-            if not COLLECTION.fullmatch(manager) or (collection and manager != collection):
-                continue
-            for line in (
-                source.read(obj["key"], db.settings.bridge_metadata_bytes).decode().splitlines()
-            ):
-                if not line.strip():
-                    continue
-                row = json.loads(line)
-                if row.get("status") != "stored":
-                    continue
-                sha = str(row.get("sha256", ""))
-                if not SHA.fullmatch(sha):
-                    raise ValueError("stored letter requires a valid checksum")
-                url = source_url(row.get("url"))
-                # Manifests written before page-chrome link texts were replaced still hold
-                # them. Deriving the title here fixes those letters on the next sync. The
-                # derived title is part of the signature, so only letters whose title
-                # changes are synced again.
-                row = {**row, "title": link_title(str(row.get("title") or ""), url)}
-                # Collection activity does not change the semantic revision of a letter.
-                stable = {k: row.get(k) for k in ("title", "published", "url", "sha256")}
-                candidates.append(
-                    {
-                        "key": f"letters/{manager}/{digest(url)}",
-                        "signature": digest(stable),
-                        "manager": manager,
-                        "row": row,
-                    }
-                )
-                if len(candidates) > db.settings.bridge_object_limit:
-                    raise ValueError("letter scope exceeds object limit; select a manager")
+        candidates = _letter_candidates(db, source, collection, latest_year=date.today().year)
     policies = getattr(source, "news_tiers", {}) if kind == "news" else {}
     for candidate in candidates:
         key, signature = candidate["key"], candidate["signature"]
@@ -351,10 +421,12 @@ def sync_library(
                 )
                 if sha != row["sha256"]:
                     raise ValueError("letter original checksum does not match manifest")
+                # The upload date stays the letter's date when the manifest has one;
+                # otherwise the month the letter covers dates it.
                 record = _metadata(
                     collection=manager,
                     title=row.get("title"),
-                    published=row.get("published"),
+                    published=row.get("published") or candidate["period"],
                     url=source_url(row["url"]),
                     tier="private_original",
                     epistemic="attributed_opinion",
