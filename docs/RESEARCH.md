@@ -16,9 +16,10 @@ extension and schema, so run that command with a migration role; use an applicat
 role for the API/worker afterwards.
 
 Every command, worker and the API retries **opening** a database connection while the
-server cannot be reached, so a PostgreSQL restart does not fail a sync, a scheduled
-job or a worker. Only opening is retried: nothing has been sent yet, so a retry cannot
-repeat a write, and an error inside a transaction fails as before.
+server cannot be reached, so a sync, a scheduled job or a worker that starts during a
+short PostgreSQL restart waits for it instead of failing. Only opening is retried:
+nothing has been sent yet, so a retry cannot repeat a write. A connection lost inside a
+transaction still fails at once, and so does opening one after the budget below.
 `OFL_RESEARCH_CONNECT_ATTEMPTS` (default 6) bounds the attempts and
 `OFL_RESEARCH_CONNECT_RETRY_SECONDS` (default 5) is the first wait, which doubles
 up to one minute. The defaults wait 5+10+20+40+60 s, about 2 min 15 s, plus up to

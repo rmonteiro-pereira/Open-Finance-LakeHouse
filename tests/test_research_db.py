@@ -39,7 +39,9 @@ class Server:
     def connect(self, url, **options):
         self.calls.append(options)
         if len(self.calls) <= self.refusals:
-            raise psycopg.OperationalError("the database system is shutting down")
+            # A real message names the host; this one carries the whole connection
+            # string, so a log that copied the message would leak the password.
+            raise psycopg.OperationalError(f"connection to {url} failed: shutting down")
         return FakeConnection(options)
 
 
@@ -86,6 +88,15 @@ def test_an_error_inside_the_transaction_is_never_retried(monkeypatch):
     assert waits == []
 
 
+def test_an_error_inside_a_session_transaction_is_never_retried(monkeypatch):
+    db, server, waits = database(monkeypatch, refusals=0)
+    with pytest.raises(psycopg.OperationalError, match="lost mid-write"), db.session():
+        with db.connect():
+            raise psycopg.OperationalError("connection lost mid-write")
+    assert len(server.calls) == 1
+    assert waits == []
+
+
 def test_shared_session_connection_is_retried_too(monkeypatch):
     db, server, waits = database(monkeypatch, refusals=1)
     with db.session(), db.connect() as con:
@@ -101,6 +112,7 @@ def test_retry_log_never_holds_the_connection_string(monkeypatch):
     assert [entry["event"] for entry in logs] == ["research_db_connect_retry"]
     assert logs[0]["error"] == "OperationalError"
     assert "not-a-real-password" not in repr(logs)
+    assert "db.example" not in repr(logs)
 
 
 def test_retry_budget_comes_from_the_environment(monkeypatch):
