@@ -415,7 +415,12 @@ Brazilian asset managers publish on their own sites. `sources/letters.yml` lists
 managers and how each one publishes; `ofl letters collect` lists what is there, keeps what
 looks like a letter, and stores each PDF once (keyed by content hash) with a manifest per
 manager, so a second run only fetches what is new. `ofl letters coverage` reports what the
-archive holds. The collector identifies itself, obeys `robots.txt` and waits between
+archive holds. A letter's title is the link text on the listing page, except when that
+text is a generic button ("Mais informações", "Leia aqui", "PDF"): then the PDF's file name
+becomes the title. The research catalog applies the same rule when it syncs letters, so
+letters stored with a generic title are retitled by the next
+`ofl research sync --kind letters` (see `docs/research/WORKBENCH.md`). The collector
+identifies itself, obeys `robots.txt` and waits between
 requests; sites behind bot challenges are not collected. The files go to a private bucket
 (`DOCUMENTS_BUCKET`, default `documents`) and are not redistributed: most letters carry a
 notice against it. Background: `docs/research/fund-letters-sources.md`.

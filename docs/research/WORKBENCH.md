@@ -25,6 +25,20 @@ limits count stored originals. Inspect jobs for failures; do not infer corpus
 coverage from a completed small batch. PDFs enqueue the existing extraction/OCR
 pipeline, whose completion is separate from registration.
 
+A letter whose listing link text is a generic button ("Mais informações", "Leia aqui",
+"PDF") is titled from its file name instead (`ofl/documents/collectors.py`,
+`link_title`). The letters sync derives the title from the manifest row each time, and
+the derived title is part of the letter's sync signature. Letters stored with a generic
+title are therefore synced again, and only those: the item title, its heading vector
+(`item_headings`, kept by a trigger) and its metadata passage are rewritten, and the
+original is not processed again. Body passages keep a hash of the title for jurisdiction
+tags, so run the jurisdiction backfill afterwards:
+
+```sh
+ofl research sync --kind letters --collection SOURCE_ID --sync-limit 20
+ofl research tag-jurisdiction --limit 1000
+```
+
 The bridge reads existing S3 objects only; it does not crawl source URLs. Configure
 `OFL_RESEARCH_LIBRARY_BUCKET` (default `documents`) and
 `OFL_RESEARCH_SNAPSHOT_BUCKET` (default `ofl-public`), using the existing core S3

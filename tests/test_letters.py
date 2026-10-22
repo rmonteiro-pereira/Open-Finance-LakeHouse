@@ -4,7 +4,7 @@ import pytest
 
 from ofl.documents import letters, store
 from ofl.documents.classify import is_letter
-from ofl.documents.collectors import page_links, wp_media
+from ofl.documents.collectors import is_page_chrome, link_title, page_links, wp_media
 from ofl.documents.http import PoliteClient
 from ofl.documents.sources import Collector, Manager, load_managers
 
@@ -98,6 +98,55 @@ def test_page_links_keeps_pdf_anchors_once_with_their_text():
     got = list(page_links([page], client))
     assert [(c.url, c.title) for c in got] == [("https://site.example/cartas/docs/c1.pdf", "Carta 1")]
     assert got[0].listing_is_letters
+
+
+@pytest.mark.parametrize(
+    "link_text",
+    ["Mais informações", "MAIS INFORMACOES", "LEIA AQUI", "Saiba mais »", "PDF", "Download", ""],
+)
+def test_generic_button_texts_are_page_chrome(link_text):
+    assert is_page_chrome(link_text)
+
+
+@pytest.mark.parametrize(
+    "link_text", ["Carta Mensal - Abril 2025", "Junho", "Mais informações 2024"]
+)
+def test_descriptive_link_texts_are_not_page_chrome(link_text):
+    assert not is_page_chrome(link_text)
+
+
+@pytest.mark.parametrize(
+    ("link_text", "url", "title"),
+    [
+        (
+            "Mais informações",
+            "https://x.example/content/view/1/file/Carta%20Mensal%20Julho.pdf?version=1",
+            "Carta Mensal Julho",
+        ),
+        ("PDF", "https://x.example/uploads/CartaMensal_202301.pdf", "Carta Mensal 202301"),
+        (
+            "",
+            "https://x.example/a/Fund-Carta_do_Gestor+Maio_2024.pdf",
+            "Fund Carta do Gestor Maio 2024",
+        ),
+        ("Carta Anual 2024", "https://x.example/uploads/ca24.pdf", "Carta Anual 2024"),
+        ("Leia aqui", "https://x.example/", "Leia aqui"),
+    ],
+)
+def test_link_title_replaces_page_chrome_with_the_file_name(link_text, url, title):
+    assert link_title(link_text, url) == title
+
+
+def test_page_links_titles_button_links_from_the_file_name():
+    page = "https://site.example/cartas/"
+    html = (
+        '<p>Resumo do mes. <a href="/files/Carta%20Mensal%20Maio.pdf">'
+        "<strong>LEIA AQUI</strong></a></p>"
+        '<a href="/files/Carta-Anual.pdf">Carta anual de gestão</a>'
+    )
+    client, _ = _client({page: _Resp(text=html)})
+    got = list(page_links([page], client))
+    assert [c.title for c in got] == ["Carta Mensal Maio", "Carta anual de gestão"]
 
 
 def test_robots_disallow_is_respected():

@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import html
 import re
+import unicodedata
 from collections.abc import Iterator
 from dataclasses import dataclass
-from urllib.parse import urljoin, urlparse
+from urllib.parse import unquote, urljoin, urlparse
 
 from ofl.documents.http import PoliteClient
 from ofl.documents.sources import Collector
@@ -14,6 +15,38 @@ from ofl.documents.sources import Collector
 _ANCHOR = re.compile(r"<a\b[^>]*?href\s*=\s*[\"']([^\"']+)[\"'][^>]*>(.*?)</a>", re.I | re.S)
 _TAG = re.compile(r"<[^>]+>")
 MAX_PAGES = 200  # 20,000 media items; a site with more is not a letters archive
+
+# Link texts that name an action on the page, not the document behind the link. They are
+# compared without accents, case or trailing punctuation.
+PAGE_CHROME_LINK_TEXTS = frozenset(
+    {
+        "abrir",
+        "acesse",
+        "acesse aqui",
+        "aqui",
+        "baixar",
+        "baixe",
+        "baixe aqui",
+        "clique aqui",
+        "confira",
+        "download",
+        "fazer download",
+        "leia aqui",
+        "leia mais",
+        "mais informacoes",
+        "pdf",
+        "saiba mais",
+        "ver mais",
+        "veja mais",
+        "visualizar",
+        "click here",
+        "here",
+        "learn more",
+        "read more",
+    }
+)
+_FILE_NAME_SEPARATORS = re.compile(r"[_+\-]+")
+_CAMEL_CASE_BOUNDARY = re.compile(r"(?<=[a-z])(?=[A-Z])")
 
 
 @dataclass(frozen=True)
@@ -26,6 +59,33 @@ class Candidate:
 
 def _is_pdf_url(url: str) -> bool:
     return urlparse(url).path.lower().endswith(".pdf")
+
+
+def is_page_chrome(link_text: str) -> bool:
+    """True when a link text is empty or a generic action such as "Saiba mais" or "PDF"."""
+    folded = unicodedata.normalize("NFKD", link_text).encode("ascii", "ignore").decode()
+    words = " ".join(re.sub(r"[^\w\s]", " ", folded.casefold()).split())
+    return not words or words in PAGE_CHROME_LINK_TEXTS
+
+
+def file_name_title(url: str) -> str:
+    """A readable title from a document URL's file name: "CartaMensal_202301.pdf" gives
+    "Carta Mensal 202301"."""
+    name = unquote(urlparse(url).path.rsplit("/", 1)[-1])
+    stem = name.rsplit(".", 1)[0] if "." in name else name
+    spaced = _CAMEL_CASE_BOUNDARY.sub(" ", _FILE_NAME_SEPARATORS.sub(" ", stem))
+    return " ".join(spaced.split())
+
+
+def link_title(link_text: str, url: str) -> str:
+    """The title a listing link gives its document.
+
+    Some listing pages label every letter with the same button text ("Mais informações",
+    "PDF"). That text says nothing about the letter, so the file name is used instead.
+    """
+    if not is_page_chrome(link_text):
+        return link_text
+    return file_name_title(url) or link_text
 
 
 def wp_media(base: str, client: PoliteClient) -> Iterator[Candidate]:
@@ -62,7 +122,8 @@ def wp_media(base: str, client: PoliteClient) -> Iterator[Candidate]:
 
 
 def page_links(urls: list[str], client: PoliteClient) -> Iterator[Candidate]:
-    """PDF links on letters listing pages; the anchor text is the title."""
+    """PDF links on letters listing pages; the anchor text is the title unless it is
+    generic page chrome (see link_title)."""
     seen: set[str] = set()
     for page_url in urls:
         resp = client.get(page_url)
@@ -72,8 +133,8 @@ def page_links(urls: list[str], client: PoliteClient) -> Iterator[Candidate]:
             if not _is_pdf_url(url) or url in seen:
                 continue
             seen.add(url)
-            title = " ".join(html.unescape(_TAG.sub(" ", inner)).split())
-            yield Candidate(url=url, title=title, listing_is_letters=True)
+            link_text = " ".join(html.unescape(_TAG.sub(" ", inner)).split())
+            yield Candidate(url=url, title=link_title(link_text, url), listing_is_letters=True)
 
 
 def list_candidates(collector: Collector, client: PoliteClient) -> Iterator[Candidate]:
