@@ -10,15 +10,19 @@ from urllib.parse import urlsplit
 from psycopg.types.json import Jsonb
 
 from ofl.documents.collectors import link_title
-from ofl.documents.periods import LetterSources, dated_title, letter_period, needs_first_page
+from ofl.documents.periods import (
+    LetterSources,
+    dated_title,
+    letter_period,
+    needs_first_page,
+)
 
-from .archive import index_text, upsert_item
+from .archive import index_text, item_identity, upsert_item
 from .db import digest, lock_item
 
 COLLECTION = re.compile(r"^[A-Za-z0-9_-]{1,80}$")
 SHA = re.compile(r"^[a-f0-9]{64}$")
 TIERS = {"official", "feed_fulltext", "headline_only"}
-EARLIEST_LETTER_YEAR = 1900
 
 
 class LibrarySource:
@@ -254,22 +258,14 @@ def index_news(con, db, store, row, object_key, *, policies=None):
     return True
 
 
-def _listing_year(value, latest_year):
-    """A manifest's listing year, when it is a plausible year."""
-    if (
-        isinstance(value, int)
-        and not isinstance(value, bool)
-        and EARLIEST_LETTER_YEAR <= value <= latest_year
-    ):
-        return value
-    return None
-
-
 def _letter_sources(row, url, latest_year, first_page=None):
+    listing_year = row.get("listing_year")
+    if not isinstance(listing_year, int) or isinstance(listing_year, bool):
+        listing_year = None
     return LetterSources(
         title=str(row.get("title") or ""),
         url=url,
-        listing_year=_listing_year(row.get("listing_year"), latest_year),
+        listing_year=listing_year,
         published=str(row.get("published") or ""),
         first_page=first_page,
     )
@@ -289,23 +285,6 @@ def _first_pages(db, letters):
         ([item_id for item_id, _ in letters],),
     )
     return {(row["item_id"], row["sha256"]): row["text"] for row in rows}
-
-
-def _dated_letter(row, url, latest_year, first_page=None):
-    """The manifest row with the title and date the letter's sources support.
-
-    Manifests written before page-chrome link texts were replaced still hold them, and
-    many titles name a month without its year. Both are derived here on every sync.
-    The derived title and date are part of the signature, so only letters whose title or
-    date changes are synced again."""
-    row = {**row, "title": link_title(str(row.get("title") or ""), url)}
-    period = letter_period(
-        _letter_sources(row, url, latest_year, first_page), latest_year=latest_year
-    )
-    row["title"] = dated_title(row["title"], period)
-    if period and not row.get("published"):
-        row["published"] = period.iso
-    return row
 
 
 def _manifest_letters(db, source, collection):
@@ -332,32 +311,51 @@ def _manifest_letters(db, source, collection):
 
 
 def _letter_candidates(db, source, collection, *, latest_year):
-    """One sync candidate per stored letter, with its derived title and date."""
-    letters = _manifest_letters(db, source, collection)
+    """One sync candidate per stored letter, with its derived title and period.
+
+    Manifests written before page-chrome link texts were replaced still hold them, and
+    many titles name a month without its year; both are derived here on every sync (see
+    ofl/documents/periods.py). Besides the manifest, the result depends on the letter's
+    first extracted page and on latest_year, so a letter can be retitled after its
+    original is processed or when a new year begins. The derived title and period are
+    part of the signature, so only letters they change are synced again."""
+    letters = []
+    for manager, url, row in _manifest_letters(db, source, collection):
+        letters.append(
+            (manager, url, {**row, "title": link_title(str(row.get("title") or ""), url)})
+        )
     # The first page is read only for letters no other source dates, and only once the
     # original has been processed; a new letter gets its year on a later sync.
     waiting = {}
     for manager, url, row in letters:
-        titled = {**row, "title": link_title(str(row.get("title") or ""), url)}
-        if needs_first_page(_letter_sources(titled, url, latest_year), latest_year=latest_year):
-            item_id = digest(["manager_letter", digest([manager, url])])
+        if needs_first_page(_letter_sources(row, url, latest_year), latest_year=latest_year):
+            item_id = item_identity("manager_letter", digest([manager, url]))
             waiting[(manager, url)] = (item_id, row["sha256"])
     pages = _first_pages(db, list(waiting.values()))
     candidates = []
-    for manager, url, manifest_row in letters:
+    for manager, url, row in letters:
         first_page = pages.get(waiting.get((manager, url)))
-        row = _dated_letter(manifest_row, url, latest_year, first_page)
-        # Collection activity does not change the semantic revision of a letter.
-        stable = {k: row.get(k) for k in ("title", "published", "url", "sha256")}
-        candidates.append(
-            {
-                "key": f"letters/{manager}/{digest(url)}",
-                "signature": digest(stable),
-                "manager": manager,
-                "row": row,
-            }
-        )
+        sources = _letter_sources(row, url, latest_year, first_page)
+        period = letter_period(sources, latest_year=latest_year)
+        candidates.append(_letter_candidate(manager, url, row, period))
     return candidates
+
+
+def _letter_candidate(manager, url, row, period):
+    dated = {**row, "title": dated_title(row["title"], period)}
+    # Collection activity does not change the semantic revision of a letter. The period
+    # joins the signature only when there is one, so letters without one keep the
+    # signature they had before periods were derived.
+    stable = {k: dated.get(k) for k in ("title", "published", "url", "sha256")}
+    if period:
+        stable["period"] = period.iso
+    return {
+        "key": f"letters/{manager}/{digest(url)}",
+        "signature": digest(stable),
+        "manager": manager,
+        "row": dated,
+        "period": period.iso if period else "",
+    }
 
 
 def _save_entry(con, kind, key, signature, detail):
@@ -423,10 +421,12 @@ def sync_library(
                 )
                 if sha != row["sha256"]:
                     raise ValueError("letter original checksum does not match manifest")
+                # The upload date stays the letter's date when the manifest has one;
+                # otherwise the month the letter covers dates it.
                 record = _metadata(
                     collection=manager,
                     title=row.get("title"),
-                    published=row.get("published"),
+                    published=row.get("published") or candidate["period"],
                     url=source_url(row["url"]),
                     tier="private_original",
                     epistemic="attributed_opinion",

@@ -70,6 +70,7 @@ _TEXT_PERIOD = re.compile(
 # Only the start of the first page is read: a letter names its own month in its header,
 # and the rest of the page discusses other months.
 FIRST_PAGE_CHARACTERS = 4000
+EARLIEST_YEAR = 1900
 
 
 @dataclass(frozen=True)
@@ -119,32 +120,56 @@ def is_bare_month(title: str) -> bool:
     return _month_of_word(words[0], allow_short=True, allow_marco=True) is not None
 
 
-def title_month(title: str) -> int | None:
-    """The one month a title names, or None when it names none or several.
-
-    Abbreviations count only when they are the whole title, because "set" and "out" are
-    also ordinary words."""
+def _title_months(title: str) -> set[int]:
     if is_bare_month(title):
-        return _month_of_word(_WORD.findall(title)[0], allow_short=True, allow_marco=True)
+        month = _month_of_word(_WORD.findall(title)[0], allow_short=True, allow_marco=True)
+        return {month} if month else set()
     months = set()
     for word in _WORD.findall(title):
         month = _month_of_word(word, allow_short=False, allow_marco=False)
         if month:
             months.add(month)
     numeric = {int(match.group(2)) for match in _TITLE_YEAR.finditer(title) if match.group(2)}
-    return _single(months | numeric)
+    return months | numeric
+
+
+def _title_years(title: str) -> set[int]:
+    return {int(match.group(1)) for match in _TITLE_YEAR.finditer(title)}
+
+
+def title_month(title: str) -> int | None:
+    """The one month a title names, or None when it names none or several.
+
+    Abbreviations count only when they are the whole title, because "set" and "out" are
+    also ordinary words."""
+    return _single(_title_months(title))
 
 
 def title_year(title: str) -> int | None:
     """The one year a title names (also inside "202301"), or None."""
-    return _single({int(match.group(1)) for match in _TITLE_YEAR.finditer(title)})
+    return _single(_title_years(title))
+
+
+def plausible_year(year: int, latest_year: int) -> bool:
+    """True for a year a letter can cover; a later one is a typing or reading error."""
+    return EARLIEST_YEAR <= year <= latest_year
+
+
+def _month_years(tokens: list[str], index: int) -> set[int]:
+    """Four-digit years next to the month word at tokens[index], also across "de"."""
+    before = tokens[max(index - 1, 0) : index]
+    after = tokens[index + 1 : index + 2]
+    if after and after[0].casefold() == "de":
+        after = tokens[index + 2 : index + 3]
+    return {int(token) for token in before + after if re.fullmatch(_YEAR, token)}
 
 
 def file_name_period(url: str) -> Period | None:
-    """The month a document's file name names: "Carta_Abril_2020.pdf", "Carta_2025_04.pdf".
+    """The month a document's file name names: "Carta_Abril_2020.pdf", "Carta_2025_04.pdf",
+    "Carta-Junho-de-2023.pdf".
 
     A month word counts only next to a four-digit year. A name with several different
-    months gives nothing."""
+    months, or with another year anywhere in it, gives nothing."""
     name = unquote(urlparse(url).path.rsplit("/", 1)[-1])
     stem = name.rsplit(".", 1)[0] if "." in name else name
     periods = {
@@ -153,13 +178,13 @@ def file_name_period(url: str) -> Period | None:
     tokens = _FILE_NAME_TOKEN.findall(_CAMEL_CASE_BOUNDARY.sub(" ", stem))
     for index, token in enumerate(tokens):
         month = _month_of_word(token, allow_short=True, allow_marco=True)
-        if not month:
-            continue
-        neighbours = tokens[max(index - 1, 0) : index] + tokens[index + 1 : index + 2]
-        for neighbour in neighbours:
-            if re.fullmatch(_YEAR, neighbour):
-                periods.add(Period(int(neighbour), month))
-    return next(iter(periods)) if len(periods) == 1 else None
+        if month:
+            periods.update(Period(year, month) for year in _month_years(tokens, index))
+    if len(periods) != 1:
+        return None
+    period = next(iter(periods))
+    stated_years = {int(token) for token in tokens if re.fullmatch(_YEAR, token)}
+    return period if stated_years <= {period.year} else None
 
 
 def date_period(published: str) -> Period | None:
@@ -177,7 +202,7 @@ def first_page_year(text: str, month: int, *, latest_year: int) -> int | None:
     for match in _TEXT_PERIOD.finditer(text[:FIRST_PAGE_CHARACTERS]):
         named = _month_of_word(match.group(1), allow_short=True, allow_marco=True)
         year = int(match.group(2))
-        if named == month and year <= latest_year:
+        if named == month and plausible_year(year, latest_year):
             years.add(year)
     return _single(years)
 
@@ -203,10 +228,11 @@ def _agrees(period: Period | None, month: int | None, year: int | None) -> bool:
 
 def _year_only_period(sources: LetterSources, month: int, *, latest_year: int) -> Period | None:
     """The period from sources that give only a year for the month the title names."""
-    if sources.listing_year:
-        return Period(sources.listing_year, month)
+    listing_year = sources.listing_year
+    if listing_year and plausible_year(listing_year, latest_year):
+        return Period(listing_year, month)
     uploaded = date_period(sources.published)
-    if _agrees(uploaded, month, None):
+    if uploaded and uploaded.month == month and plausible_year(uploaded.year, latest_year):
         return uploaded
     if not sources.first_page:
         return None
@@ -218,16 +244,21 @@ def letter_period(sources: LetterSources, *, latest_year: int) -> Period | None:
     """The month a letter covers, from the first source that states it.
 
     The order is the title itself, the file name, the listing page's year heading, the
-    upload date and the first page. A source must agree with the month and year the
-    title already names, and a year after latest_year is a typing or reading error. The
-    listing year, upload date and first page only give a year, so they are used only
-    when the title names the month and no year."""
-    month = title_month(sources.title)
-    year = title_year(sources.title)
+    upload date and the first page. A title that names several months or several years
+    gives nothing. A source must agree with the month and year the title names, and a
+    year after latest_year is a typing or reading error. The listing year, upload date
+    and first page only give a year, so they are used only when the title names the month
+    and no year."""
+    months = _title_months(sources.title)
+    years = _title_years(sources.title)
+    if len(months) > 1 or len(years) > 1:
+        return None
+    month = _single(months)
+    year = _single(years)
     if month and year:
         return Period(year, month)
     from_file_name = file_name_period(sources.url)
-    plausible = from_file_name is not None and from_file_name.year <= latest_year
+    plausible = from_file_name is not None and plausible_year(from_file_name.year, latest_year)
     if plausible and _agrees(from_file_name, month, year):
         return from_file_name
     if month is None or year is not None:
@@ -237,7 +268,7 @@ def letter_period(sources: LetterSources, *, latest_year: int) -> Period | None:
 
 def needs_first_page(sources: LetterSources, *, latest_year: int) -> bool:
     """True when only the first page could still give this letter's year."""
-    if title_year(sources.title) or title_month(sources.title) is None:
+    if _title_years(sources.title) or title_month(sources.title) is None:
         return False
     return letter_period(sources, latest_year=latest_year) is None
 

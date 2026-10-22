@@ -103,9 +103,10 @@ def collect_manager(
                 # download; the research sync then adds the year to their titles. A page
                 # that stops showing years keeps the year already recorded.
                 known_year = seen.get("listing_year")
-                if not dry_run and candidate.listing_year not in (None, known_year):
-                    seen["listing_year"] = candidate.listing_year
+                if candidate.listing_year not in (None, known_year):
                     counts["listing_year_updated"] = counts.get("listing_year_updated", 0) + 1
+                    if not dry_run:
+                        seen["listing_year"] = candidate.listing_year
                 continue
             keep, reason = is_letter(
                 candidate.url, candidate.title, listing_is_letters=candidate.listing_is_letters

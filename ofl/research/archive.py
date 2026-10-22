@@ -177,9 +177,14 @@ def _replace_chain(db, chain, words):
     return True
 
 
+def item_identity(source, source_id):
+    """The catalog id of the item a source record describes."""
+    return digest([source, source_id])
+
+
 def upsert_item(con, source, record, fallback_id):
     source_id = str(record.get("source_id") or fallback_id)
-    identity = digest([source, source_id])
+    identity = item_identity(source, source_id)
     lock_item(con, identity)
     title = str(record.get("title") or source_id)
     revision = digest(record)

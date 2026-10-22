@@ -42,15 +42,17 @@ Each source must agree with the month the title names; a source that gives two y
 or a year after the current one, gives nothing. When no source states the year the
 title stays as it is: a year is never guessed. "Jun" becomes "Junho 2023", "Carta
 Mensal Julho" becomes "Carta Mensal Julho 2025", and a title with no month ("COVID")
-dated by its file name becomes "COVID - Março 2020". The same month and year fill the
-letter's date (month precision) when the manifest has none.
+dated by its file name becomes "COVID - Março 2020". The letter's date is its upload
+date when the manifest has one; otherwise the derived month dates it (month precision).
 
 The letters sync derives the title and date from the manifest row each time, and both
 are part of the letter's sync signature. Letters whose title or date changes are
 therefore synced again, and only those: the item title, its heading vector
 (`item_headings`, kept by a trigger) and its metadata passage are rewritten, and the
-original is not processed again. A new letter dated only by its first page gets its
-year on the first sync after its original is processed. Letters collected before
+original is not processed again. Besides the manifest, the derivation reads the
+letter's first extracted page and the current year (later years are rejected as errors),
+so a letter can be retitled without a manifest change: a new letter dated only by its
+first page gets its year on the first sync after its original is processed. Letters collected before
 listing years were recorded get them from the next `ofl letters collect`, which
 updates the manifest without downloading the letters again. Body passages keep a hash
 of the title for jurisdiction tags, so run the jurisdiction backfill afterwards:

@@ -283,6 +283,17 @@ def test_listing_year_is_recorded_and_refreshed_without_a_new_download(tmp_path)
     assert manifest_years() == {letter: 2025, f"{page}x.pdf": 2026}
     assert letter not in session.asked
 
+    # A dry run reports the update without writing it.
+    client, _ = _client({page: sectioned})
+    manifest_file.write_text(
+        manifest_file.read_text().replace('"listing_year": 2025', '"listing_year": null')
+    )
+    counts = letters.collect_manager(manager, backend=backend, client=client, dry_run=True)
+    assert counts == {"already_seen": 2, "listing_year_updated": 1}
+    assert manifest_years() == {letter: None, f"{page}x.pdf": 2026}
+    client, _ = _client({page: sectioned})
+    letters.collect_manager(manager, backend=backend, client=client)
+
     # A page that stops grouping by year keeps the year already recorded.
     client, _ = _client({page: before})
     assert letters.collect_manager(manager, backend=backend, client=client) == {"already_seen": 1}

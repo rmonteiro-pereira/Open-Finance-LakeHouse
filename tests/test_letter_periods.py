@@ -29,7 +29,9 @@ OPAQUE_URL = "https://example.org/_files/ugd/0a1b2c_3d4e5f60718293a4b5c6d7e8f901
         ("https://example.org/CartaMensal_202301.pdf", Period(2023, 1)),
         ("https://example.org/CartaDezembro2019.pdf", Period(2019, 12)),
         ("https://example.org/Carta-outubro-22-1.pdf", None),
+        ("https://example.org/Carta-Junho-de-2023.pdf", Period(2023, 6)),
         ("https://example.org/Carta-Junho_2021-e-Dezembro_2021.pdf", None),
+        ("https://example.org/Carta-Junho-2023-revisada-2024.pdf", None),
         ("https://example.org/Carta%20Mensal%20Julho.pdf", None),
         ("https://example.org/Relatorio_20230303_final.pdf", None),
         (OPAQUE_URL, None),
@@ -124,6 +126,50 @@ def test_file_name_that_contradicts_the_title_month_is_not_used():
 def test_file_name_year_after_the_latest_year_is_not_used():
     sources = LetterSources(title="Abr", url="https://example.org/Carta-Abril_2062.pdf")
     assert letter_period(sources, latest_year=LATEST) is None
+
+
+def test_file_name_with_de_comes_before_a_listing_year():
+    sources = LetterSources(
+        title="Junho", url="https://example.org/Carta-Junho-de-2023.pdf", listing_year=2025
+    )
+    assert letter_period(sources, latest_year=LATEST) == Period(2023, 6)
+
+
+def test_file_name_with_a_second_year_falls_through_to_the_listing_year():
+    sources = LetterSources(
+        title="Junho",
+        url="https://example.org/Carta-Junho-2023-revisada-2024.pdf",
+        listing_year=2023,
+    )
+    assert letter_period(sources, latest_year=LATEST) == Period(2023, 6)
+
+
+@pytest.mark.parametrize("title", ["Junho 2022 e 2023", "Junho e Julho", "Carta Junho 202307"])
+def test_title_naming_two_years_or_months_is_left_as_it_is(title):
+    sources = LetterSources(
+        title=title,
+        url="https://example.org/Carta-Junho_2025.pdf",
+        listing_year=2025,
+        first_page="Junho 2025",
+    )
+    assert letter_period(sources, latest_year=LATEST) is None
+    assert not needs_first_page(sources, latest_year=LATEST)
+
+
+@pytest.mark.parametrize(
+    ("listing_year", "published"), [(2062, ""), (1850, ""), (None, "2062-06-10")]
+)
+def test_implausible_listing_or_upload_year_falls_through_to_the_first_page(
+    listing_year, published
+):
+    sources = LetterSources(
+        title="Junho",
+        url=OPAQUE_URL,
+        listing_year=listing_year,
+        published=published,
+        first_page="Carta Junho/2023",
+    )
+    assert letter_period(sources, latest_year=LATEST) == Period(2023, 6)
 
 
 def test_upload_date_counts_only_in_the_title_month():
