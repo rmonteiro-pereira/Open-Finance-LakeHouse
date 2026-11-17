@@ -15,13 +15,12 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /app
 
 # Project metadata + source (hatchling builds the `ofl` wheel from these).
-COPY pyproject.toml README.md LICENSE ./
+COPY pyproject.toml uv.lock README.md LICENSE ./
 COPY ofl ./ofl
 COPY sources ./sources
 
 # Isolated venv with core + the pure-Python extras (Yahoo extract, lineage).
-RUN uv venv /opt/venv \
- && VIRTUAL_ENV=/opt/venv uv pip install --no-cache ".[yahoo,lineage]"
+RUN UV_PROJECT_ENVIRONMENT=/opt/venv uv sync --locked --no-dev --no-editable --extra yahoo --extra lineage
 
 # Pre-bake the DuckDB extensions used by the gold lane into an offline directory.
 RUN /opt/venv/bin/python - <<'PY'

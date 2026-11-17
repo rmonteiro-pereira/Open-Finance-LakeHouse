@@ -8,6 +8,15 @@ external egress**) can run every step **offline**.
 | `:slim`  | `docker/Dockerfile`       | extract + serve | Python only           | `ingest`, `gold`, `registry` |
 | `:spark` | `docker/Dockerfile.spark` | refine          | Python + JRE 17       | `silver` |
 
+The images target x86-64 Sandy Bridge CPUs with AVX and without AVX2, FMA
+or BMI2. Full CPU compatibility requires execution of each lane on that CPU.
+All Python images install the versions in the shared lock file;
+`polars[rtcompat]` adds the matching compatibility runtime, which Polars prefers
+at import time even when its default runtime is also installed. No CPU override
+is needed. The research web builder's pinned Bun image already uses the x64
+baseline binary; its final image runs Node.js. See the [dependency CPU requirements](CPU_REQUIREMENTS.md)
+for native-library details and limits.
+
 ## Why two images
 - **Slim** runs Polars ingest and the DuckDB gold marts — no JVM, so it stays
   small. The DuckDB `httpfs`/`delta` extensions are **pre-baked** into
