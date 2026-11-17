@@ -21,9 +21,9 @@
   quarterly ones key periods as `YYYYQQ` and would be read as months.
 - **`pyproject.toml` needs `LICENSE` at build time.** Both Dockerfiles copy it; drop that
   and the image build fails. The `images` workflow builds both images on every PR.
-- **Image builds are not lock-pinned.** They `uv pip install "."`, so versions float
-  inside the `pyproject.toml` ranges; `delta-spark` can resolve to 3.3.x against the
-  baked 3.2.1 jar.
+- **Image builds use locked dependencies.** Python packages follow `uv.lock`;
+  the Spark image derives both Delta jar versions from the installed `delta-spark`
+  package so the Python and JVM APIs match.
 - **The image tags are mutable** (`:slim`, `:spark`) and no pull policy is set, so a
   node keeps a stale image until it is removed. No CI publishes them.
 - **`ghcr-pull` is always attached** as an image pull secret. If it is missing the

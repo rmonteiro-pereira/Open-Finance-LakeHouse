@@ -5,8 +5,8 @@
 # silver job runs fully OFFLINE — cluster pods have no egress for Ivy resolution.
 # OFL_SPARK_JARS_PACKAGED=1 (set below) makes build_spark_session skip Ivy.
 #
-# Jar versions are pinned to the Spark/Hadoop the pip `pyspark` wheel ships:
-#   pyspark 3.5.x -> hadoop 3.3.4  | delta-spark 3.2.x pairs with Spark 3.5.
+# Delta jars match the installed Python API; Hadoop and AWS versions match
+# the Hadoop 3.3.4 libraries shipped with pyspark 3.5.x.
 ARG PYTHON_VERSION=3.11
 
 # ----------------------------------------------------------------------------
@@ -24,6 +24,7 @@ RUN UV_PROJECT_ENVIRONMENT=/opt/venv uv sync --locked --no-dev --no-editable --e
 
 # Bake the jars Spark needs for Delta + s3a directly into pyspark/jars.
 RUN /opt/venv/bin/python - <<'PY'
+import importlib.metadata
 import os
 import urllib.request
 
@@ -31,10 +32,11 @@ import pyspark
 
 jars = os.path.join(os.path.dirname(pyspark.__file__), "jars")
 base = "https://repo1.maven.org/maven2"
-# (maven path, version, artifact) — pinned to pyspark 3.5 / hadoop 3.3.4.
+delta_version = importlib.metadata.version("delta-spark")
+# Delta uses the Python package version to keep its JVM API compatible.
 artifacts = [
-    ("io/delta/delta-spark_2.12", "3.2.1", "delta-spark_2.12"),
-    ("io/delta/delta-storage", "3.2.1", "delta-storage"),
+    ("io/delta/delta-spark_2.12", delta_version, "delta-spark_2.12"),
+    ("io/delta/delta-storage", delta_version, "delta-storage"),
     ("org/apache/hadoop/hadoop-aws", "3.3.4", "hadoop-aws"),
     ("com/amazonaws/aws-java-sdk-bundle", "1.12.262", "aws-java-sdk-bundle"),
 ]
